@@ -1,0 +1,172 @@
+/**
+ * POST /api/generate-signature — render HTML to PNG via Puppeteer, upload to Supabase Storage when
+ * configured (public HTTPS URL for email clients), else save under /public/signatures.
+ */
+import { Router } from 'express';
+import puppeteer from 'puppeteer';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
+import { uploadGeneratedSignaturePng } from '../services/signatureExportStorage.js';
+
+const router = Router();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** server/public/signatures — served at GET /signatures/:file */
+const PUBLIC_ROOT = path.join(__dirname, '..', '..', 'public');
+const SIGNATURES_DIR = path.join(PUBLIC_ROOT, 'signatures');
+
+function imageUrlUnreachableForEmailRecipients(publicBase) {
+  try {
+    const u = new URL(publicBase);
+    const h = u.hostname.toLowerCase();
+    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '0.0.0.0';
+  } catch {
+    return false;
+  }
+}
+
+function wrapDocument(fragmentHtml) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+    /* Tight shrink-wrap — avoids fullPage capturing viewport/scroll dead space under the card */
+    #sig-export-root {
+      display: inline-block;
+      vertical-align: top;
+      line-height: normal;
+      margin: 0;
+      padding: 0;
+      width: max-content;
+      max-width: 100%;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body><div id="sig-export-root">${fragmentHtml}</div></body>
+</html>`;
+}
+
+router.post('/generate-signature', async (req, res, next) => {
+  try {
+    const html = typeof req.body?.html === 'string' ? req.body.html.trim() : '';
+    if (!html) {
+      return res.status(400).json({ error: 'Missing "html" string in JSON body' });
+    }
+
+    const port = Number(process.env.PORT) || 3001;
+    const publicBase = String(process.env.PUBLIC_BASE_URL || `http://localhost:${port}`).replace(
+      /\/$/,
+      ''
+    );
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: 720,
+        height: 480,
+        deviceScaleFactor: 2,
+      });
+
+      await page.setContent(wrapDocument(html), {
+        waitUntil: 'load',
+        timeout: 45_000,
+      });
+
+      await new Promise((r) => setTimeout(r, 800));
+
+      const root = await page.$('#sig-export-root');
+      let buf;
+      if (root) {
+        try {
+          buf = await root.screenshot({
+            type: 'png',
+            omitBackground: false,
+            captureBeyondViewport: true,
+          });
+        } catch {
+          buf = await root.screenshot({ type: 'png', omitBackground: false });
+        }
+        await root.dispose();
+      }
+      if (!buf?.length) {
+        const box = await page.evaluate(() => {
+          const el = document.getElementById('sig-export-root');
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          // page.screenshot clip is in CSS pixels (viewport space)
+          return {
+            x: Math.max(0, Math.floor(r.left)),
+            y: Math.max(0, Math.floor(r.top)),
+            width: Math.min(Math.ceil(r.width), 4096),
+            height: Math.min(Math.ceil(r.height), 4096),
+          };
+        });
+        if (box && box.width > 0 && box.height > 0) {
+          buf = await page.screenshot({
+            type: 'png',
+            clip: box,
+            omitBackground: false,
+          });
+        } else {
+          buf = await page.screenshot({ type: 'png', omitBackground: false });
+        }
+      }
+
+      const fileName = `signature-${randomUUID()}.png`;
+      const base64 = Buffer.from(buf).toString('base64');
+
+      const uploaded = await uploadGeneratedSignaturePng(buf, fileName);
+      let url;
+      let storage = 'local';
+
+      if (uploaded.ok) {
+        url = uploaded.publicUrl;
+        storage = 'supabase';
+      } else {
+        await fs.mkdir(SIGNATURES_DIR, { recursive: true });
+        const filePath = path.join(SIGNATURES_DIR, fileName);
+        await fs.writeFile(filePath, buf);
+        url = `${publicBase}/signatures/${fileName}`;
+      }
+
+      const recipientImageWarning =
+        storage === 'local' && imageUrlUnreachableForEmailRecipients(publicBase)
+          ? 'This PNG URL is not reachable from the internet (localhost). Recipients will see a broken image in HTML signatures with a link. Configure Supabase (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY) to store exports on Storage, or set PUBLIC_BASE_URL to a public HTTPS origin.'
+          : null;
+
+      return res.json({
+        url,
+        mime: 'image/png',
+        base64,
+        dataUrl: `data:image/png;base64,${base64}`,
+        recipientImageWarning,
+        storage,
+      });
+    } finally {
+      await browser.close();
+    }
+  } catch (e) {
+    next(e);
+  }
+});
+
+export default router;

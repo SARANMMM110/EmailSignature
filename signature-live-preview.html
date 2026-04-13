@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit signature — SignatureStudio</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f0f1f5; color: #0d0f14; min-height: 100vh; padding: 24px; line-height: 1.5; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    a.back { display: inline-flex; align-items: center; gap: 6px; color: #2d5be3; font-weight: 600; text-decoration: none; margin-bottom: 20px; }
+    a.back:hover { text-decoration: underline; }
+    .card { background: #fff; border-radius: 14px; border: 1px solid rgba(0,0,0,.08); box-shadow: 0 2px 8px rgba(0,0,0,.06); padding: 24px; margin-bottom: 20px; }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    .meta { font-size: 13px; color: #64748b; margin-bottom: 16px; }
+    .preview { background: linear-gradient(180deg, #f8fafc, #fff); border-radius: 12px; padding: 20px; display: flex; justify-content: center; margin-bottom: 16px; border: 1px solid rgba(0,0,0,.06); }
+    .preview img { max-width: 100%; height: auto; border-radius: 8px; }
+    label { display: block; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+    textarea { width: 100%; min-height: 88px; padding: 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.12); font-family: ui-monospace, monospace; font-size: 12px; resize: vertical; }
+    .menu { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .menu button {
+      font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 8px;
+      border: 1px solid rgba(0,0,0,.12); background: #f8fafc; color: #334155; cursor: pointer;
+    }
+    .menu button:hover { background: #f1f5f9; border-color: rgba(0,0,0,.18); }
+    .menu button.primary { background: #2d5be3; color: #fff; border-color: #2d5be3; }
+    .menu button.primary:hover { background: #2248c4; }
+    .empty { text-align: center; padding: 48px 24px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="signature_builder_enhanced.html">← Back to studio</a>
+    <div id="app"></div>
+  </div>
+  <script>
+    const LS_KEY = 'signatures';
+    const EDIT_KEY = 'editSignature';
+
+    function loadSignatures() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return [];
+        const p = JSON.parse(raw);
+        return Array.isArray(p) ? p : [];
+      } catch { return []; }
+    }
+
+    function persistSignatures(list) {
+      localStorage.setItem(LS_KEY, JSON.stringify(list));
+    }
+
+    const existingRaw = localStorage.getItem(EDIT_KEY);
+    let current = null;
+    try {
+      current = existingRaw ? JSON.parse(existingRaw) : null;
+    } catch {
+      current = null;
+    }
+
+    function imgHtmlSnippet(sig) {
+      if (!sig || !sig.imageDataUrl) return '';
+      return `<img src="${sig.imageDataUrl}" alt="signature" />`;
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      if (!current || !current.id) {
+        app.innerHTML =
+          '<div class="card empty"><p>No signature to edit. Save one from the studio first, then use <strong>Edit</strong> on the card.</p><p style="margin-top:12px"><a class="back" href="signature_builder_enhanced.html">Open studio</a></p></div>';
+        return;
+      }
+
+      const snippet = imgHtmlSnippet(current);
+      app.innerHTML = `
+        <div class="card">
+          <h1>${escapeHtml(current.name || 'Signature')}</h1>
+          <p class="meta">Saved ${escapeHtml(current.createdAt || '')} · id ${escapeHtml(current.id)}</p>
+          <div class="preview"><img src="${escapeAttr(current.imageDataUrl)}" alt="Preview"></div>
+          <label>Image-based HTML (for clients that accept a single image)</label>
+          <textarea id="snippet" readonly></textarea>
+          <div class="menu">
+            <button type="button" class="primary" onclick="copyImage()">Copy image</button>
+            <button type="button" onclick="copyHTML()">Copy HTML code</button>
+            <button type="button" onclick="downloadSig()">Download PNG</button>
+            <button type="button" onclick="duplicateSig()">Duplicate</button>
+            <button type="button" onclick="deleteSig()">Delete</button>
+          </div>
+        </div>
+      `;
+      const ta = document.getElementById('snippet');
+      if (ta) ta.value = snippet;
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function copyImage() {
+      if (!current || !current.imageDataUrl) return;
+      try {
+        const res = await fetch(current.imageDataUrl);
+        const blob = await res.blob();
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type || 'image/png']: blob })]);
+          alert('Copied image to clipboard!');
+        } else {
+          alert('Clipboard image not supported in this browser.');
+        }
+      } catch (e) {
+        alert('Could not copy image.');
+      }
+    }
+
+    function copyHTML() {
+      const html = imgHtmlSnippet(current);
+      navigator.clipboard.writeText(html).then(
+        () => alert('HTML copied!'),
+        () => alert('Could not copy')
+      );
+    }
+
+    function downloadSig() {
+      if (!current || !current.imageDataUrl) return;
+      const a = document.createElement('a');
+      a.href = current.imageDataUrl;
+      a.download = 'signature.png';
+      a.click();
+    }
+
+    function duplicateSig() {
+      if (!current) return;
+      const list = loadSignatures();
+      const copy = {
+        ...current,
+        id: 'sig_' + Date.now(),
+        name: (current.name || 'Signature') + ' Copy',
+        createdAt: new Date().toISOString().slice(0, 10),
+      };
+      list.push(copy);
+      persistSignatures(list);
+      alert('Duplicate added to your list in the studio.');
+    }
+
+    function deleteSig() {
+      if (!current || !confirm('Delete this signature from saved list?')) return;
+      const list = loadSignatures().filter((s) => s.id !== current.id);
+      persistSignatures(list);
+      localStorage.removeItem(EDIT_KEY);
+      window.location.href = 'signature_builder_enhanced.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules
+.env
+public/signatures/*.png
+public/signatures/*.jpg
+public/signatures/*.webp
+src/data/templatePreviewUrls.json
+*.log
+.DS_Store
