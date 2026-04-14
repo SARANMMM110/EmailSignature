@@ -9,7 +9,8 @@ export const UUID_TO_TEMPLATE_SLUG = {
   'a0000006-0000-4000-8000-000000000006': 'template_6',
   'a0000007-0000-4000-8000-000000000007': 'template_7',
   'a0000008-0000-4000-8000-000000000008': 'template_8',
-  'a0000009-0000-4000-8000-000000000009': 'template_9',
+  /** Retired Layout 9 — map to default engine. */
+  'a0000009-0000-4000-8000-000000000009': 'template_1',
 };
 
 /** Stable UUIDs — must match supabase template seed migrations (e.g. 002, 009, 010). */
@@ -21,7 +22,6 @@ const TEMPLATE_5_UUID = 'a0000005-0000-4000-8000-000000000005';
 const TEMPLATE_6_UUID = 'a0000006-0000-4000-8000-000000000006';
 const TEMPLATE_7_UUID = 'a0000007-0000-4000-8000-000000000007';
 const TEMPLATE_8_UUID = 'a0000008-0000-4000-8000-000000000008';
-const TEMPLATE_9_UUID = 'a0000009-0000-4000-8000-000000000009';
 
 export const TEMPLATE_SLUG_TO_UUID = {
   template_1: TEMPLATE_1_UUID,
@@ -32,7 +32,6 @@ export const TEMPLATE_SLUG_TO_UUID = {
   template_6: TEMPLATE_6_UUID,
   template_7: TEMPLATE_7_UUID,
   template_8: TEMPLATE_8_UUID,
-  template_9: TEMPLATE_9_UUID,
   'classic-table': TEMPLATE_1_UUID,
   'minimal-stack': TEMPLATE_1_UUID,
   'corporate-strip': TEMPLATE_1_UUID,
@@ -62,7 +61,6 @@ export function uuidToTemplateSlug(uuid) {
   if (/^template_6$/i.test(s)) return 'template_6';
   if (/^template_7$/i.test(s)) return 'template_7';
   if (/^template_8$/i.test(s)) return 'template_8';
-  if (/^template_9$/i.test(s)) return 'template_9';
   if (/^template_\d+$/i.test(s)) return 'template_1';
   return 'template_1';
 }
@@ -104,14 +102,15 @@ export function engineSlugFromCatalogTemplateId(id) {
   if (n === 6) return 'template_6';
   if (n === 7) return 'template_7';
   if (n === 8) return 'template_8';
-  if (n === 9) return 'template_9';
+  if (n === 9) return 'template_1';
   return 'template_1';
 }
 
-/** Bundle / preview rail: Layout 1 & 5 = 520px; Layout 2 & 4 = 470px; Layout 3 = 600px (must match client editor preview). */
+/** Bundle / preview rail: Layout 2 = 500px; Layout 4 = 470px; Layout 1 & 5 = 520px; Layout 3 = 600px (must match client editor preview). */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
-  if (s === 'template_2' || s === 'template_4') return 470;
+  if (s === 'template_2') return 500;
+  if (s === 'template_4') return 470;
   if (s === 'template_1' || s === 'template_5') return 520;
   return 600;
 }

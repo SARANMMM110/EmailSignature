@@ -438,8 +438,12 @@ router.put(
       if (req.body.social_links != null) {
         nextRow.social_links = { ...existing.social_links, ...req.body.social_links };
       }
-      if (req.body.banner_config != null) {
-        nextRow.banner_config = { ...existing.banner_config, ...req.body.banner_config };
+      /**
+       * Replace `banner_config` entirely from the editor — shallow merge kept deleted keys
+       * (e.g. `{}` merged with old config left `link_url`, and `secondary_*` could never clear).
+       */
+      if (req.body.banner_config != null && typeof req.body.banner_config === 'object') {
+        nextRow.banner_config = req.body.banner_config;
       }
       if (typeof req.body.show_badge === 'boolean') nextRow.show_badge = req.body.show_badge;
       if (req.body.signature_link !== undefined) {
@@ -447,6 +451,14 @@ router.put(
       }
       if (req.body.banner_id !== undefined) {
         nextRow.banner_id = req.body.banner_id ? resolveBannerUuid(req.body.banner_id) : null;
+        if (!nextRow.banner_id && nextRow.fields && typeof nextRow.fields === 'object') {
+          const f = nextRow.fields;
+          if (f._bundle && typeof f._bundle === 'object' && f._bundle.banner != null) {
+            const restBundle = { ...f._bundle };
+            delete restBundle.banner;
+            nextRow.fields = { ...f, _bundle: restBundle };
+          }
+        }
       }
 
       if (req.body.data != null) {

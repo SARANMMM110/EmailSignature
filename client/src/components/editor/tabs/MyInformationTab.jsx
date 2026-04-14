@@ -158,6 +158,13 @@ export function MyInformationTab({ onToast }) {
   const hasBannerCta =
     Boolean(signature.banner_id) || Boolean(String(bc.link_url || bc.href || '').trim());
   const isWebinarBanner = isWebinarBannerPreset(bc.preset_id, signature.banner_id);
+  const isBookCallBanner =
+    !isWebinarBanner && /book|call/i.test(String(bc.preset_id || ''));
+  const isSecondaryWebinar = isWebinarBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryBookCall =
+    Boolean(bc.secondary_link_url || bc.secondary_href || bc.secondary_banner_id) &&
+    !isSecondaryWebinar &&
+    /book|call/i.test(String(bc.secondary_preset_id || ''));
 
   const bannerLabelClass = 'mb-1.5 block text-sm font-bold text-slate-800';
 
@@ -171,6 +178,9 @@ export function MyInformationTab({ onToast }) {
     };
     if (isWebinarBanner && partial.field_3 !== undefined) {
       next.text = String(partial.field_3);
+    }
+    if (isSecondaryWebinar && partial.secondary_field_3 !== undefined) {
+      next.secondary_text = String(partial.secondary_field_3);
     }
     updateField('banner_config', next);
   };
@@ -446,11 +456,6 @@ export function MyInformationTab({ onToast }) {
         </>
       ) : hasBannerCta ? (
         <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm">
-          <div className="flex justify-end">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/90">
-              {isWebinarBanner ? 'Banner 1' : 'CTA banner'}
-            </span>
-          </div>
           <p className="text-sm text-slate-600">
             Optional CTA under your signature. Pick another style anytime from{' '}
             <button
@@ -502,6 +507,23 @@ export function MyInformationTab({ onToast }) {
                 onChange={(e) => mergeBannerCfg({ field_4: e.target.value })}
               />
             </div>
+          ) : isBookCallBanner ? (
+            <div className="space-y-4">
+              <Input
+                label="Headline"
+                labelClassName={bannerLabelClass}
+                placeholder="Book a call today"
+                value={bc.text || ''}
+                onChange={(e) => mergeBannerCfg({ text: e.target.value })}
+              />
+              <Input
+                label="Right image URL (optional)"
+                labelClassName={bannerLabelClass}
+                placeholder="https://… (defaults to a stock team photo if empty)"
+                value={bc.field_2 ?? ''}
+                onChange={(e) => mergeBannerCfg({ field_2: e.target.value })}
+              />
+            </div>
           ) : (
             <Input
               label="Banner button text"
@@ -510,6 +532,98 @@ export function MyInformationTab({ onToast }) {
               onChange={(e) => mergeBannerCfg({ text: e.target.value })}
             />
           )}
+          <div className="space-y-3 rounded-lg border border-slate-200/80 bg-white/70 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-600">
+              Second CTA (optional)
+            </p>
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              Choose a second style under{' '}
+              <button
+                type="button"
+                onClick={() => navigate(`/editor/${id}/banners`)}
+                className="font-semibold text-[#3b5bdb] hover:underline"
+              >
+                Banners
+              </button>{' '}
+              (stacked under the first), then set link and copy here.
+            </p>
+            <Input
+              label="Second link"
+              labelClassName={bannerLabelClass}
+              placeholder="https://"
+              value={bc.secondary_link_url || bc.secondary_href || ''}
+              onChange={(e) =>
+                mergeBannerCfg({ secondary_link_url: e.target.value, secondary_href: '' })
+              }
+            />
+            {isSecondaryWebinar ? (
+              <div className="space-y-4">
+                <Input
+                  label="Second — field 1"
+                  labelClassName={bannerLabelClass}
+                  value={bc.secondary_field_1 ?? ''}
+                  placeholder="Email Marketing 101 Webinar"
+                  onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+                />
+                <Input
+                  label="Second — field 2"
+                  labelClassName={bannerLabelClass}
+                  value={bc.secondary_field_2 ?? ''}
+                  placeholder="Only 10 seats available!"
+                  onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+                />
+                <Input
+                  label="Second — field 3"
+                  labelClassName={bannerLabelClass}
+                  value={bc.secondary_field_3 ?? bc.secondary_text ?? ''}
+                  placeholder="Book my seat"
+                  onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
+                />
+                <Input
+                  label="Second — field 4"
+                  labelClassName={bannerLabelClass}
+                  value={bc.secondary_field_4 ?? ''}
+                  placeholder="88"
+                  inputMode="numeric"
+                  onChange={(e) => mergeBannerCfg({ secondary_field_4: e.target.value })}
+                />
+              </div>
+            ) : isSecondaryBookCall ? (
+              <div className="space-y-4">
+                <Input
+                  label="Second headline"
+                  labelClassName={bannerLabelClass}
+                  placeholder="Book a call today"
+                  value={bc.secondary_text ?? ''}
+                  onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
+                />
+                <Input
+                  label="Second right image URL (optional)"
+                  labelClassName={bannerLabelClass}
+                  placeholder="https://…"
+                  value={bc.secondary_field_2 ?? ''}
+                  onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Input
+                  label="Second button / line text"
+                  labelClassName={bannerLabelClass}
+                  placeholder="Learn more"
+                  value={bc.secondary_text ?? ''}
+                  onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
+                />
+                <Input
+                  label="Second image URL (optional, book-style strips)"
+                  labelClassName={bannerLabelClass}
+                  placeholder="https://…"
+                  value={bc.secondary_field_2 ?? ''}
+                  onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+                />
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200/90 bg-white px-5 py-10 text-center shadow-sm sm:px-8">

@@ -8,7 +8,6 @@ const TEMPLATE_5_UUID = 'a0000005-0000-4000-8000-000000000005';
 const TEMPLATE_6_UUID = 'a0000006-0000-4000-8000-000000000006';
 const TEMPLATE_7_UUID = 'a0000007-0000-4000-8000-000000000007';
 const TEMPLATE_8_UUID = 'a0000008-0000-4000-8000-000000000008';
-const TEMPLATE_9_UUID = 'a0000009-0000-4000-8000-000000000009';
 
 export const UUID_TO_TEMPLATE_SLUG = {
   'a0000001-0000-4000-8000-000000000001': 'template_1',
@@ -19,7 +18,7 @@ export const UUID_TO_TEMPLATE_SLUG = {
   'a0000006-0000-4000-8000-000000000006': 'template_6',
   'a0000007-0000-4000-8000-000000000007': 'template_7',
   'a0000008-0000-4000-8000-000000000008': 'template_8',
-  'a0000009-0000-4000-8000-000000000009': 'template_9',
+  'a0000009-0000-4000-8000-000000000009': 'template_1',
 };
 
 /** Reverse map — slug → DB `template_id` FK. */
@@ -32,7 +31,6 @@ export const TEMPLATE_SLUG_TO_UUID = {
   template_6: TEMPLATE_6_UUID,
   template_7: TEMPLATE_7_UUID,
   template_8: TEMPLATE_8_UUID,
-  template_9: TEMPLATE_9_UUID,
 };
 
 export const TEMPLATE_SLUG_LABELS = {
@@ -44,11 +42,18 @@ export const TEMPLATE_SLUG_LABELS = {
   template_6: 'Layout 6',
   template_7: 'Layout 7',
   template_8: 'Layout 8',
-  template_9: 'Layout 9',
 };
 
 /** Webinar / “Banner 1” layout — matches engine `banner_1`. */
 export const WEBINAR_BANNER_UUID = 'b0000003-0000-4000-8000-000000000003';
+
+/** Slug → DB `banner_id` FK — must match server `templateIds.js` and Supabase seed. */
+export const BANNER_SLUG_TO_UUID = {
+  'book-call': 'b0000001-0000-4000-8000-000000000001',
+  download: 'b0000002-0000-4000-8000-000000000002',
+  webinar: WEBINAR_BANNER_UUID,
+  'need-call': 'b0000004-0000-4000-8000-000000000004',
+};
 
 export function isWebinarBannerPreset(presetId, bannerId) {
   const p = String(presetId || '').toLowerCase();
@@ -68,7 +73,6 @@ export function uuidToTemplateSlug(uuid) {
   if (/^template_6$/i.test(s)) return 'template_6';
   if (/^template_7$/i.test(s)) return 'template_7';
   if (/^template_8$/i.test(s)) return 'template_8';
-  if (/^template_9$/i.test(s)) return 'template_9';
   if (/^template_\d+$/i.test(s)) return 'template_1';
   return 'template_1';
 }
@@ -91,17 +95,17 @@ export function normalizeSignatureTemplateSlug(design, template_id) {
     if (/^template_6$/i.test(s)) return 'template_6';
     if (/^template_7$/i.test(s)) return 'template_7';
     if (/^template_8$/i.test(s)) return 'template_8';
-    if (/^template_9$/i.test(s)) return 'template_9';
     if (/^template_\d+$/i.test(s)) return 'template_1';
     if (UUID_TEMPLATE_RE.test(s)) return uuidToTemplateSlug(s);
   }
   return 'template_1';
 }
 
-/** Editor preview / export rail width: Layout 1 & 5 = 520px; Layout 2 & 4 = 470px; Layout 3 = 600px. */
+/** Editor preview / export rail width: Layout 2 = 500px; Layout 4 = 470px; Layout 1 & 5 = 520px; Layout 3 = 600px. */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
-  if (s === 'template_2' || s === 'template_4') return 470;
+  if (s === 'template_2') return 500;
+  if (s === 'template_4') return 470;
   if (s === 'template_1' || s === 'template_5') return 520;
   return 600;
 }
@@ -126,7 +130,6 @@ export function engineSlugForGalleryPreview(slug) {
   if (s === 'template_6') return 'template_6';
   if (s === 'template_7') return 'template_7';
   if (s === 'template_8') return 'template_8';
-  if (s === 'template_9') return 'template_9';
   return 'template_1';
 }
 
@@ -139,7 +142,6 @@ export const TEMPLATE_HAS_LOGO = {
   template_6: true,
   template_7: true,
   template_8: true,
-  template_9: true,
 };
 
 /** @param {string | undefined} slugOrUuid */
@@ -152,7 +154,6 @@ export function templateSlugSupportsLogo(slugOrUuid) {
   if (s.includes('template_6')) return TEMPLATE_HAS_LOGO.template_6 !== false;
   if (s.includes('template_7')) return TEMPLATE_HAS_LOGO.template_7 !== false;
   if (s.includes('template_8')) return TEMPLATE_HAS_LOGO.template_8 !== false;
-  if (s.includes('template_9')) return TEMPLATE_HAS_LOGO.template_9 !== false;
   if (s.includes('template_2')) return TEMPLATE_HAS_LOGO.template_2 !== false;
   return TEMPLATE_HAS_LOGO.template_1 !== false;
 }

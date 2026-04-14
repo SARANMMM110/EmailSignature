@@ -35,7 +35,8 @@ export function TemplateCard({
 
   const previewWidthPx = useMemo(() => {
     const slug = uuidToTemplateSlug(template.id);
-    if (slug === 'template_2' || slug === 'template_4') return 470;
+    if (slug === 'template_2') return 500;
+    if (slug === 'template_4') return 470;
     if (slug === 'template_1' || slug === 'template_5') return 520;
     return 600;
   }, [template.id]);

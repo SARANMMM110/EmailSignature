@@ -38,7 +38,7 @@ function landingDemoPayload(templateKey, palette) {
  */
 router.post(
   '/signature-html-batch',
-  body('templateIds').isArray({ min: 1, max: 9 }),
+  body('templateIds').isArray({ min: 1, max: 8 }),
   body('templateIds.*').isString(),
   body('palette').optional().isObject(),
   async (req, res, next) => {

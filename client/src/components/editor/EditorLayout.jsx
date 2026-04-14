@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import {
+  HiOutlineCheckCircle,
   HiOutlineHome,
   HiOutlineUserCircle,
   HiOutlineSwatch,
@@ -30,28 +31,31 @@ export function EditorLayout({
   );
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#f4f5f7]">
-      <header className="relative z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#f0f2f5]">
+      <header className="relative z-20 flex h-[52px] shrink-0 items-center justify-between gap-4 border-b border-slate-200/90 bg-[#fafbfc] px-4 sm:px-5">
         <Link
           to="/dashboard"
-          className="flex min-w-0 shrink-0 items-center gap-2 font-extrabold tracking-tight text-[#0c1929]"
+          className="flex min-w-0 shrink-0 items-center gap-2.5 font-bold tracking-tight text-[#0f172a]"
         >
           <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-md shadow-blue-500/25"
-            style={{ background: 'linear-gradient(135deg, #3b5fff, #2563eb)' }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold text-white shadow-sm"
+            style={{ background: 'linear-gradient(145deg, #3d7dff, #2563eb)' }}
           >
-            S
+            SB
           </span>
-          <span className="truncate">
+          <span className="truncate text-[15px] sm:text-base">
             Signature<span className="text-[#2563eb]">Builder</span>
           </span>
         </Link>
         <Button
           type="button"
-          className="!bg-[#3b5bdb] !px-3 !py-2 text-xs hover:!bg-[#324fcc] sm:!text-sm shrink-0 lg:hidden"
+          className="inline-flex shrink-0 items-center justify-center gap-2 !rounded-full !border-0 !bg-[#2d65f0] !px-4 !py-2 text-[13px] !font-semibold !text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition hover:!bg-[#2557d6] active:translate-y-px sm:!px-5 sm:!text-sm"
           disabled={saving}
           onClick={onDoneEditing}
         >
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 sm:h-6 sm:w-6">
+            <HiOutlineCheckCircle className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" aria-hidden />
+          </span>
           {saving ? t('editor.saving') : t('editor.doneEditing')}
         </Button>
       </header>
@@ -122,7 +126,13 @@ export function EditorLayout({
             className="min-h-[min(50vh,420px)] min-w-0 flex-1 overflow-hidden bg-transparent lg:min-h-0"
             aria-label="Preview"
           >
-            <EditorPreview saveStatus={saveStatus} saving={saving} />
+            <EditorPreview
+              saveStatus={saveStatus}
+              saving={saving}
+              onDoneEditing={onDoneEditing}
+              doneEditingLabel={t('editor.doneEditing')}
+              savingLabel={t('editor.saving')}
+            />
           </section>
         </div>
       </div>

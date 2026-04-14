@@ -35,5 +35,4 @@ export const LANDING_TEMPLATE_ROWS = [
   { id: 'template_6', label: 'Helix', tier: 'pro' },
   { id: 'template_7', label: 'Studio', tier: 'free' },
   { id: 'template_8', label: 'Split', tier: 'free' },
-  { id: 'template_9', label: 'Compact', tier: 'free' },
 ];

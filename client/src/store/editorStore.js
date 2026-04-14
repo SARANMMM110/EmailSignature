@@ -13,6 +13,7 @@ import {
   isWebinarBannerPreset,
   WEBINAR_BANNER_UUID,
 } from '../lib/templateIds.js';
+import { filterAndSortEditorBanners } from '../lib/editorBanners.js';
 import { DEMO_SIGNATURE_DATA } from '../data/templatePreviews.js';
 import {
   hasPersistedMyInfoDraft,
@@ -39,6 +40,26 @@ function bannerPresetFromRow(b) {
   if (id.includes('need')) return 'need-call';
   if (id.includes('book') || id.includes('call')) return 'book-call';
   return String(b.id);
+}
+
+/** Keys for a stacked second CTA — preserved when changing the primary banner. */
+function pickSecondaryBannerConfig(bc) {
+  if (!bc || typeof bc !== 'object') return {};
+  const out = {};
+  for (const k of Object.keys(bc)) {
+    if (k.startsWith('secondary_')) out[k] = bc[k];
+  }
+  return out;
+}
+
+/** Stale `fields._bundle.banner` otherwise wins in server `rowToGeneratePayload` / regenerate. */
+function fieldsWithoutBundleBanner(fields) {
+  if (!fields || typeof fields !== 'object') return fields;
+  const bundle = fields._bundle;
+  if (!bundle || typeof bundle !== 'object' || bundle.banner == null) return fields;
+  const nextBundle = { ...bundle };
+  delete nextBundle.banner;
+  return { ...fields, _bundle: nextBundle };
 }
 
 function setByPath(obj, path, value) {
@@ -181,11 +202,21 @@ export function signatureToEditorPayload(sig) {
       ? {
           id: bannerCfg.preset_id || 'book-call',
           href: bannerCfg.link_url || bannerCfg.href || 'https://',
+          link_url: bannerCfg.link_url || bannerCfg.href || '',
           text: bannerCfg.text || '',
           field_1: bannerCfg.field_1,
           field_2: bannerCfg.field_2,
           field_3: bannerCfg.field_3,
           field_4: bannerCfg.field_4,
+          secondary_link_url: bannerCfg.secondary_link_url,
+          secondary_href: bannerCfg.secondary_href,
+          secondary_text: bannerCfg.secondary_text,
+          secondary_field_1: bannerCfg.secondary_field_1,
+          secondary_field_2: bannerCfg.secondary_field_2,
+          secondary_field_3: bannerCfg.secondary_field_3,
+          secondary_field_4: bannerCfg.secondary_field_4,
+          secondary_preset_id: bannerCfg.secondary_preset_id,
+          secondary_banner_id: bannerCfg.secondary_banner_id,
         }
       : null;
 
@@ -592,11 +623,7 @@ export const useEditorStore = create((set, get) => ({
     try {
       const { data } = await bannersAPI.getAll();
       const raw = data?.banners || [];
-      const wid = WEBINAR_BANNER_UUID.toLowerCase();
-      const webinarOnly = raw.filter(
-        (b) => String(b.id).toLowerCase() === wid || /webinar/i.test(String(b.name || ''))
-      );
-      const list = webinarOnly.length ? webinarOnly : [];
+      const list = filterAndSortEditorBanners(raw);
       set({ bannersCache: list });
       return list;
     } catch {
@@ -608,15 +635,18 @@ export const useEditorStore = create((set, get) => ({
     const sig = get().signature;
     if (!sig) return;
     if (!bannerId) {
+      runDebouncedPreview.cancel();
       set({
         signature: {
           ...sig,
           banner_id: null,
           banner_config: {},
+          fields: fieldsWithoutBundleBanner(sig.fields || {}),
         },
         isDirty: true,
+        saveStatus: 'idle',
       });
-      runDebouncedPreview();
+      void get().refreshPreviewNow();
       get().scheduleAutosave();
       return;
     }
@@ -624,7 +654,11 @@ export const useEditorStore = create((set, get) => ({
     const b = list.find((x) => x.id === bannerId);
     const pid = bannerPresetFromRow(b);
     const isWebinar = isWebinarBannerPreset(pid, b?.id);
-    const text = isWebinar ? 'Book my seat' : b?.name || 'Learn more';
+    const text = isWebinar
+      ? 'Book my seat'
+      : /book|call/i.test(pid)
+        ? 'Book a call today'
+        : b?.name || 'Learn more';
     const webinarFields = isWebinar
       ? {
           field_1: 'Email Marketing 101 Webinar',
@@ -633,6 +667,11 @@ export const useEditorStore = create((set, get) => ({
           field_4: '88',
         }
       : {};
+    const prev = sig.banner_config || {};
+    let preserved = pickSecondaryBannerConfig(prev);
+    if (preserved.secondary_banner_id && String(preserved.secondary_banner_id) === String(bannerId)) {
+      preserved = {};
+    }
     set({
       signature: {
         ...sig,
@@ -642,6 +681,68 @@ export const useEditorStore = create((set, get) => ({
           link_url: 'https://',
           text,
           ...webinarFields,
+          ...preserved,
+        },
+      },
+      isDirty: true,
+      saveStatus: 'idle',
+    });
+    runDebouncedPreview();
+    get().scheduleAutosave();
+  },
+
+  setSecondaryBanner: async (bannerId) => {
+    const sig = get().signature;
+    if (!sig) return;
+    const prev = sig.banner_config || {};
+    if (!bannerId) {
+      runDebouncedPreview.cancel();
+      const next = { ...prev };
+      for (const k of Object.keys(next)) {
+        if (k.startsWith('secondary_')) delete next[k];
+      }
+      set({
+        signature: { ...sig, banner_config: next },
+        isDirty: true,
+        saveStatus: 'idle',
+      });
+      void get().refreshPreviewNow();
+      get().scheduleAutosave();
+      return;
+    }
+    if (String(bannerId) === String(sig.banner_id)) return;
+    const list = await get().ensureBannersCache();
+    const b = list.find((x) => x.id === bannerId);
+    const pid = bannerPresetFromRow(b);
+    const isWebinar = isWebinarBannerPreset(pid, b?.id);
+    const secText = isWebinar
+      ? 'Book my seat'
+      : /book|call/i.test(pid)
+        ? 'Book a call today'
+        : b?.name || 'Learn more';
+    const baseCfg = { ...prev };
+    for (const k of Object.keys(baseCfg)) {
+      if (k.startsWith('secondary_')) delete baseCfg[k];
+    }
+    const webinarSecondary = isWebinar
+      ? {
+          secondary_field_1: 'Email Marketing 101 Webinar',
+          secondary_field_2: 'Only 10 seats available!',
+          secondary_field_3: 'Book my seat',
+          secondary_field_4: '88',
+        }
+      : {};
+    set({
+      signature: {
+        ...sig,
+        banner_config: {
+          ...baseCfg,
+          secondary_banner_id: bannerId,
+          secondary_preset_id: pid,
+          secondary_link_url: 'https://',
+          secondary_href: '',
+          secondary_text: secText,
+          ...webinarSecondary,
         },
       },
       isDirty: true,

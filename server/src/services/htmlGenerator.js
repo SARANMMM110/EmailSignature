@@ -304,6 +304,57 @@ function webinarBannerStyleVars(color1, color2, color3, color4) {
   };
 }
 
+/**
+ * Book-a-call banner (banner_2) — soft horizontal wash from palette primary / accent / secondary.
+ */
+function bookCallBannerStyleVars(color1, color2, color3, color4) {
+  const c1 = String(color1 || '#1e3a5f').trim();
+  const c2 = String(color2 || c1).trim();
+  const c3 = String(color3 || '#94a3b8').trim();
+  const c4 = String(color4 || '#0f172a').trim();
+  const gradStart = mixHexPair(mixHexWithWhite(c1, 0.28), mixHexWithWhite(c3, 0.2), 0.55);
+  const gradEnd = mixHexPair(c1, c2, 0.42);
+  const titleColor = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.18), mixHexWithBlack(c2, 0.12)], 0.5);
+  const arrowColor = pickDarkestReadable([mixHexWithBlack(c2, 0.1), c4, c1], 0.48);
+  return {
+    banner_b2_grad_start: gradStart,
+    banner_b2_grad_end: gradEnd,
+    banner_b2_title_color: titleColor,
+    banner_b2_arrow_color: arrowColor,
+  };
+}
+
+/**
+ * Need-a-call strip (banner_4) — bar uses `color_1`; label + pill CTA follow palette contrast rules.
+ */
+function needCallBannerStyleVars(color1, color2, _color3, color4) {
+  const c1 = String(color1 || '#1e3a5f').trim();
+  const c2 = String(color2 || c1).trim();
+  const c4 = String(color4 || '#0f172a').trim();
+  const barL = relativeLuminance(c1);
+  const leftText = barL < 0.42 ? '#ffffff' : pickDarkestReadable([c4, mixHexWithBlack(c1, 0.22)], 0.5);
+  let btnBg = c2;
+  if (relativeLuminance(btnBg) > 0.58) {
+    btnBg = mixHexPair(c1, c2, 0.55);
+  }
+  if (relativeLuminance(btnBg) > 0.58) {
+    btnBg = mixHexWithBlack(c1, 0.08);
+  }
+  if (relativeLuminance(btnBg) > 0.62) {
+    btnBg = pickDarkestReadable([c2, c1, mixHexWithBlack(c1, 0.05)], 0.44);
+  }
+  const btnL = relativeLuminance(btnBg);
+  const btnText =
+    btnL < 0.52 ? '#ffffff' : pickDarkestReadable([c4, mixHexWithBlack(c1, 0.12)], 0.5);
+  const btnBorder = mixHexWithWhite(btnBg, btnL < 0.45 ? 0.32 : 0.22);
+  return {
+    banner_4_left_text: leftText,
+    banner_4_btn_bg: btnBg,
+    banner_4_btn_text: btnText,
+    banner_4_btn_border: btnBorder,
+  };
+}
+
 /** Inline SVG contact icons (stroke color) for email-safe data URIs. */
 function contactStrokeIconDataUris(strokeHex) {
   const stroke = String(strokeHex || '#334155').trim();
@@ -610,35 +661,6 @@ function buildTemplate8PaletteContext(c1, _c2, _c3, c4) {
 }
 
 /**
- * Layout 9 — “mini card”: 88px round photo | name + title + compact contacts | logo top-right (Helvetica-style).
- */
-function buildTemplate9PaletteContext(c1, _c2, _c3, c4) {
-  const primary = String(c1 || '#0071ce').trim();
-  const titleMuted = '#878787';
-  const p4 = String(c4 || '#525252').trim();
-  const contactText = mixHexPair('#525252', p4, 0.12);
-  const borderSoft = mixHexPair('#e5e7eb', mixHexWithWhite(p4, 0.85), 0.55);
-  const icons = contactStrokeIconDataUrisCompact(contactText);
-  const sw = '1.65';
-  const linkSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${contactText}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.07.07l3-3a5 5 0 00-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.07-.07l-3 3a5 5 0 007.07 7.07l1.5-1.5"/></svg>`;
-  const initialsBg = mixHexPair('#f4f4f5', p4, 0.08);
-  const initialsColor = pickDarkestReadable([primary, p4], 0.42);
-  return {
-    t9_shell_bg: '#ffffff',
-    t9_border_color: borderSoft,
-    t9_name_color: primary,
-    t9_title_color: titleMuted,
-    t9_contact_color: contactText,
-    t9_icon_mail: icons.mail,
-    t9_icon_link: svgDataUri(linkSvg),
-    t9_icon_phone: icons.phone,
-    t9_icon_pin: icons.pin,
-    t9_initials_bg: initialsBg,
-    t9_initials_color: initialsColor,
-  };
-}
-
-/**
  * Layout 3 — teal quarters + top arc, 8×3 light-teal dot grids, white-on-black contact icons,
  * social glyphs (FB / mail / dribbble / X).
  */
@@ -918,7 +940,6 @@ function contextFromEditorPayload(payload) {
       f = { ...f, logoUrl: '' };
     }
   }
-
   const p = mergePaletteWithDemoDefaults(payload.palette || {});
   const d = payload.design || {};
   const websiteRaw = String(f.website || '').trim();
@@ -1084,7 +1105,6 @@ function contextFromEditorPayload(payload) {
     ...buildTemplate6PaletteContext(c1, c2, c3, c4),
     ...buildTemplate7PaletteContext(c1, c2, c3, c4),
     ...buildTemplate8PaletteContext(c1, c2, c3, c4),
-    ...buildTemplate9PaletteContext(c1, c2, c3, c4),
     t6_row1_right_display,
     t6_row1_right_href,
     has_t6_row1_right,
@@ -1177,7 +1197,6 @@ function resolveRowTemplateSlug(row) {
     if (/^template_6$/i.test(s)) return 'template_6';
     if (/^template_7$/i.test(s)) return 'template_7';
     if (/^template_8$/i.test(s)) return 'template_8';
-    if (/^template_9$/i.test(s)) return 'template_9';
     if (/^template_\d+$/i.test(s)) return 'template_1';
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)) {
       return uuidToTemplateSlug(s);
@@ -1242,30 +1261,51 @@ export function rowToGeneratePayload(row) {
 
   const templateId = resolveRowTemplateSlug(row);
 
+  const bannerSecondaryFrom = (b) => ({
+    secondary_banner_id: b.secondary_banner_id,
+    secondary_link_url: b.secondary_link_url,
+    secondary_href: b.secondary_href,
+    secondary_text: b.secondary_text,
+    secondary_field_1: b.secondary_field_1,
+    secondary_field_2: b.secondary_field_2,
+    secondary_field_3: b.secondary_field_3,
+    secondary_field_4: b.secondary_field_4,
+    secondary_preset_id: b.secondary_preset_id,
+  });
+
   let banner;
-  if (bundle?.banner && String(bundle.banner.href || bundle.banner.link_url || '').trim()) {
-    const pid = bundle.banner.preset_id || bundle.banner.id || 'book-call';
-    banner = {
-      id: pid,
-      preset_id: pid,
-      href: bundle.banner.href || bundle.banner.link_url,
-      text: bundle.banner.text || 'Learn more',
-      field_1: bundle.banner.field_1,
-      field_2: bundle.banner.field_2,
-      field_3: bundle.banner.field_3,
-      field_4: bundle.banner.field_4,
-    };
-  } else if (bannerCfg.link_url || bannerCfg.href) {
+  /** DB `banner_config` is authoritative; avoid stale `fields._bundle.banner` after CTAs are cleared. */
+  if (bannerCfg.link_url || bannerCfg.href) {
     const pid = bannerCfg.preset_id || 'book-call';
     banner = {
       id: pid,
       preset_id: pid,
       href: bannerCfg.link_url || bannerCfg.href,
+      link_url: bannerCfg.link_url || bannerCfg.href,
       text: bannerCfg.text || 'Learn more',
       field_1: bannerCfg.field_1,
       field_2: bannerCfg.field_2,
       field_3: bannerCfg.field_3,
       field_4: bannerCfg.field_4,
+      ...bannerSecondaryFrom(bannerCfg),
+    };
+  } else if (
+    row.banner_id &&
+    bundle?.banner &&
+    String(bundle.banner.href || bundle.banner.link_url || '').trim()
+  ) {
+    const pid = bundle.banner.preset_id || bundle.banner.id || 'book-call';
+    banner = {
+      id: pid,
+      preset_id: pid,
+      href: bundle.banner.href || bundle.banner.link_url,
+      link_url: bundle.banner.link_url || bundle.banner.href,
+      text: bundle.banner.text || 'Learn more',
+      field_1: bundle.banner.field_1,
+      field_2: bundle.banner.field_2,
+      field_3: bundle.banner.field_3,
+      field_4: bundle.banner.field_4,
+      ...bannerSecondaryFrom(bundle.banner),
     };
   }
 
@@ -1284,6 +1324,10 @@ const WEBINAR_BANNER_DEFAULTS = {
   field_3: 'Book my seat',
   field_4: '88',
 };
+
+/** Default right photo for {@link BANNER_TEMPLATES} `banner_2` when no custom image URL is set. */
+const BANNER_B2_DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&q=80&auto=format&fit=crop';
 
 function normalizeWebinarBannerFields(banner) {
   const d = WEBINAR_BANNER_DEFAULTS;
@@ -1306,16 +1350,38 @@ function parseBannerMinHeightPx(field4) {
   return Math.min(180, Math.max(64, n));
 }
 
-function appendBanner(html, context, banner, templateId) {
+/**
+ * Compile one CTA strip (inner HTML only, no data-sig-part wrapper). `railPx` matches signature rail
+ * so {@link collapseSignatureShellWidth} does not shrink `width:100%` layouts to a narrow column.
+ */
+/**
+ * Vertical gap between two CTA tables inside one banner cell — Gmail collapses adjacent
+ * block-level tables; a fixed-height spacer `<td>` is the reliable pattern.
+ */
+function bannerStackSpacerHtml(railPx) {
+  const w = Number(railPx) || SIG_LAYOUT_RAIL_PX;
+  const h = 14;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${w}" style="width:${w}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td height="${h}" style="height:${h}px;line-height:${h}px;font-size:${h}px;mso-line-height-rule:exactly;padding:0;margin:0;border:0;">&nbsp;</td></tr></table>`;
+}
+
+/** Marks inner banner `<table>` roots so the editor can show separate preview blocks. */
+function tagBannerSlotInner(html, slot) {
+  const s = String(html || '').trim();
+  if (!s) return '';
+  return s.replace(/^<table\b/i, `<table data-sig-banner-slot="${slot}"`);
+}
+
+function compileBannerInnerHtml(context, banner, railPx) {
   const hasHref = String(banner?.href || banner?.link_url || '').trim();
-  if (!banner || !hasHref) return html;
+  if (!banner || !hasHref) return '';
   const key = resolveBannerKey(banner);
   const tpl = BANNER_TEMPLATES[key];
-  if (!tpl) return html;
+  if (!tpl) return '';
   const bannerLink = ensureHttps(banner.href || banner.link_url || '#');
   const compiled = Handlebars.compile(tpl, { strict: false });
   const hbIn = {
     ...context,
+    banner_rail_w_px: railPx,
     banner_link: bannerLink,
     banner_text: escapeHtml(String(banner.text ?? '')),
   };
@@ -1335,12 +1401,84 @@ function appendBanner(html, context, banner, templateId) {
       )
     );
   }
-  const bannerHtml = compiled(hbIn);
+  if (key === 'banner_2') {
+    const headline =
+      String(banner.field_1 ?? '')
+        .trim() ||
+      String(banner.text ?? '')
+        .trim() ||
+      'Book a call today';
+    hbIn.banner_b2_headline = escapeHtml(headline);
+    const rawImg = String(banner.field_2 ?? banner.image_url ?? '').trim();
+    hbIn.banner_b2_image =
+      rawImg.length > 0 ? ensureHttps(rawImg) : BANNER_B2_DEFAULT_IMAGE;
+    Object.assign(
+      hbIn,
+      bookCallBannerStyleVars(
+        context.color_1,
+        context.color_2,
+        context.color_3,
+        context.color_4
+      )
+    );
+  }
+  if (key === 'banner_4') {
+    Object.assign(
+      hbIn,
+      needCallBannerStyleVars(
+        context.color_1,
+        context.color_2,
+        context.color_3,
+        context.color_4
+      )
+    );
+  }
+  return compiled(hbIn);
+}
+
+function appendBanner(html, context, editorBanner, templateId) {
+  const primaryHref = String(editorBanner?.href || editorBanner?.link_url || '').trim();
+  if (!editorBanner || !primaryHref) return html;
   const w = bundleRailPxForEngineSlug(resolveTemplateKey(templateId));
-  // Sibling wrapper tables before finalize: split point for two outer paste shells (see finalizeSignatureRoots).
+
+  const primaryBanner = {
+    id: editorBanner.id || editorBanner.preset_id || 'book-call',
+    preset_id: editorBanner.preset_id || editorBanner.id,
+    href: editorBanner.href || editorBanner.link_url,
+    link_url: editorBanner.link_url || editorBanner.href,
+    text: editorBanner.text || '',
+    field_1: editorBanner.field_1,
+    field_2: editorBanner.field_2,
+    field_3: editorBanner.field_3,
+    field_4: editorBanner.field_4,
+  };
+  let bannerInner = tagBannerSlotInner(compileBannerInnerHtml(context, primaryBanner, w), 1);
+
+  const secHref = String(
+    editorBanner.secondary_link_url || editorBanner.secondary_href || ''
+  ).trim();
+  if (secHref) {
+    const secondaryBanner = {
+      id: editorBanner.secondary_preset_id || editorBanner.preset_id || 'book-call',
+      preset_id: editorBanner.secondary_preset_id || editorBanner.preset_id,
+      href: secHref,
+      link_url: secHref,
+      text: editorBanner.secondary_text ?? '',
+      field_1: editorBanner.secondary_field_1,
+      field_2: editorBanner.secondary_field_2,
+      field_3: editorBanner.secondary_field_3,
+      field_4: editorBanner.secondary_field_4,
+    };
+    const secHtml = compileBannerInnerHtml(context, secondaryBanner, w);
+    if (secHtml) {
+      bannerInner += bannerStackSpacerHtml(w);
+      bannerInner += tagBannerSlotInner(secHtml, 2);
+    }
+  }
+
   const wrapOpen = `cellpadding="0" cellspacing="0" border="0" width="${w}" style="width:${w}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"`;
   const sigBlock = `<table role="presentation" data-sig-root="signature" data-sig-part="signature" ${wrapOpen}><tr><td width="${w}" style="padding:0;margin:0;border:0;width:${w}px;max-width:100%;vertical-align:top;">${html}</td></tr></table>`;
-  const banBlock = `<table role="presentation" data-sig-root="banner" data-sig-part="banner" ${wrapOpen}><tr><td width="${w}" style="padding:0;margin:0;border:0;width:${w}px;max-width:100%;vertical-align:top;">${bannerHtml}</td></tr></table>`;
+  const banBlock = `<table role="presentation" data-sig-root="banner" data-sig-part="banner" ${wrapOpen}><tr><td width="${w}" style="padding:0;margin:0;border:0;width:${w}px;max-width:100%;vertical-align:top;">${bannerInner}</td></tr></table>`;
   return `${sigBlock}${banBlock}`;
 }
 
@@ -1367,22 +1505,8 @@ export async function generateSignatureHtml(payload, options = {}) {
   }
 
   const editorBanner = payload.banner;
-  if (editorBanner && String(editorBanner.href || '').trim()) {
-    html = appendBanner(
-      html,
-      context,
-      {
-        id: editorBanner.id || editorBanner.preset_id || 'book-call',
-        preset_id: editorBanner.preset_id || editorBanner.id,
-        href: editorBanner.href,
-        text: editorBanner.text || '',
-        field_1: editorBanner.field_1,
-        field_2: editorBanner.field_2,
-        field_3: editorBanner.field_3,
-        field_4: editorBanner.field_4,
-      },
-      templateId
-    );
+  if (editorBanner && String(editorBanner.href || editorBanner.link_url || '').trim()) {
+    html = appendBanner(html, context, editorBanner, templateId);
   }
 
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${html}</body></html>`;

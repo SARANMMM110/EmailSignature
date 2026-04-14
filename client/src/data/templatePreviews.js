@@ -84,7 +84,7 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null) {
  * CSS `zoom` inside the editor iframe when the HTML rail is locked (e.g. 470px).
  * Layout math in generated HTML stays at the rail width; the wrapper in {@link EditorPreview} widens by this factor so nothing clips.
  */
-export const EDITOR_PREVIEW_LOCK_ZOOM = 1.38;
+export const EDITOR_PREVIEW_LOCK_ZOOM = 1.5;
 
 /**
  * Max width (px) for the editor preview iframe shell — rail width × {@link EDITOR_PREVIEW_LOCK_ZOOM}.
@@ -175,6 +175,10 @@ export function wrapSignatureHtmlForIframe(signatureHTML, options = {}) {
     width: 470px !important;
     max-width: 470px !important;
   }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:500px"] {
+    width: 500px !important;
+    max-width: 500px !important;
+  }
   [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:520px"] {
     width: 520px !important;
   }
@@ -248,11 +252,17 @@ export function wrapSignatureHtmlForIframe(signatureHTML, options = {}) {
     max-width: 700px !important;
     box-sizing: border-box;
   }
-  /* Sibling bundle tables: 470 / 520 / 600px rails (Layouts 2&4, 1, 3). */
+  /* Sibling bundle tables: 470 / 500 / 520 / 600px rails (Layouts 4, 2, 1&5, 3). */
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:470px"],
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="banner"][style*="width:470px"] {
     width: 470px !important;
     max-width: 470px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:500px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="banner"][style*="width:500px"] {
+    width: 500px !important;
+    max-width: 500px !important;
     box-sizing: border-box;
   }
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:520px"],

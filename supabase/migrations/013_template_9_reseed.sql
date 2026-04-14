@@ -1,9 +1,8 @@
--- Layout 9 (compact card engine) — stable UUID matches server/client templateIds.js
--- Superseded by 012_remove_template_9.sql; kept for migration history on databases that already applied this file.
+-- Layout 9 (Montserrat / brand rule card) — re-seed after 012_remove_template_9; UUID matches templateIds.js
 
 insert into public.templates (id, name, html_structure, tier, style, has_logo, has_photo, sort_order, is_active)
 values
-  ('a0000009-0000-4000-8000-000000000009', 'Layout 9', '<!-- engine -->', 'free', 'minimalist', true, true, 9, true)
+  ('a0000009-0000-4000-8000-000000000009', 'Layout 9', '<!-- engine -->', 'free', 'design', true, false, 9, true)
 on conflict (id) do update set
   name = excluded.name,
   tier = excluded.tier,

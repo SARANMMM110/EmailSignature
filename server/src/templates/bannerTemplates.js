@@ -4,10 +4,10 @@
 
 export const BANNER_TEMPLATES = {
   /** Webinar CTA — dark charcoal card, left copy + white pill button, right ascending bar graphic. */
-  banner_1: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  banner_1: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td style="padding:0;border-radius:12px;overflow:hidden;background-color:{{banner_bg_mid}};background-image:linear-gradient(148deg,{{banner_bg_start}} 0%,{{banner_bg_mid}} 45%,{{banner_bg_end}} 100%);">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td width="64%" valign="middle" style="width:64%;min-height:{{banner_min_height}}px;padding:12px 8px 12px 14px;vertical-align:middle;">
 <p style="margin:0;padding:0;color:{{banner_headline_color}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:15px;font-weight:700;line-height:1.2;letter-spacing:-0.02em;">{{{banner_headline}}}</p>
@@ -31,10 +31,32 @@ export const BANNER_TEMPLATES = {
 </tr>
 </table>`,
 
-  /** Compact resume / download strip (previous banner_1). */
-  banner_2: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  /**
+   * Book-a-call CTA — mint→sage gradient, Montserrat headline, forest arrow, right photo (email-safe tables).
+   * Headline: {@link appendBanner} sets `banner_b2_headline`; image: `banner_b2_image` (optional default).
+   */
+  banner_2: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<tr>
+<td style="padding:0;border-radius:22px;-webkit-border-radius:22px;overflow:hidden;mso-line-height-rule:exactly;">
+<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;background-color:{{banner_b2_grad_end}};background-image:linear-gradient(90deg,{{banner_b2_grad_start}} 0%,{{banner_b2_grad_end}} 100%);">
+<tr>
+<td valign="middle" style="padding:20px 10px 20px 24px;vertical-align:middle;font-family:'Montserrat',Arial,Helvetica,{{font_family}},sans-serif;font-size:17px;font-weight:500;color:{{banner_b2_title_color}};line-height:1.3;mso-line-height-rule:exactly;">{{banner_b2_headline}}</td>
+<td valign="middle" width="36" style="width:36px;padding:12px 6px;vertical-align:middle;text-align:center;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:26px;font-weight:400;color:{{banner_b2_arrow_color}};line-height:1;mso-line-height-rule:exactly;">&#8594;</td>
+<td valign="middle" align="right" style="padding:14px 20px 14px 8px;vertical-align:middle;text-align:right;line-height:0;font-size:0;width:34%;max-width:180px;">
+<img src="{{{banner_b2_image}}}" alt="" width="160" style="display:block;border:0;border-radius:12px;-webkit-border-radius:12px;width:160px;max-width:100%;height:auto;object-fit:cover;vertical-align:middle;">
+</td>
+</tr>
+</table>
+</a>
+</td>
+</tr>
+</table>`,
+
+  /** Compact resume / download strip (moved from legacy banner_2). */
+  banner_3: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td style="background-color:{{color_1}};padding:10px 16px;border-radius:10px;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
 <tr>
 <td width="60%" style="color:#ffffff;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:12px;font-weight:700;">Download my Resume</td>
 <td width="40%" align="right"><a href="{{{banner_link}}}" style="background-color:#ffffff;color:{{color_1}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:11px;font-weight:700;text-decoration:none;padding:5px 12px;border-radius:18px;display:inline-block;">Download</a></td>
@@ -43,23 +65,12 @@ export const BANNER_TEMPLATES = {
 </td></tr>
 </table>`,
 
-  banner_3: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-<tr><td style="background-color:{{color_3}};padding:10px 16px;border-radius:7px;">
-<table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-<tr>
-<td width="55%" style="color:{{color_1}};font-family:Arial,sans-serif;font-size:12px;font-weight:700;">Book a call today</td>
-<td width="45%" align="right"><a href="{{{banner_link}}}" style="color:{{color_1}};font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-decoration:none;">Schedule now</a></td>
-</tr>
-</table>
-</td></tr>
-</table>`,
-
-  banner_4: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  banner_4: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td style="background-color:{{color_1}};padding:12px 16px;border-radius:7px;">
-<table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
 <tr>
-<td width="50%"><p style="margin:0;color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:700;">Need a call?</p></td>
-<td width="50%" align="right"><a href="{{{banner_link}}}" style="background-color:#3d4cff;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-decoration:none;padding:6px 13px;border-radius:5px;display:inline-block;border:1px solid #8fa4ff;">Pick a slot now</a></td>
+<td width="50%"><p style="margin:0;color:{{banner_4_left_text}};font-family:Arial,sans-serif;font-size:12px;font-weight:700;">Need a call?</p></td>
+<td width="50%" align="right"><a href="{{{banner_link}}}" style="background-color:{{banner_4_btn_bg}};color:{{banner_4_btn_text}};font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-decoration:none;padding:6px 13px;border-radius:5px;display:inline-block;border:1px solid {{banner_4_btn_border}};">Pick a slot now</a></td>
 </tr>
 </table>
 </td></tr>
@@ -74,8 +85,10 @@ export function resolveBannerKey(banner) {
   if (!banner) return null;
   const id = String(banner.id || banner.preset_id || '').toLowerCase();
   if (id.includes('webinar')) return 'banner_1';
-  if (id.includes('download') || id.includes('resume')) return 'banner_2';
   if (id.includes('need')) return 'banner_4';
-  if (id.includes('book') || id.includes('call')) return 'banner_3';
-  return 'banner_3';
+  /** Gradient “Book a call” card (was banner_3). */
+  if (id.includes('book') || id.includes('call')) return 'banner_2';
+  /** Resume / download pill strip (was banner_2). */
+  if (id.includes('download') || id.includes('resume')) return 'banner_3';
+  return 'banner_2';
 }

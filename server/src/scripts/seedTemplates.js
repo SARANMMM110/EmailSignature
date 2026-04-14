@@ -8,8 +8,8 @@ import { BANNER_TEMPLATES } from '../templates/bannerTemplates.js';
 import { TEMPLATE_SLUG_TO_UUID, BANNER_SLUG_TO_UUID } from '../lib/templateIds.js';
 
 const BANNER_KEY_BY_SLUG = {
-  'book-call': 'banner_3',
-  download: 'banner_2',
+  'book-call': 'banner_2',
+  download: 'banner_3',
   webinar: 'banner_1',
   'need-call': 'banner_4',
 };

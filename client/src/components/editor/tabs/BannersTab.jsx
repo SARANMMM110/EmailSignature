@@ -1,25 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bannersAPI } from '../../../lib/api.js';
 import { useEditorStore } from '../../../store/editorStore.js';
-import { WEBINAR_BANNER_UUID } from '../../../lib/templateIds.js';
+import { WEBINAR_BANNER_UUID, BANNER_SLUG_TO_UUID } from '../../../lib/templateIds.js';
+import { filterAndSortEditorBanners } from '../../../lib/editorBanners.js';
 import { webinarBannerThumbnailSrcDoc } from '../../../data/webinarBannerStaticHtml.js';
+import {
+  bookCallBannerThumbnailSrcDoc,
+  downloadBannerThumbnailSrcDoc,
+  needCallBannerThumbnailSrcDoc,
+} from '../../../data/ctaBannerThumbnails.js';
 import { resolvePaletteColorsFromDesign } from '../../../lib/resolveDesignPalette.js';
+import { HiPlus, HiXMark } from 'react-icons/hi2';
 
-const THUMB_BOX_W = 176;
-const THUMB_BOX_H = 76;
 const BANNER_DOC_W = 470;
 const BANNER_DOC_H = 128;
-const THUMB_SCALE = Math.min(THUMB_BOX_W / BANNER_DOC_W, THUMB_BOX_H / BANNER_DOC_H);
+const CARD_THUMB_W = 320;
+const CARD_THUMB_H = 88;
+const CARD_THUMB_SCALE = Math.min(CARD_THUMB_W / BANNER_DOC_W, CARD_THUMB_H / BANNER_DOC_H);
 
-function WebinarBannerDesignPreview({ design }) {
+function WebinarBannerDesignPreview({ design, thumbW, thumbH, scale }) {
   const srcDoc = useMemo(() => {
     const [c1, c2, c3, c4] = resolvePaletteColorsFromDesign(design);
     return webinarBannerThumbnailSrcDoc(c1, c2, c3, c4);
   }, [design]);
   return (
     <div
-      className="relative shrink-0 overflow-hidden rounded-[10px] border border-slate-400/30 bg-transparent ring-1 ring-black/[0.04]"
-      style={{ width: THUMB_BOX_W, height: THUMB_BOX_H }}
+      className="relative mx-auto shrink-0 overflow-hidden rounded-[10px] border border-slate-400/30 bg-transparent ring-1 ring-black/[0.04]"
+      style={{ width: thumbW, height: thumbH }}
     >
       <iframe
         title="Webinar banner preview"
@@ -29,7 +36,7 @@ function WebinarBannerDesignPreview({ design }) {
         style={{
           width: BANNER_DOC_W,
           height: BANNER_DOC_H,
-          transform: `scale(${THUMB_SCALE})`,
+          transform: `scale(${scale})`,
           transformOrigin: 'top left',
         }}
       />
@@ -37,30 +44,114 @@ function WebinarBannerDesignPreview({ design }) {
   );
 }
 
-/** Reference card palette (terracotta → purple). */
-function webinarSwatches() {
-  return ['#c45c4a', '#6b7c3f', '#4a8f5c', '#2d9b8a', '#5b7fd1', '#7c6bbd'];
+function StaticBannerIframePreview({ title, srcDoc, thumbW, thumbH, scale }) {
+  return (
+    <div
+      className="relative mx-auto shrink-0 overflow-hidden rounded-[10px] border border-slate-400/30 bg-transparent ring-1 ring-black/[0.04]"
+      style={{ width: thumbW, height: thumbH }}
+    >
+      <iframe
+        title={title}
+        loading="lazy"
+        srcDoc={srcDoc}
+        className="pointer-events-none absolute left-0 top-0 border-0 bg-transparent"
+        style={{
+          width: BANNER_DOC_W,
+          height: BANNER_DOC_H,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+      />
+    </div>
+  );
 }
+
+function BookCallBannerThumb({ thumbW, thumbH, scale }) {
+  const srcDoc = useMemo(() => bookCallBannerThumbnailSrcDoc(), []);
+  return (
+    <StaticBannerIframePreview
+      title="Book a call banner preview"
+      srcDoc={srcDoc}
+      thumbW={thumbW}
+      thumbH={thumbH}
+      scale={scale}
+    />
+  );
+}
+
+function DownloadBannerThumb({ thumbW, thumbH, scale }) {
+  const srcDoc = useMemo(() => downloadBannerThumbnailSrcDoc(), []);
+  return (
+    <StaticBannerIframePreview
+      title="Download banner preview"
+      srcDoc={srcDoc}
+      thumbW={thumbW}
+      thumbH={thumbH}
+      scale={scale}
+    />
+  );
+}
+
+function NeedCallBannerThumb({ thumbW, thumbH, scale }) {
+  const srcDoc = useMemo(() => needCallBannerThumbnailSrcDoc(), []);
+  return (
+    <StaticBannerIframePreview
+      title="Need a call banner preview"
+      srcDoc={srcDoc}
+      thumbW={thumbW}
+      thumbH={thumbH}
+      scale={scale}
+    />
+  );
+}
+
+function BannerThumbnail({ banner, design }) {
+  const id = String(banner.id).toLowerCase();
+  const thumbW = CARD_THUMB_W;
+  const thumbH = CARD_THUMB_H;
+  const scale = CARD_THUMB_SCALE;
+  if (id === WEBINAR_BANNER_UUID.toLowerCase()) {
+    return <WebinarBannerDesignPreview design={design} thumbW={thumbW} thumbH={thumbH} scale={scale} />;
+  }
+  if (id === BANNER_SLUG_TO_UUID['book-call'].toLowerCase()) {
+    return <BookCallBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
+  }
+  if (id === BANNER_SLUG_TO_UUID.download.toLowerCase()) {
+    return <DownloadBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
+  }
+  if (id === BANNER_SLUG_TO_UUID['need-call'].toLowerCase()) {
+    return <NeedCallBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
+  }
+  return (
+    <div
+      className="mx-auto flex shrink-0 items-center justify-center rounded-[10px] border border-slate-300/60 bg-slate-100 text-[10px] text-slate-500"
+      style={{ width: thumbW, height: thumbH }}
+    >
+      Preview
+    </div>
+  );
+}
+
+const PLUS_BTN =
+  'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#3b5bdb] text-white shadow-[0_6px_24px_-4px_rgba(59,91,219,0.65)] transition hover:bg-[#324fcc] active:scale-[0.98]';
 
 export function BannersTab() {
   const [banners, setBanners] = useState([]);
+
   const signature = useEditorStore((s) => s.signature);
   const setBanner = useEditorStore((s) => s.setBanner);
+  const setSecondaryBanner = useEditorStore((s) => s.setSecondaryBanner);
   const editorSaving = useEditorStore((s) => s.isSaving);
 
   const activeId = signature?.banner_id;
+  const activeSecondaryId = signature?.banner_config?.secondary_banner_id;
 
   useEffect(() => {
     (async () => {
       try {
         const { data } = await bannersAPI.getAll();
         const raw = data?.banners || [];
-        const onlyWebinar = raw.filter(
-          (b) =>
-            String(b.id).toLowerCase() === WEBINAR_BANNER_UUID.toLowerCase() ||
-            /webinar/i.test(String(b.name || ''))
-        );
-        setBanners(onlyWebinar);
+        setBanners(filterAndSortEditorBanners(raw));
       } catch {
         setBanners([]);
       }
@@ -69,60 +160,98 @@ export function BannersTab() {
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        disabled={editorSaving}
-        onClick={() => setBanner(null)}
-        className="w-full rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-      >
-        Remove banner
-      </button>
-
-      <p className="text-xs text-slate-600">
-        Webinar CTA strip — uses the same color palette as your signature (headline area, button,
-        and accents). Text and link are editable under My information → Banner.
-      </p>
-
       {banners.length === 0 ? (
         <p className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-900">
-          No Webinar banner is available from the API. With Supabase, run{' '}
-          <code className="rounded bg-white/80 px-1">node src/scripts/seedTemplates.js</code> or ensure a
-          banner row named Webinar (id <code className="rounded bg-white/80 px-1">b0000003-…</code>) exists.
+          No CTA banners returned from the API. With Supabase, run{' '}
+          <code className="rounded bg-white/80 px-1">node src/scripts/seedTemplates.js</code> or ensure
+          banner rows exist (ids <code className="rounded bg-white/80 px-1">b0000001</code> …{' '}
+          <code className="rounded bg-white/80 px-1">b0000004</code>).
         </p>
       ) : null}
 
-      <ul className="space-y-3">
+      <ul className="flex flex-col gap-4">
         {banners.map((b) => {
-          const sw = webinarSwatches();
-          const selected = String(activeId) === String(b.id);
+          const isPrimary = String(activeId) === String(b.id);
+          const isStacked = String(activeSecondaryId) === String(b.id);
+          const canAddSecond = Boolean(activeId) && !isPrimary;
+
           return (
             <li key={b.id}>
-              <button
-                type="button"
-                disabled={editorSaving}
-                onClick={() => setBanner(b.id)}
-                className={`flex w-full gap-3 rounded-xl border-2 p-3 text-left transition hover:shadow-sm disabled:opacity-50 ${
-                  selected ? 'border-[#3b5bdb] bg-transparent' : 'border-slate-300/60 bg-transparent'
+              <div
+                className={`rounded-2xl border bg-white p-3 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.12)] transition ${
+                  isPrimary
+                    ? 'border-[#3b5bdb] ring-1 ring-[#3b5bdb]/20'
+                    : isStacked
+                      ? 'border-slate-300 ring-2 ring-[#3b5bdb]/15'
+                      : 'border-slate-200/90'
                 }`}
               >
-                <WebinarBannerDesignPreview design={signature?.design} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900">{b.name || 'Webinar'}</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {sw.map((c, i) => (
-                      <span
-                        key={i}
-                        className="h-4 w-4 rounded-full border border-white shadow-sm ring-1 ring-slate-200/80"
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
+                <div
+                  className="group relative mx-auto rounded-[10px]"
+                  style={{ width: CARD_THUMB_W, height: CARD_THUMB_H }}
+                >
+                  <button
+                    type="button"
+                    disabled={editorSaving}
+                    onClick={() => setBanner(b.id)}
+                    className="absolute inset-0 z-0 flex cursor-pointer items-center justify-center rounded-[10px] border-0 bg-transparent p-0 transition disabled:opacity-50"
+                    aria-label={`Use ${b.name || 'banner'} as main strip`}
+                  >
+                    <BannerThumbnail banner={b} design={signature?.design} />
+                  </button>
+
+                  {canAddSecond ? (
+                    <button
+                      type="button"
+                      disabled={editorSaving}
+                      title="Add as second banner"
+                      aria-label="Add as second banner"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSecondaryBanner(b.id);
+                      }}
+                      className={`${PLUS_BTN} pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 opacity-0 transition duration-200 group-hover:pointer-events-auto group-hover:opacity-100 disabled:opacity-0`}
+                    >
+                      <HiPlus className="h-8 w-8" strokeWidth={2.25} aria-hidden />
+                    </button>
+                  ) : null}
+
+                  {isStacked ? (
+                    <button
+                      type="button"
+                      disabled={editorSaving}
+                      title="Remove second banner"
+                      aria-label="Remove second banner"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSecondaryBanner(null);
+                      }}
+                      className={`${PLUS_BTN} pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 bg-slate-700 opacity-0 shadow-[0_6px_24px_-4px_rgba(30,41,59,0.5)] transition duration-200 hover:bg-slate-800 group-hover:pointer-events-auto group-hover:opacity-100 disabled:opacity-0`}
+                    >
+                      <HiXMark className="h-7 w-7" strokeWidth={2} aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
-              </button>
+              </div>
             </li>
           );
         })}
       </ul>
+
+      {banners.length > 0 && (activeId || activeSecondaryId) ? (
+        <p className="text-center">
+          <button
+            type="button"
+            disabled={editorSaving}
+            onClick={() => setBanner(null)}
+            className="text-xs font-medium text-slate-500 underline-offset-2 hover:text-red-600 hover:underline disabled:opacity-50"
+          >
+            Clear all banners
+          </button>
+        </p>
+      ) : null}
     </div>
   );
 }
