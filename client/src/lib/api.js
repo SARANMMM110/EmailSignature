@@ -32,6 +32,11 @@ async function resolveAccessToken() {
  * Set VITE_API_URL to override (e.g. point at a remote API).
  */
 const viteApi = import.meta.env.VITE_API_URL?.toString().trim();
+if (import.meta.env.PROD && !viteApi) {
+  console.error(
+    '[api] Missing VITE_API_URL. In Vercel → Settings → Environment Variables, add VITE_API_URL=https://your-deployed-api.example (no trailing slash), apply to Production, then Redeploy. Otherwise requests default to http://localhost:3001 and the browser blocks them.'
+  );
+}
 const base =
   import.meta.env.DEV && !viteApi
     ? ''
