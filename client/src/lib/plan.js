@@ -1,21 +1,14 @@
-/**
- * Billing / plan gates — disabled during product development.
- * Restore the block below when you ship pricing (set SHOW_LANDING_PRICING in LandingPage.jsx too).
- *
- * --- PRODUCTION (restore) ---
- * export function isPaidPlan(plan) {
- *   return plan === 'pro' || plan === 'business';
- * }
- * export function isFreePlan(plan) {
- *   return !plan || plan === 'free';
- * }
- * --- end ---
- */
+import { normalizePlanId, PLAN_IDS } from '../data/plans.js';
 
-export function isPaidPlan(_plan) {
-  return true;
+export { normalizePlanId } from '../data/plans.js';
+
+/** Personal tier (incl. legacy `free`) — badge cannot be hidden. */
+export function isFreePlan(plan) {
+  return normalizePlanId(plan) === PLAN_IDS.PERSONAL;
 }
 
-export function isFreePlan(_plan) {
-  return false;
+/** Paid tiers: Advanced + Ultimate (incl. legacy `pro` / `business`). */
+export function isPaidPlan(plan) {
+  const id = normalizePlanId(plan);
+  return id === PLAN_IDS.ADVANCED || id === PLAN_IDS.ULTIMATE;
 }

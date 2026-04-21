@@ -84,7 +84,11 @@ export function Sidebar() {
   const { user, profile, updateProfile } = useAuth();
   const [langError, setLangError] = useState('');
 
-  const avatarUrl = user?.user_metadata?.avatar_url || profile?.avatar_url;
+  /** Saved uploads live on `profiles.avatar_url` — prefer it over stale OAuth metadata. */
+  const avatarUrl =
+    String(profile?.avatar_url || '').trim() ||
+    String(user?.user_metadata?.picture || '').trim() ||
+    String(user?.user_metadata?.avatar_url || '').trim();
   const currentLang = normalizeLang(profile?.language);
   const profileTitle = user ? displayName(user, profile) || user.email?.split('@')[0] || t('sidebar.guest') : t('sidebar.guest');
 
@@ -104,44 +108,47 @@ export function Sidebar() {
   const Flag = currentLang === 'fr' ? FlagFr : FlagGb;
 
   return (
-    <aside className="relative z-20 flex h-full min-h-0 w-[260px] shrink-0 flex-col overflow-hidden border-r border-slate-200/80 bg-white shadow-sidebar">
-      <div className="shrink-0 px-5 pb-5 pt-6">
-        <Link to="/dashboard" className="flex items-center gap-3 transition-opacity hover:opacity-90">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-lg shadow-blue-500/30"
-            style={{
-              background: 'linear-gradient(135deg, #3b5fff 0%, #2563eb 45%, #1d4ed8 100%)',
-            }}
+    <div className="w-[260px] shrink-0 self-start min-h-[100dvh]">
+      <aside className="fixed left-0 top-0 z-20 flex h-[100dvh] max-h-[100dvh] w-[260px] flex-col overflow-hidden border-r border-slate-200/80 bg-white shadow-sidebar">
+        <div className="shrink-0 px-5 pb-5 pt-6">
+          <Link to="/dashboard" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-lg shadow-blue-500/30"
+              style={{
+                background: 'linear-gradient(135deg, #3b5fff 0%, #2563eb 45%, #1d4ed8 100%)',
+              }}
+            >
+              S
+            </span>
+            <span className="text-lg font-extrabold tracking-tight" style={{ color: NAVY }}>
+              Signature<span style={{ color: ACCENT }}>Builder</span>
+            </span>
+          </Link>
+        </div>
+
+        <div className="shrink-0 px-4">
+          <button
+            type="button"
+            onClick={handleCreateClick}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-[#2563eb]/40 hover:bg-blue-50/50 hover:text-[#1d4ed8] hover:shadow-md"
           >
-            S
-          </span>
-          <span className="text-lg font-extrabold tracking-tight" style={{ color: NAVY }}>
-            Signature<span style={{ color: ACCENT }}>Builder</span>
-          </span>
-        </Link>
-      </div>
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-[#2563eb] transition-colors group-hover:bg-white">
+              <IconPlus />
+            </span>
+            {t('sidebar.createSignature')}
+          </button>
+        </div>
 
-      <div className="shrink-0 px-4">
-        <button
-          type="button"
-          onClick={handleCreateClick}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-[#2563eb]/40 hover:bg-blue-50/50 hover:text-[#1d4ed8] hover:shadow-md"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-[#2563eb] transition-colors group-hover:bg-white">
-            <IconPlus />
-          </span>
-          {t('sidebar.createSignature')}
-        </button>
-      </div>
+        <div className="mt-8 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3">
+          <nav className="space-y-1 pb-4" aria-label="Main">
+            <NavLink to="/dashboard" end className={navClass}>
+              <IconHome />
+              {t('sidebar.mySignatures')}
+            </NavLink>
+          </nav>
+        </div>
 
-      <nav className="mt-8 shrink-0 space-y-1 px-3" aria-label="Main">
-        <NavLink to="/dashboard" end className={navClass}>
-          <IconHome />
-          {t('sidebar.mySignatures')}
-        </NavLink>
-      </nav>
-
-      <div className="mt-auto shrink-0 border-t border-slate-100/80 bg-gradient-to-b from-white to-slate-50/50 px-4 py-4">
+        <div className="shrink-0 border-t border-slate-100/80 bg-gradient-to-b from-white to-slate-50/50 px-4 py-4">
         <button
           type="button"
           onClick={handleLanguageToggle}
@@ -161,7 +168,12 @@ export function Sidebar() {
           className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-2.5 shadow-sm transition hover:border-slate-200 hover:shadow-md"
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-slate-100" />
+            <img
+              key={avatarUrl}
+              src={avatarUrl}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-slate-100"
+            />
           ) : (
             <div
               className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-orange-100"
@@ -178,7 +190,8 @@ export function Sidebar() {
             <p className="truncate text-xs font-medium text-slate-500">{user?.email || '—'}</p>
           </div>
         </Link>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </div>
   );
 }

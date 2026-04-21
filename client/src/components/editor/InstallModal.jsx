@@ -10,6 +10,8 @@ import {
 } from '../../lib/clipboardHelper.js';
 import { useEditorStore } from '../../store/editorStore.js';
 import { formatInstallGuide } from '../../content/installClientGuides.js';
+import { usePlanGate } from '../../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../../store/upgradeModalStore.js';
 
 const BRAND = 'SignatureBuilder';
 
@@ -102,6 +104,8 @@ function IconHome({ className = 'h-4 w-4' }) {
 
 export function InstallModal({ open, onClose, onToast }) {
   const navigate = useNavigate();
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
   const [active, setActive] = useState('gmail');
   const [copyingImage, setCopyingImage] = useState(false);
   const [copyingHtml, setCopyingHtml] = useState(false);
@@ -138,21 +142,29 @@ export function InstallModal({ open, onClose, onToast }) {
   };
 
   const handleCopyImage = async () => {
+    if (!gate.can('png_rich_clipboard_render')) {
+      showUpgradeModal({
+        feature: 'png_rich_clipboard_render',
+        title: 'PNG Clipboard — Advanced Feature',
+        message: 'Copy your signature as a high-quality PNG image directly to clipboard.',
+      });
+      return;
+    }
     setCopyingImage(true);
     try {
       const url = await resolveExportUrl();
       const banUrl = String(useEditorStore.getState().exportBannerImageUrl || '').trim();
-      await copySignatureImageToClipboard(url, {
+      const frag = String(generatedHTML || '').trim();
+      const clip = await copySignatureImageToClipboard(url, {
         signatureLinkUrl: signatureLink,
         bannerLinkUrl: bannerLink,
         ...(banUrl ? { bannerImageUrl: banUrl } : {}),
+        ...(frag ? { fragmentHtml: frag } : {}),
       });
       onToast?.(
-        banUrl
-          ? `Copied signature + CTA as separate blocks — paste in ${client.name} (Ctrl+V / Cmd+V). Each image can be selected and deleted on its own.`
-          : signatureLink
-            ? `Copied signature (image + link for rich paste) — paste in ${client.name} (Ctrl+V / Cmd+V).`
-            : `Copied signature image — paste in ${client.name} (Ctrl+V / Cmd+V).`,
+        clip?.mode === 'image'
+          ? 'Signature copied as image — paste into your mail app.'
+          : `Copied for ${client.name}. Paste with Ctrl+V / Cmd+V — images load from your hosted URLs.`,
         'success'
       );
       setCopiedKind('image');
@@ -201,10 +213,10 @@ export function InstallModal({ open, onClose, onToast }) {
       }
       onToast?.(
         banUrl
-          ? 'Copied HTML: two tables (signature image + CTA image) separated by <br> — delete either block in Gmail.'
+          ? 'HTML Copied'
           : frag
-            ? 'Copied full signature HTML as plain text.'
-            : 'Copied HTML (table + linked image when a URL is set).',
+            ? 'HTML Copied'
+            : 'HTML Copied',
         'success'
       );
       setCopiedKind('html');
@@ -299,9 +311,9 @@ export function InstallModal({ open, onClose, onToast }) {
             {signatureLink ? (
               <p className="mt-6 rounded-lg border border-blue-100 bg-blue-50/90 px-4 py-3 text-sm text-slate-800">
                 <span className="font-semibold text-blue-900">Link on signature: </span>
-                Copy to clipboard sends both image and HTML where supported so the pasted picture stays
-                clickable. If your client only picks the plain image, use <strong>Copy HTML code</strong>{' '}
-                and paste that into the signature editor.
+                Copy to clipboard uses rich HTML (hosted images) so the pasted signature stays clickable
+                without duplicating blocks in Gmail or Outlook. For the raw HTML string only, use{' '}
+                <strong>Copy HTML code</strong>.
               </p>
             ) : null}
 
@@ -337,12 +349,17 @@ export function InstallModal({ open, onClose, onToast }) {
           </Button>
           <Button
             type="button"
-            title="Fetches the PNG and copies image/png — paste shows the picture in Gmail, not code."
+            title="Copies rich HTML for paste (hosted PNG URLs). Image-only fallback when no HTML is available."
             className={`inline-flex !min-w-[200px] items-center justify-center gap-2 !bg-[#3b5bdb] hover:!bg-[#324fcc] ${copiedKind === 'image' ? '!bg-emerald-600 hover:!bg-emerald-600' : ''}`}
             disabled={copyingImage || copyingHtml || exportGenerating}
             onClick={handleCopyImage}
           >
             <IconClipboardCheck className="h-5 w-5 shrink-0 text-white" />
+            {!gate.can('png_rich_clipboard_render') ? (
+              <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-900">
+                Adv+
+              </span>
+            ) : null}
             {copiedKind === 'image' ? 'Copied!' : copyingImage ? 'Preparing…' : 'Copy to clipboard'}
           </Button>
         </footer>

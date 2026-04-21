@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { GoogleIcon } from '../components/icons/GoogleIcon.jsx';
+import { getPublicRegistrationLinkPreview } from '../lib/api.js';
+import { REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
 
 export function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refParam = searchParams.get('ref')?.trim() || '';
   const { session, loading, loginWithGoogle, signupWithEmail } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -14,6 +18,27 @@ export function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState(null);
+
+  useEffect(() => {
+    if (refParam) {
+      sessionStorage.setItem(REGISTRATION_REF_STORAGE_KEY, refParam);
+    }
+  }, [refParam]);
+
+  useEffect(() => {
+    if (!refParam) {
+      setInviteInfo(null);
+      return undefined;
+    }
+    let cancelled = false;
+    getPublicRegistrationLinkPreview(refParam).then((data) => {
+      if (!cancelled) setInviteInfo(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refParam]);
 
   useEffect(() => {
     if (!loading && session) {
@@ -107,6 +132,18 @@ export function SignupPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50">
+          {inviteInfo?.valid ? (
+            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              You&apos;re signing up with an invite for the <strong>{inviteInfo.plan_name}</strong> plan. After you create your
+              account, we&apos;ll apply that tier to your profile automatically.
+            </div>
+          ) : null}
+          {inviteInfo && !inviteInfo.valid && refParam ? (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              This invite link isn&apos;t valid anymore (or it expired). You can still sign up — you&apos;ll start on the
+              default plan unless you get a new link.
+            </div>
+          ) : null}
           <button
             type="button"
             disabled={googleLoading || submitting}

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HexColorPicker } from 'react-colorful';
 import { palettesAPI } from '../../../lib/api.js';
 import { useEditorStore } from '../../../store/editorStore.js';
+import { usePlanGate } from '../../../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
 import { Button } from '../../ui/Button.jsx';
 import { Input } from '../../ui/Input.jsx';
 
@@ -31,6 +34,9 @@ function designColorsKeyFromSignatureDesign(design) {
 }
 
 export function PalettesTab() {
+  const navigate = useNavigate();
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
   const signature = useEditorStore((s) => s.signature);
   const setPalette = useEditorStore((s) => s.setPalette);
   const editorSaving = useEditorStore((s) => s.isSaving);
@@ -80,7 +86,45 @@ export function PalettesTab() {
     return user.filter((p) => (p.name || '').toLowerCase().includes(q));
   }, [user, filterQ]);
 
+  const openAddPalette = () => {
+    if (!gate.can('custom_palette_creation')) {
+      showUpgradeModal({
+        feature: 'custom_palette_creation',
+        requiredPlan: 'advanced',
+        title: 'Custom Palettes — Advanced Feature',
+        message: 'Create custom color palettes to match your exact brand colors.',
+      });
+      return;
+    }
+    if (gate.isAtLimit('max_saved_custom_palettes', user.length)) {
+      showUpgradeModal({
+        feature: 'max_saved_custom_palettes',
+        requiredPlan: gate.planId === 'advanced' ? 'ultimate' : 'advanced',
+        message: `Your ${gate.plan.name} plan allows up to ${gate.limitText('max_saved_custom_palettes')} custom palettes.`,
+      });
+      return;
+    }
+    setShowAdd((s) => !s);
+  };
+
   const handleSaveNew = async () => {
+    if (!gate.can('custom_palette_creation')) {
+      showUpgradeModal({
+        feature: 'custom_palette_creation',
+        requiredPlan: 'advanced',
+        title: 'Custom Palettes — Advanced Feature',
+        message: 'Create custom color palettes to match your exact brand colors.',
+      });
+      return;
+    }
+    if (gate.isAtLimit('max_saved_custom_palettes', user.length)) {
+      showUpgradeModal({
+        feature: 'max_saved_custom_palettes',
+        requiredPlan: gate.planId === 'advanced' ? 'ultimate' : 'advanced',
+        message: `Your ${gate.plan.name} plan allows up to ${gate.limitText('max_saved_custom_palettes')} custom palettes.`,
+      });
+      return;
+    }
     const colors = [c1, c2, c3, c4];
     setSaving(true);
     try {
@@ -129,7 +173,14 @@ export function PalettesTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-slate-900">Palettes</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-900">Palettes</h2>
+          {gate.planId !== 'ultimate' && gate.can('custom_palette_creation') ? (
+            <span className="text-[11px] font-medium text-slate-400">
+              {user.length} / {gate.limitText('max_saved_custom_palettes')} palettes
+            </span>
+          ) : null}
+        </div>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -170,13 +221,20 @@ export function PalettesTab() {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowAdd((s) => !s)}
-        className="text-sm font-semibold text-[#3b5bdb] hover:underline"
-      >
-        {showAdd ? '− Cancel' : '+ Add palette'}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={openAddPalette} className="text-sm font-semibold text-[#3b5bdb] hover:underline">
+          {showAdd ? '− Cancel' : '+ Add palette'}
+        </button>
+        {!gate.can('custom_palette_creation') ? (
+          <button
+            type="button"
+            className="text-xs font-semibold text-slate-500 hover:text-[#2563eb] hover:underline"
+            onClick={() => navigate('/settings#plan')}
+          >
+            View plans →
+          </button>
+        ) : null}
+      </div>
 
       {showAdd && (
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">

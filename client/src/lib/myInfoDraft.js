@@ -12,7 +12,7 @@ const FIELD_KEYS = [
   'logo_url',
 ];
 
-const SOCIAL_KEYS = ['linkedin', 'twitter', 'instagram', 'github', 'facebook', 'medium'];
+const SOCIAL_KEYS = ['linkedin', 'twitter', 'instagram', 'github', 'facebook', 'telegram', 'medium'];
 
 export function readMyInfoDraft() {
   try {
@@ -58,23 +58,111 @@ export function pickDraftPayload(fields, social_links) {
 }
 
 /**
- * Merge last-saved My information (localStorage) over demo/API defaults.
- * Used for brand-new signature rows so the next template starts with what you already entered.
+ * Map Supabase `profiles` + auth user into signature `fields` (snake_case).
+ * Company / website are not stored on profiles; omit so callers keep demo or API defaults.
  */
-export function starterFieldsWithSavedMyInfo(baseFields, baseSocial) {
-  const draft = readMyInfoDraft();
+export function fieldsFromAccountProfile(profile, user) {
+  if (!profile && !user) return {};
+  const out = {};
+  const fromParts = [profile?.first_name, profile?.last_name]
+    .map((x) => (x != null ? String(x).trim() : ''))
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const full =
+    (profile?.full_name != null && String(profile.full_name).trim()) ||
+    fromParts ||
+    '';
+  if (full) out.full_name = full;
+  const email = user?.email != null ? String(user.email).trim() : '';
+  if (email) out.email = email;
+  if (profile?.job_title != null && String(profile.job_title).trim() !== '') {
+    out.job_title = String(profile.job_title).trim();
+  }
+  if (profile?.phone != null && String(profile.phone).trim() !== '') {
+    out.phone = String(profile.phone).trim();
+  }
+  if (profile?.address != null && String(profile.address).trim() !== '') {
+    out.address = String(profile.address).trim();
+  }
+  if (profile?.avatar_url != null && String(profile.avatar_url).trim() !== '') {
+    out.photo_url = String(profile.avatar_url).trim();
+  }
+  if (profile?.logo_url != null && String(profile.logo_url).trim() !== '') {
+    out.logo_url = String(profile.logo_url).trim();
+  }
+  return out;
+}
+
+export function profileHasPrefillableContent(profile, user) {
+  return Object.keys(fieldsFromAccountProfile(profile, user)).length > 0;
+}
+
+/**
+ * Merge account profile over demo/API defaults for a pristine signature row.
+ */
+export function starterFieldsWithProfile(baseFields, baseSocial, profile, user) {
+  const p = fieldsFromAccountProfile(profile, user);
   const fields = { ...(baseFields || {}) };
-  const social_links = { ...(baseSocial || {}) };
-  if (!draft) return { fields, social_links };
   for (const k of FIELD_KEYS) {
-    const dv = draft.fields?.[k];
-    if (dv != null && String(dv).trim() !== '') fields[k] = dv;
+    const v = p[k];
+    if (v != null && String(v).trim() !== '') fields[k] = v;
   }
-  for (const k of SOCIAL_KEYS) {
-    const dv = draft.social_links?.[k];
-    if (dv != null && String(dv).trim() !== '') social_links[k] = dv;
+  return { fields, social_links: { ...(baseSocial || {}) } };
+}
+
+/** Partial `form` object (camelCase) for POST /html/generate from profile + user. */
+export function profileFormPartialForGenerate(profile, user) {
+  const f = fieldsFromAccountProfile(profile, user);
+  const out = {};
+  if (f.full_name) out.fullName = f.full_name;
+  if (f.job_title) out.jobTitle = f.job_title;
+  if (f.company) out.companyName = f.company;
+  if (f.phone) out.phone = f.phone;
+  if (f.email) out.email = f.email;
+  if (f.website) out.website = f.website;
+  if (f.address) out.address = f.address;
+  if (f.photo_url) out.photoUrl = f.photo_url;
+  if (f.logo_url) out.logoUrl = f.logo_url;
+  return out;
+}
+
+/** Fill empty signature fields from the account profile (same keys as FIELD_KEYS). */
+export function mergeProfileIntoSignature(sig, profile, user) {
+  const p = fieldsFromAccountProfile(profile, user);
+  if (!sig || Object.keys(p).length === 0) return sig;
+  const nextFields = { ...(sig.fields || {}) };
+  let changed = false;
+  for (const k of FIELD_KEYS) {
+    if (String(nextFields[k] ?? '').trim() === '' && String(p[k] ?? '').trim() !== '') {
+      nextFields[k] = p[k];
+      changed = true;
+    }
   }
-  return { fields, social_links };
+  return changed ? { ...sig, fields: nextFields } : sig;
+}
+
+/**
+ * After a signature was seeded with {@link starterFieldsWithProfile} using empty profile, or when
+ * profile loads later, replace fields that still match demo placeholders with account data.
+ * Does not overwrite values the user has changed away from the demo defaults.
+ */
+export function applyProfileOverDemoPlaceholders(sig, profile, user, demoFields) {
+  const p = fieldsFromAccountProfile(profile, user);
+  if (!sig || !demoFields || typeof demoFields !== 'object' || Object.keys(p).length === 0) return sig;
+  const nextFields = { ...(sig.fields || {}) };
+  let changed = false;
+  for (const k of FIELD_KEYS) {
+    const pv = String(p[k] ?? '').trim();
+    if (!pv) continue;
+    const cur = String(nextFields[k] ?? '').trim();
+    const demoVal = String(demoFields[k] ?? '').trim();
+    if (cur === '' || (demoVal !== '' && cur === demoVal)) {
+      nextFields[k] = p[k];
+      changed = true;
+    }
+  }
+  return changed ? { ...sig, fields: nextFields } : sig;
 }
 
 export function hasPersistedMyInfoDraft() {
@@ -84,24 +172,3 @@ export function hasPersistedMyInfoDraft() {
   return Object.keys(fields).length > 0 || Object.keys(social_links).length > 0;
 }
 
-/** Fill empty signature fields / socials from the last saved draft (same browser). */
-export function mergeDraftIntoSignature(sig) {
-  const draft = readMyInfoDraft();
-  if (!draft || !sig) return sig;
-  const nextFields = { ...(sig.fields || {}) };
-  let changed = false;
-  for (const k of FIELD_KEYS) {
-    if (String(nextFields[k] ?? '').trim() === '' && String(draft.fields[k] ?? '').trim() !== '') {
-      nextFields[k] = draft.fields[k];
-      changed = true;
-    }
-  }
-  const nextSocial = { ...(sig.social_links || {}) };
-  for (const k of SOCIAL_KEYS) {
-    if (String(nextSocial[k] ?? '').trim() === '' && String(draft.social_links[k] ?? '').trim() !== '') {
-      nextSocial[k] = draft.social_links[k];
-      changed = true;
-    }
-  }
-  return changed ? { ...sig, fields: nextFields, social_links: nextSocial } : sig;
-}

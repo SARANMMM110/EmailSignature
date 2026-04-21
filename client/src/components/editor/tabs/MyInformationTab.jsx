@@ -1,17 +1,36 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { HiArrowUpTray, HiPlus } from 'react-icons/hi2';
 import { uploadAPI } from '../../../lib/api.js';
 import { useEditorStore } from '../../../store/editorStore.js';
 import { useAuth } from '../../../hooks/useAuth.js';
-import { isFreePlan } from '../../../lib/plan.js';
+import { useI18n } from '../../../hooks/useI18n.js';
+import { usePlanGate } from '../../../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
 import {
   isImageTemplateSignature,
   signatureLayoutSupportsLogo,
   isWebinarBannerPreset,
+  isBlankImageBannerPreset,
+  isDownloadBannerPreset,
+  isNeedCallBannerPreset,
+  isMindscopeBannerPreset,
+  isMailchimpBannerPreset,
+  isExploreWorldBannerPreset,
+  isBoostImproveBannerPreset,
+  isOnlineLoanBannerPreset,
+  isBusinessCityBannerPreset,
+  isLeaveReviewBannerPreset,
+  isSeoWhitepaperBannerPreset,
+  isGreenGradientCtaBannerPreset,
+  bundleRailPxForSignature,
+  normalizeSignatureTemplateSlug,
 } from '../../../lib/templateIds.js';
+import { myInfoShowsField, templateShowsPhotoSlot } from '../../../lib/templateMyInfoFields.js';
 import { Input } from '../../ui/Input.jsx';
+import { PrimaryBannerFields } from '../banner/PrimaryBannerFields.jsx';
+import { SecondaryBannerFields } from '../banner/SecondaryBannerFields.jsx';
 import { Toggle } from '../../ui/Toggle.jsx';
 import { PhotoCropModal } from '../../ui/PhotoCropModal.jsx';
 
@@ -20,23 +39,28 @@ export function MyInformationTab({ onToast }) {
   const location = useLocation();
   const { id } = useParams();
   const { profile } = useAuth();
+  const { t } = useI18n();
   const signature = useEditorStore((s) => s.signature);
   const updateField = useEditorStore((s) => s.updateField);
   const updateSignatureDesignImageUrl = useEditorStore((s) => s.updateSignatureDesignImageUrl);
-  const setBanner = useEditorStore((s) => s.setBanner);
-  const ensureBannersCache = useEditorStore((s) => s.ensureBannersCache);
-  const plan = profile?.plan || 'free';
-  const isFree = isFreePlan(plan);
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
+  const maxUploadBytes = (gate.limit('media_upload_limit_mb') || 5) * 1024 * 1024;
+  const badgePlanLocked = !gate.can('hide_made_with_badge');
+  const canWholeSigLink = gate.can('whole_sig_clickthrough_url');
 
   const [subTab, setSubTab] = useState('signature');
-  const [uploadKind, setUploadKind] = useState(null);
+  const [uploadKind, setUploadKind] = useState(null); // 'photo' | 'logo' | 'sigImage' | 'bannerImg' | 'bannerImg2'
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [cropObjectUrl, setCropObjectUrl] = useState(null);
-  const [addingBanner, setAddingBanner] = useState(false);
 
   const f = signature?.fields || {};
+  const social = signature?.social_links || {};
   const bc = signature?.banner_config || {};
+  const bannerStripRailPx = useMemo(() => bundleRailPxForSignature(signature), [signature]);
   const isImageTpl = isImageTemplateSignature(signature);
+  const layoutSlug = normalizeSignatureTemplateSlug(signature?.design, signature?.template_id);
+  const showField = (key) => myInfoShowsField(signature, key);
   const sigDesignImg = String(signature?.design?.signatureImageUrl || f.signature_image_url || '').trim();
 
   const closeCropModal = useCallback(() => {
@@ -59,7 +83,7 @@ export function MyInformationTab({ onToast }) {
 
   const onCroppedPhotoConfirm = useCallback(
     async (blob) => {
-      const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+      const file = new File([blob], 'photo.png', { type: 'image/png' });
       setUploadKind('photo');
       try {
         const { data } = await uploadAPI.uploadPhoto(file);
@@ -78,9 +102,14 @@ export function MyInformationTab({ onToast }) {
   const photoDrop = useDropzone({
     onDrop: onPhotoDrop,
     accept: { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'] },
-    maxSize: 5 * 1024 * 1024,
+    maxSize: maxUploadBytes,
     multiple: false,
-    disabled: cropModalOpen || uploadKind === 'logo' || uploadKind === 'sigImage',
+    disabled:
+      cropModalOpen ||
+      uploadKind === 'logo' ||
+      uploadKind === 'sigImage' ||
+      uploadKind === 'bannerImg' ||
+      uploadKind === 'bannerImg2',
   });
 
   const onLogoDrop = useCallback(
@@ -104,9 +133,14 @@ export function MyInformationTab({ onToast }) {
   const logoDrop = useDropzone({
     onDrop: onLogoDrop,
     accept: { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'] },
-    maxSize: 5 * 1024 * 1024,
+    maxSize: maxUploadBytes,
     multiple: false,
-    disabled: cropModalOpen || uploadKind === 'photo' || uploadKind === 'sigImage',
+    disabled:
+      cropModalOpen ||
+      uploadKind === 'photo' ||
+      uploadKind === 'sigImage' ||
+      uploadKind === 'bannerImg' ||
+      uploadKind === 'bannerImg2',
   });
 
   const onSigImageDrop = useCallback(
@@ -130,24 +164,47 @@ export function MyInformationTab({ onToast }) {
   const sigImageDrop = useDropzone({
     onDrop: onSigImageDrop,
     accept: { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'] },
-    maxSize: 5 * 1024 * 1024,
+    maxSize: maxUploadBytes,
     multiple: false,
-    disabled: cropModalOpen || uploadKind === 'photo' || uploadKind === 'logo',
+    disabled:
+      cropModalOpen ||
+      uploadKind === 'photo' ||
+      uploadKind === 'logo' ||
+      uploadKind === 'bannerImg' ||
+      uploadKind === 'bannerImg2',
   });
 
   useEffect(() => {
-    if (!isFree || !signature) return;
+    if (!badgePlanLocked || !signature) return;
     if (signature.show_badge === false) {
       updateField('show_badge', true);
     }
-  }, [isFree, signature?.id, signature?.show_badge, updateField]);
+  }, [badgePlanLocked, signature?.id, signature?.show_badge, updateField]);
 
   useEffect(() => {
-    if (location.state?.myInfoSubTab === 'banner') {
-      setSubTab('banner');
-      navigate(location.pathname, { replace: true, state: { ...location.state, myInfoSubTab: undefined } });
+    const next = location.state?.myInfoSubTab;
+    if (next === 'banner' || next === 'signature') {
+      setSubTab(next);
+      const suffix = `${location.search || ''}${location.hash || ''}`;
+      navigate(`${location.pathname}${suffix}`, {
+        replace: true,
+        state: { ...location.state, myInfoSubTab: undefined },
+      });
     }
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, location.search, location.hash, location.state, navigate]);
+
+  useLayoutEffect(() => {
+    const id = String(location.hash || '').replace(/^#/, '');
+    if (
+      id !== 'editor-myinfo-signature' &&
+      id !== 'editor-myinfo-banner' &&
+      id !== 'editor-myinfo-banner-2'
+    )
+      return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  }, [location.hash, subTab]);
 
   if (!signature) return <p className="text-sm text-slate-500">Loading…</p>;
 
@@ -158,12 +215,99 @@ export function MyInformationTab({ onToast }) {
   const hasBannerCta =
     Boolean(signature.banner_id) || Boolean(String(bc.link_url || bc.href || '').trim());
   const isWebinarBanner = isWebinarBannerPreset(bc.preset_id, signature.banner_id);
+  const isBlankBanner = isBlankImageBannerPreset(bc.preset_id, signature.banner_id);
+  const isDownloadBanner = isDownloadBannerPreset(bc.preset_id, signature.banner_id);
+  const isNeedCallBanner = isNeedCallBannerPreset(bc.preset_id, signature.banner_id);
+  const isMindscopeBanner = isMindscopeBannerPreset(bc.preset_id, signature.banner_id);
+  const isMailchimpBanner = isMailchimpBannerPreset(bc.preset_id, signature.banner_id);
+  const isExploreWorldBanner = isExploreWorldBannerPreset(bc.preset_id, signature.banner_id);
+  const isBoostImproveBanner = isBoostImproveBannerPreset(bc.preset_id, signature.banner_id);
+  const isOnlineLoanBanner = isOnlineLoanBannerPreset(bc.preset_id, signature.banner_id);
+  const isBusinessCityBanner = isBusinessCityBannerPreset(bc.preset_id, signature.banner_id);
+  const isLeaveReviewBanner = isLeaveReviewBannerPreset(bc.preset_id, signature.banner_id);
+  const isSeoWhitepaperBanner = isSeoWhitepaperBannerPreset(bc.preset_id, signature.banner_id);
+  const isGreenGradientCtaBanner = isGreenGradientCtaBannerPreset(bc.preset_id, signature.banner_id);
   const isBookCallBanner =
-    !isWebinarBanner && /book|call/i.test(String(bc.preset_id || ''));
+    !isWebinarBanner &&
+    !isBlankBanner &&
+    !isDownloadBanner &&
+    !isNeedCallBanner &&
+    !isMindscopeBanner &&
+    !isMailchimpBanner &&
+    !isExploreWorldBanner &&
+    !isBoostImproveBanner &&
+    !isOnlineLoanBanner &&
+    !isBusinessCityBanner &&
+    !isLeaveReviewBanner &&
+    !isSeoWhitepaperBanner &&
+    !isGreenGradientCtaBanner &&
+    /book|call/i.test(String(bc.preset_id || ''));
+  const isSimpleBanner =
+    !isWebinarBanner &&
+    !isBookCallBanner &&
+    !isBlankBanner &&
+    !isDownloadBanner &&
+    !isNeedCallBanner &&
+    !isMindscopeBanner &&
+    !isMailchimpBanner &&
+    !isExploreWorldBanner &&
+    !isBoostImproveBanner &&
+    !isOnlineLoanBanner &&
+    !isBusinessCityBanner &&
+    !isLeaveReviewBanner &&
+    !isSeoWhitepaperBanner &&
+    !isGreenGradientCtaBanner;
+
   const isSecondaryWebinar = isWebinarBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryBlank = isBlankImageBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryDownload =
+    Boolean(bc.secondary_banner_id) &&
+    isDownloadBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryNeedCall =
+    Boolean(bc.secondary_banner_id) &&
+    isNeedCallBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryMindscope =
+    Boolean(bc.secondary_banner_id) &&
+    isMindscopeBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryMailchimp =
+    Boolean(bc.secondary_banner_id) &&
+    isMailchimpBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryExploreWorld =
+    Boolean(bc.secondary_banner_id) &&
+    isExploreWorldBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryBoostImprove =
+    Boolean(bc.secondary_banner_id) &&
+    isBoostImproveBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryOnlineLoan =
+    Boolean(bc.secondary_banner_id) &&
+    isOnlineLoanBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryBusinessCity =
+    Boolean(bc.secondary_banner_id) &&
+    isBusinessCityBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryLeaveReview =
+    Boolean(bc.secondary_banner_id) &&
+    isLeaveReviewBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondarySeoWhitepaper =
+    Boolean(bc.secondary_banner_id) &&
+    isSeoWhitepaperBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const isSecondaryGreenGradientCta =
+    Boolean(bc.secondary_banner_id) &&
+    isGreenGradientCtaBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
   const isSecondaryBookCall =
-    Boolean(bc.secondary_link_url || bc.secondary_href || bc.secondary_banner_id) &&
+    Boolean(bc.secondary_banner_id) &&
     !isSecondaryWebinar &&
+    !isSecondaryBlank &&
+    !isSecondaryDownload &&
+    !isSecondaryNeedCall &&
+    !isSecondaryMindscope &&
+    !isSecondaryMailchimp &&
+    !isSecondaryExploreWorld &&
+    !isSecondaryBoostImprove &&
+    !isSecondaryOnlineLoan &&
+    !isSecondaryBusinessCity &&
+    !isSecondaryLeaveReview &&
+    !isSecondarySeoWhitepaper &&
+    !isSecondaryGreenGradientCta &&
     /book|call/i.test(String(bc.secondary_preset_id || ''));
 
   const bannerLabelClass = 'mb-1.5 block text-sm font-bold text-slate-800';
@@ -179,28 +323,212 @@ export function MyInformationTab({ onToast }) {
     if (isWebinarBanner && partial.field_3 !== undefined) {
       next.text = String(partial.field_3);
     }
-    if (isSecondaryWebinar && partial.secondary_field_3 !== undefined) {
-      next.secondary_text = String(partial.secondary_field_3);
-    }
     updateField('banner_config', next);
   };
 
-  const handleAddCtaBanner = useCallback(async () => {
-    setAddingBanner(true);
-    try {
-      const list = await ensureBannersCache();
-      if (list?.length) {
-        await setBanner(list[0].id);
-        onToast?.('CTA banner added — adjust text and link below or pick another in Banners.', 'success');
-      } else {
-        navigate(`/editor/${id}/banners`);
+  const mergeSecondaryBannerCfg = useCallback(
+    (partial) => {
+      const sig = useEditorStore.getState().signature;
+      if (!sig) return;
+      const prev = sig.banner_config || {};
+      const next = { ...prev, ...partial };
+      if (
+        isWebinarBannerPreset(next.secondary_preset_id, next.secondary_banner_id) &&
+        partial.secondary_field_3 !== undefined
+      ) {
+        next.secondary_text = String(partial.secondary_field_3);
       }
-    } catch {
-      navigate(`/editor/${id}/banners`);
-    } finally {
-      setAddingBanner(false);
+      updateField('banner_config', next);
+    },
+    [updateField]
+  );
+
+  const onBannerImgDrop = useCallback(
+    async (accepted) => {
+      const file = accepted[0];
+      if (!file) return;
+      setUploadKind('bannerImg');
+      try {
+        const { data } = await uploadAPI.uploadBannerImage(file);
+        mergeBannerCfg({ banner_image_url: data.url });
+        onToast?.(t('editor.bannerImageUpdatedSlot', { n: 1 }), 'success');
+      } catch {
+        onToast?.('Banner image upload failed', 'error');
+      } finally {
+        setUploadKind(null);
+      }
+    },
+    [mergeBannerCfg, onToast, t]
+  );
+
+  const bannerImgDrop = useDropzone({
+    onDrop: onBannerImgDrop,
+    accept: { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'] },
+    maxSize: maxUploadBytes,
+    multiple: false,
+    disabled:
+      cropModalOpen ||
+      uploadKind === 'photo' ||
+      uploadKind === 'logo' ||
+      uploadKind === 'sigImage' ||
+      uploadKind === 'bannerImg2',
+  });
+
+  const onSecondaryBannerImgDrop = useCallback(
+    async (accepted) => {
+      const file = accepted[0];
+      if (!file) return;
+      setUploadKind('bannerImg2');
+      try {
+        const { data } = await uploadAPI.uploadBannerImage(file);
+        mergeSecondaryBannerCfg({ secondary_banner_image_url: data.url });
+        onToast?.(t('editor.bannerImageUpdatedSlot', { n: 2 }), 'success');
+      } catch {
+        onToast?.('Upload failed', 'error');
+      } finally {
+        setUploadKind(null);
+      }
+    },
+    [mergeSecondaryBannerCfg, onToast, t]
+  );
+
+  const secondaryBannerImgDrop = useDropzone({
+    onDrop: onSecondaryBannerImgDrop,
+    accept: { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'] },
+    maxSize: maxUploadBytes,
+    multiple: false,
+    disabled:
+      cropModalOpen ||
+      uploadKind === 'photo' ||
+      uploadKind === 'logo' ||
+      uploadKind === 'sigImage' ||
+      uploadKind === 'bannerImg',
+  });
+
+  const handleAddCtaBanner = useCallback(() => {
+    navigate(`/editor/${id}/banners`);
+  }, [navigate, id]);
+
+  const hashId = String(location.hash || '').replace(/^#/, '');
+  const isBannerQuickEdit =
+    (hashId === 'editor-myinfo-banner' || hashId === 'editor-myinfo-banner-2') && hasBannerCta;
+
+  if (isBannerQuickEdit) {
+    const goFullMyInfo = () => {
+      setSubTab('signature');
+      navigate(`${location.pathname}${location.search || ''}#editor-myinfo-signature`, {
+        replace: true,
+      });
+    };
+
+    if (hashId === 'editor-myinfo-banner-2' && bc.secondary_banner_id) {
+      return (
+        <div className="space-y-5">
+          <button
+            type="button"
+            onClick={goFullMyInfo}
+            className="text-left text-sm font-semibold text-[#2563eb] underline-offset-2 hover:underline"
+          >
+            ← Full My information
+          </button>
+          <div
+            id="editor-myinfo-banner-2"
+            className="scroll-mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm"
+          >
+            <p className="text-sm font-semibold text-slate-800">{t('editor.bannerSlot', { n: 2 })}</p>
+            <p className="text-xs text-slate-600">Link and labels for this strip only.</p>
+            <SecondaryBannerFields
+              bc={bc}
+              mergeBannerCfg={mergeSecondaryBannerCfg}
+              bannerLabelClass={bannerLabelClass}
+              secondaryBannerImgDrop={secondaryBannerImgDrop}
+              uploadKind={uploadKind === 'bannerImg2' ? uploadKind : null}
+              isSecondaryWebinar={isSecondaryWebinar}
+              isSecondaryBlank={isSecondaryBlank}
+              isSecondaryBookCall={isSecondaryBookCall}
+              isSecondaryMailchimp={isSecondaryMailchimp}
+              isSecondaryExploreWorld={isSecondaryExploreWorld}
+              isSecondaryBoostImprove={isSecondaryBoostImprove}
+              isSecondaryOnlineLoan={isSecondaryOnlineLoan}
+              isSecondaryBusinessCity={isSecondaryBusinessCity}
+              isSecondaryLeaveReview={isSecondaryLeaveReview}
+              isSecondarySeoWhitepaper={isSecondarySeoWhitepaper}
+              isSecondaryGreenGradientCta={isSecondaryGreenGradientCta}
+              idPrefix="myinfo-secondary-banner"
+              blankStripRailPx={bannerStripRailPx}
+            />
+          </div>
+          <PhotoCropModal
+            open={cropModalOpen}
+            imageSrc={cropObjectUrl}
+            onClose={closeCropModal}
+            onConfirm={onCroppedPhotoConfirm}
+          />
+        </div>
+      );
     }
-  }, [ensureBannersCache, setBanner, navigate, id, onToast]);
+
+    return (
+      <div className="space-y-5">
+        <button
+          type="button"
+          onClick={goFullMyInfo}
+          className="text-left text-sm font-semibold text-[#2563eb] underline-offset-2 hover:underline"
+        >
+          ← Full My information
+        </button>
+        {hashId === 'editor-myinfo-banner-2' && !bc.secondary_banner_id ? (
+          <p className="text-sm text-slate-600">
+            {t('editor.noSecondBannerYetBeforeLink')}{' '}
+            <button
+              type="button"
+              onClick={() => navigate(`/editor/${id}/banners`)}
+              className="font-semibold text-[#3b5bdb] hover:underline"
+            >
+              {t('editor.banners')}
+            </button>
+            {t('editor.noSecondBannerYetAfterLink')}
+          </p>
+        ) : null}
+        <div
+          id="editor-myinfo-banner"
+          className="scroll-mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm"
+        >
+          <p className="text-sm font-semibold text-slate-800">{t('editor.bannerSlot', { n: 1 })}</p>
+          <p className="text-xs text-slate-600">Link and wording for this banner only.</p>
+          <PrimaryBannerFields
+            bc={bc}
+            mergeBannerCfg={mergeBannerCfg}
+            bannerLabelClass={bannerLabelClass}
+            bannerImgDrop={bannerImgDrop}
+            uploadKind={uploadKind}
+            isWebinarBanner={isWebinarBanner}
+            isBlankBanner={isBlankBanner}
+            isBookCallBanner={isBookCallBanner}
+            isMindscopeBanner={isMindscopeBanner}
+            isMailchimpBanner={isMailchimpBanner}
+            isExploreWorldBanner={isExploreWorldBanner}
+            isBoostImproveBanner={isBoostImproveBanner}
+            isOnlineLoanBanner={isOnlineLoanBanner}
+            isBusinessCityBanner={isBusinessCityBanner}
+            isLeaveReviewBanner={isLeaveReviewBanner}
+            isSeoWhitepaperBanner={isSeoWhitepaperBanner}
+            isGreenGradientCtaBanner={isGreenGradientCtaBanner}
+            isDownloadBanner={isDownloadBanner}
+            isNeedCallBanner={isNeedCallBanner}
+            isSimpleBanner={isSimpleBanner}
+            blankStripRailPx={bannerStripRailPx}
+          />
+        </div>
+        <PhotoCropModal
+          open={cropModalOpen}
+          imageSrc={cropObjectUrl}
+          onClose={closeCropModal}
+          onConfirm={onCroppedPhotoConfirm}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-7">
@@ -225,13 +553,16 @@ export function MyInformationTab({ onToast }) {
               : 'text-slate-600 hover:text-slate-800'
           }`}
         >
-          Banner
+          {t('editor.myInfoBannerDetailsSubtab')}
         </button>
       </div>
 
       {subTab === 'signature' ? (
         <>
-          <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+          <section
+            id="editor-myinfo-signature"
+            className="scroll-mt-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm"
+          >
             <h2 className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
               Signature settings
             </h2>
@@ -241,12 +572,47 @@ export function MyInformationTab({ onToast }) {
                 value={signature.label || ''}
                 onChange={(e) => updateField('label', e.target.value)}
               />
-              <Input
-                label="Link on signature"
-                placeholder="https://"
-                value={signature.signature_link || ''}
-                onChange={(e) => updateField('signature_link', e.target.value)}
-              />
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-slate-800">Link on signature</span>
+                  {!canWholeSigLink ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-900">
+                      Advanced
+                    </span>
+                  ) : null}
+                </div>
+                <div className="relative">
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-[#3b5bdb] focus:outline-none focus:ring-2 focus:ring-[#3b5bdb]/20 disabled:cursor-not-allowed"
+                    type="url"
+                    placeholder="https://your-website.com"
+                    disabled={!canWholeSigLink}
+                    value={signature.signature_link || ''}
+                    onChange={(e) => updateField('signature_link', e.target.value)}
+                  />
+                  {!canWholeSigLink ? (
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[#2563eb] hover:underline"
+                      onClick={() =>
+                        showUpgradeModal({
+                          feature: 'whole_sig_clickthrough_url',
+                          requiredPlan: 'advanced',
+                          title: 'Clickable signature',
+                          message: 'Makes the entire signature clickable. Available on Advanced and Ultimate.',
+                        })
+                      }
+                    >
+                      Unlock →
+                    </button>
+                  ) : null}
+                </div>
+                {!canWholeSigLink ? (
+                  <p className="text-xs text-slate-400">
+                    Makes the entire signature clickable. Available on Advanced and Ultimate.
+                  </p>
+                ) : null}
+              </div>
               {String(signature.signature_link || '').trim() ? (
                 <p className="text-xs leading-relaxed text-slate-500">
                   Pasted mail uses HTML with a linked image. The PNG must be hosted at a URL the
@@ -258,14 +624,36 @@ export function MyInformationTab({ onToast }) {
               ) : null}
               <div
                 className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3"
-                title={isFree ? 'Upgrade to remove' : undefined}
+                style={{ opacity: badgePlanLocked ? 0.85 : 1 }}
               >
-                <Toggle
-                  label='Show "Made with SignatureBuilder" badge'
-                  checked={isFree ? true : signature.show_badge !== false}
-                  disabled={isFree}
-                  onChange={(v) => updateField('show_badge', v)}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Toggle
+                    label='Show "Made with SignatureBuilder" badge'
+                    checked={badgePlanLocked ? true : signature.show_badge !== false}
+                    disabled={badgePlanLocked}
+                    onChange={(v) => {
+                      if (badgePlanLocked) {
+                        showUpgradeModal({
+                          feature: 'hide_made_with_badge',
+                          requiredPlan: 'advanced',
+                          message: 'Upgrade to Advanced to hide the SignatureBuilder badge.',
+                        });
+                        return;
+                      }
+                      updateField('show_badge', v);
+                    }}
+                  />
+                  {badgePlanLocked ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-900">
+                      Required on Personal
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  {badgePlanLocked
+                    ? 'Upgrade to Advanced to remove branding.'
+                    : 'Optional branding below your signature.'}
+                </p>
               </div>
             </div>
           </section>
@@ -307,7 +695,7 @@ export function MyInformationTab({ onToast }) {
                       <HiArrowUpTray className="h-5 w-5" aria-hidden />
                     </span>
                     <span className="mt-2 text-xs font-medium text-slate-600">Upload design image</span>
-                    <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
+                    <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max {gate.limit('media_upload_limit_mb')}MB</span>
                   </>
                 )}
               </div>
@@ -335,38 +723,142 @@ export function MyInformationTab({ onToast }) {
               />
               {!isImageTpl ? (
                 <>
-                  <Input
-                    label="Job title"
-                    value={f.job_title || ''}
-                    onChange={(e) => updateField('fields.job_title', e.target.value)}
-                  />
-                  <Input
-                    label="Phone number"
-                    value={f.phone || ''}
-                    onChange={(e) => updateField('fields.phone', e.target.value)}
-                  />
-                  <Input
-                    label="Email address"
-                    type="email"
-                    value={f.email || ''}
-                    onChange={(e) => updateField('fields.email', e.target.value)}
-                  />
-                  <Input
-                    label="Website"
-                    value={f.website || ''}
-                    onChange={(e) => updateField('fields.website', e.target.value)}
-                  />
-                  <Input
-                    label="Address (shown in signature)"
-                    value={f.address || ''}
-                    placeholder="e.g. Office 60, Calicut, Kerala, India"
-                    onChange={(e) => updateField('fields.address', e.target.value)}
-                  />
-                  <Input
-                    label="Company"
-                    value={f.company || f.companyName || ''}
-                    onChange={(e) => updateField('fields.company', e.target.value)}
-                  />
+                  {showField('job_title') ? (
+                    <div className="w-full">
+                      <Input
+                        label="Job title"
+                        value={f.job_title || ''}
+                        onChange={(e) => updateField('fields.job_title', e.target.value)}
+                      />
+                      {layoutSlug === 'template_11' ? (
+                        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+                          Use a line break for a short second line (shown as a small line by your photo).
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {showField('phone') ? (
+                    <Input
+                      label="Phone number"
+                      value={f.phone || ''}
+                      onChange={(e) => updateField('fields.phone', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('email') ? (
+                    <Input
+                      label="Email address"
+                      type="email"
+                      value={f.email || ''}
+                      onChange={(e) => updateField('fields.email', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('website') ? (
+                    <Input
+                      label="Website"
+                      value={f.website || ''}
+                      onChange={(e) => updateField('fields.website', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('address') ? (
+                    <Input
+                      label="Address (shown in signature)"
+                      value={f.address || ''}
+                      placeholder="e.g. Office 60, Calicut, Kerala, India"
+                      onChange={(e) => updateField('fields.address', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('company') ? (
+                    <div className="w-full">
+                      <label
+                        htmlFor="fields-company"
+                        className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                      >
+                        {layoutSlug === 'template_4' ? 'Company (two lines in lockup)' : 'Company / organization'}
+                      </label>
+                      <textarea
+                        id="fields-company"
+                        rows={layoutSlug === 'template_4' ? 3 : 2}
+                        value={f.company || f.companyName || ''}
+                        onChange={(e) => updateField('fields.company', e.target.value)}
+                        placeholder={
+                          layoutSlug === 'template_4'
+                            ? 'Line 1 and line 2 appear next to your logo mark.'
+                            : 'Shown when this layout includes a company line or wordmark area.'
+                        }
+                        className="w-full resize-y rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-shadow duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus-visible:border-blue-500 focus-visible:shadow-[0_0_0_3px_rgba(37,99,235,0.22)]"
+                      />
+                    </div>
+                  ) : null}
+                  {showField('tagline') ? (
+                    <div className="w-full">
+                      <label
+                        htmlFor="fields-tagline"
+                        className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                      >
+                        {layoutSlug === 'template_11' ? 'Intro / subtitle' : 'Tagline / extra line'}
+                      </label>
+                      <textarea
+                        id="fields-tagline"
+                        rows={3}
+                        value={f.tagline || ''}
+                        onChange={(e) => updateField('fields.tagline', e.target.value)}
+                        placeholder={
+                          layoutSlug === 'template_11'
+                            ? 'Short text under your name (optional).'
+                            : 'Optional second line next to your logo area on this layout.'
+                        }
+                        className="w-full resize-y rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-shadow duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus-visible:border-blue-500 focus-visible:shadow-[0_0_0_3px_rgba(37,99,235,0.22)]"
+                      />
+                    </div>
+                  ) : null}
+                  {showField('facebook') ? (
+                    <Input
+                      label="Facebook profile URL"
+                      placeholder="https://facebook.com/…"
+                      value={social.facebook || ''}
+                      onChange={(e) => updateField('social_links.facebook', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('twitter') ? (
+                    <Input
+                      label="X / Twitter or Instagram (SNS line)"
+                      placeholder="@Yournamehere or profile URL"
+                      value={social.twitter || ''}
+                      onChange={(e) => updateField('social_links.twitter', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('linkedin') ? (
+                    <Input
+                      label="LinkedIn profile URL"
+                      placeholder="https://www.linkedin.com/in/…"
+                      value={social.linkedin || ''}
+                      onChange={(e) => updateField('social_links.linkedin', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('github') ? (
+                    <Input
+                      label="Portfolio URL (middle icon — Behance, Dribbble, etc.)"
+                      placeholder="https://…"
+                      value={social.github || ''}
+                      onChange={(e) => updateField('social_links.github', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('instagram') ? (
+                    <Input
+                      label="Instagram profile URL"
+                      placeholder="https://www.instagram.com/…"
+                      value={social.instagram || ''}
+                      onChange={(e) => updateField('social_links.instagram', e.target.value)}
+                    />
+                  ) : null}
+                  {showField('telegram') ? (
+                    <Input
+                      label="Telegram link"
+                      placeholder="https://t.me/…"
+                      value={social.telegram || ''}
+                      onChange={(e) => updateField('social_links.telegram', e.target.value)}
+                    />
+                  ) : null}
                 </>
               ) : (
                 <p className="text-[11px] leading-relaxed text-slate-400">
@@ -377,7 +869,7 @@ export function MyInformationTab({ onToast }) {
             </div>
           </section>
 
-          {!isImageTpl ? (
+          {!isImageTpl && templateShowsPhotoSlot(signature) ? (
           <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
               Photo
@@ -400,7 +892,7 @@ export function MyInformationTab({ onToast }) {
                     <HiArrowUpTray className="h-5 w-5" aria-hidden />
                   </span>
                   <span className="mt-2 text-xs font-medium text-slate-600">Upload photo</span>
-                  <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
+                  <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max {gate.limit('media_upload_limit_mb')}MB</span>
                 </>
               )}
             </div>
@@ -437,7 +929,9 @@ export function MyInformationTab({ onToast }) {
                       <HiArrowUpTray className="h-5 w-5" aria-hidden />
                     </span>
                     <span className="mt-2 text-xs font-medium text-slate-600">Upload logo</span>
-                    <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB · wide images work best</span>
+                    <span className="mt-1 text-[10px] text-slate-400">
+                      PNG, JPG, WebP · max {gate.limit('media_upload_limit_mb')}MB · wide images work best
+                    </span>
                   </>
                 )}
               </div>
@@ -455,197 +949,114 @@ export function MyInformationTab({ onToast }) {
 
         </>
       ) : hasBannerCta ? (
-        <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm">
-          <p className="text-sm text-slate-600">
-            Optional CTA under your signature. Pick another style anytime from{' '}
-            <button
-              type="button"
-              onClick={() => navigate(`/editor/${id}/banners`)}
-              className="font-semibold text-[#3b5bdb] hover:underline"
-            >
-              Banners
-            </button>
-            .
-          </p>
-          <Input
-            label="Link on banner"
-            labelClassName={bannerLabelClass}
-            placeholder="https://"
-            value={bc.link_url || bc.href || ''}
-            onChange={(e) => mergeBannerCfg({ link_url: e.target.value })}
-          />
-          <hr className="border-slate-200/90" />
-          {isWebinarBanner ? (
-            <div className="space-y-4">
-              <Input
-                label="Field 1"
-                labelClassName={bannerLabelClass}
-                value={bc.field_1 ?? ''}
-                placeholder="Email Marketing 101 Webinar"
-                onChange={(e) => mergeBannerCfg({ field_1: e.target.value })}
-              />
-              <Input
-                label="Field 2"
-                labelClassName={bannerLabelClass}
-                value={bc.field_2 ?? ''}
-                placeholder="Only 10 seats available!"
-                onChange={(e) => mergeBannerCfg({ field_2: e.target.value })}
-              />
-              <Input
-                label="Field 3"
-                labelClassName={bannerLabelClass}
-                value={bc.field_3 ?? bc.text ?? ''}
-                placeholder="Book my seat"
-                onChange={(e) => mergeBannerCfg({ field_3: e.target.value })}
-              />
-              <Input
-                label="Field 4"
-                labelClassName={bannerLabelClass}
-                value={bc.field_4 ?? ''}
-                placeholder="88"
-                inputMode="numeric"
-                onChange={(e) => mergeBannerCfg({ field_4: e.target.value })}
-              />
-            </div>
-          ) : isBookCallBanner ? (
-            <div className="space-y-4">
-              <Input
-                label="Headline"
-                labelClassName={bannerLabelClass}
-                placeholder="Book a call today"
-                value={bc.text || ''}
-                onChange={(e) => mergeBannerCfg({ text: e.target.value })}
-              />
-              <Input
-                label="Right image URL (optional)"
-                labelClassName={bannerLabelClass}
-                placeholder="https://… (defaults to a stock team photo if empty)"
-                value={bc.field_2 ?? ''}
-                onChange={(e) => mergeBannerCfg({ field_2: e.target.value })}
-              />
-            </div>
-          ) : (
-            <Input
-              label="Banner button text"
-              labelClassName={bannerLabelClass}
-              value={bc.text || ''}
-              onChange={(e) => mergeBannerCfg({ text: e.target.value })}
-            />
-          )}
-          <div className="space-y-3 rounded-lg border border-slate-200/80 bg-white/70 p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-600">
-              Second CTA (optional)
-            </p>
-            <p className="text-[11px] leading-relaxed text-slate-500">
-              Choose a second style under{' '}
+        <>
+          <div
+            id="editor-myinfo-banner"
+            className="scroll-mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm"
+          >
+            <p className="text-sm font-semibold text-slate-800">{t('editor.bannerSlot', { n: 1 })}</p>
+            <p className="text-sm text-slate-600">
+              Optional strip under your signature. Pick another style anytime from{' '}
               <button
                 type="button"
                 onClick={() => navigate(`/editor/${id}/banners`)}
                 className="font-semibold text-[#3b5bdb] hover:underline"
               >
-                Banners
-              </button>{' '}
-              (stacked under the first), then set link and copy here.
+                {t('editor.banners')}
+              </button>
+              .
             </p>
-            <Input
-              label="Second link"
-              labelClassName={bannerLabelClass}
-              placeholder="https://"
-              value={bc.secondary_link_url || bc.secondary_href || ''}
-              onChange={(e) =>
-                mergeBannerCfg({ secondary_link_url: e.target.value, secondary_href: '' })
-              }
+            <PrimaryBannerFields
+              bc={bc}
+              mergeBannerCfg={mergeBannerCfg}
+              bannerLabelClass={bannerLabelClass}
+              bannerImgDrop={bannerImgDrop}
+              uploadKind={uploadKind}
+              isWebinarBanner={isWebinarBanner}
+              isBlankBanner={isBlankBanner}
+              isBookCallBanner={isBookCallBanner}
+              isMindscopeBanner={isMindscopeBanner}
+              isMailchimpBanner={isMailchimpBanner}
+              isExploreWorldBanner={isExploreWorldBanner}
+              isBoostImproveBanner={isBoostImproveBanner}
+              isOnlineLoanBanner={isOnlineLoanBanner}
+              isBusinessCityBanner={isBusinessCityBanner}
+              isLeaveReviewBanner={isLeaveReviewBanner}
+              isSeoWhitepaperBanner={isSeoWhitepaperBanner}
+              isGreenGradientCtaBanner={isGreenGradientCtaBanner}
+              isDownloadBanner={isDownloadBanner}
+              isNeedCallBanner={isNeedCallBanner}
+              isSimpleBanner={isSimpleBanner}
+              blankStripRailPx={bannerStripRailPx}
             />
-            {isSecondaryWebinar ? (
-              <div className="space-y-4">
-                <Input
-                  label="Second — field 1"
-                  labelClassName={bannerLabelClass}
-                  value={bc.secondary_field_1 ?? ''}
-                  placeholder="Email Marketing 101 Webinar"
-                  onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-                />
-                <Input
-                  label="Second — field 2"
-                  labelClassName={bannerLabelClass}
-                  value={bc.secondary_field_2 ?? ''}
-                  placeholder="Only 10 seats available!"
-                  onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
-                />
-                <Input
-                  label="Second — field 3"
-                  labelClassName={bannerLabelClass}
-                  value={bc.secondary_field_3 ?? bc.secondary_text ?? ''}
-                  placeholder="Book my seat"
-                  onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
-                />
-                <Input
-                  label="Second — field 4"
-                  labelClassName={bannerLabelClass}
-                  value={bc.secondary_field_4 ?? ''}
-                  placeholder="88"
-                  inputMode="numeric"
-                  onChange={(e) => mergeBannerCfg({ secondary_field_4: e.target.value })}
-                />
-              </div>
-            ) : isSecondaryBookCall ? (
-              <div className="space-y-4">
-                <Input
-                  label="Second headline"
-                  labelClassName={bannerLabelClass}
-                  placeholder="Book a call today"
-                  value={bc.secondary_text ?? ''}
-                  onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
-                />
-                <Input
-                  label="Second right image URL (optional)"
-                  labelClassName={bannerLabelClass}
-                  placeholder="https://…"
-                  value={bc.secondary_field_2 ?? ''}
-                  onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+            {bc.secondary_banner_id ? (
+              <div
+                id="editor-myinfo-banner-2"
+                className="scroll-mt-4 mt-6 space-y-4 border-t border-slate-200/80 pt-6"
+              >
+                <p className="text-sm font-semibold text-slate-800">{t('editor.bannerSlot', { n: 2 })}</p>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  {t('editor.bannerSlot2BlurbLead')}{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/editor/${id}/banners`)}
+                    className="font-semibold text-[#3b5bdb] hover:underline"
+                  >
+                    {t('editor.banners')}
+                  </button>{' '}
+                  {t('editor.bannerSlot2BlurbTail')}
+                </p>
+                <SecondaryBannerFields
+                  bc={bc}
+                  mergeBannerCfg={mergeSecondaryBannerCfg}
+                  bannerLabelClass={bannerLabelClass}
+                  secondaryBannerImgDrop={secondaryBannerImgDrop}
+                  uploadKind={uploadKind === 'bannerImg2' ? uploadKind : null}
+                  isSecondaryWebinar={isSecondaryWebinar}
+                  isSecondaryBlank={isSecondaryBlank}
+                  isSecondaryBookCall={isSecondaryBookCall}
+                  isSecondaryMailchimp={isSecondaryMailchimp}
+                  isSecondaryExploreWorld={isSecondaryExploreWorld}
+                  isSecondaryBoostImprove={isSecondaryBoostImprove}
+                  isSecondaryOnlineLoan={isSecondaryOnlineLoan}
+                  isSecondaryBusinessCity={isSecondaryBusinessCity}
+                  isSecondaryLeaveReview={isSecondaryLeaveReview}
+                  isSecondarySeoWhitepaper={isSecondarySeoWhitepaper}
+                  isSecondaryGreenGradientCta={isSecondaryGreenGradientCta}
+                  idPrefix="myinfo-secondary-banner"
+                  blankStripRailPx={bannerStripRailPx}
                 />
               </div>
             ) : (
-              <div className="space-y-4">
-                <Input
-                  label="Second button / line text"
-                  labelClassName={bannerLabelClass}
-                  placeholder="Learn more"
-                  value={bc.secondary_text ?? ''}
-                  onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
-                />
-                <Input
-                  label="Second image URL (optional, book-style strips)"
-                  labelClassName={bannerLabelClass}
-                  placeholder="https://…"
-                  value={bc.secondary_field_2 ?? ''}
-                  onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
-                />
-              </div>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                {t('editor.bannerStackHintLead')}{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/editor/${id}/banners`)}
+                  className="font-semibold text-[#3b5bdb] hover:underline"
+                >
+                  {t('editor.banners')}
+                </button>{' '}
+                {t('editor.bannerStackHintTail')}
+              </p>
             )}
           </div>
-        </div>
+        </>
       ) : (
         <div className="rounded-2xl border border-slate-200/90 bg-white px-5 py-10 text-center shadow-sm sm:px-8">
-          <h3 className="text-lg font-bold tracking-tight text-[#0c1929]">No banner CTA added</h3>
+          <h3 className="text-lg font-bold tracking-tight text-[#0c1929]">{t('editor.noBannersYetTitle')}</h3>
           <p className="mx-auto mt-4 max-w-[320px] text-sm font-normal leading-relaxed text-neutral-800">
-            You haven&apos;t selected a CTA banner yet ! Click on the button below to choose your CTA
-            banner.
+            {t('editor.noBannersYetBody')}
           </p>
           <button
             type="button"
-            disabled={addingBanner}
             onClick={handleAddCtaBanner}
-            className="mt-10 inline-flex items-center justify-center gap-3 rounded-xl bg-[#3b5bdb] px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-[#324fcc] disabled:opacity-60"
+            className="mt-10 inline-flex items-center justify-center gap-3 rounded-xl bg-[#3b5bdb] px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-[#324fcc]"
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/15">
-              {addingBanner ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <HiPlus className="h-5 w-5 text-white" strokeWidth={2.25} aria-hidden />
-              )}
+              <HiPlus className="h-5 w-5 text-white" strokeWidth={2.25} aria-hidden />
             </span>
-            Add a CTA banner
+            {t('editor.addBannerStylesCta')}
           </button>
         </div>
       )}

@@ -11,6 +11,8 @@
     "upload:template-images": "node src/scripts/uploadImageTemplates.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
     "@supabase/supabase-js": "^2.49.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

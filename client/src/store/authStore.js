@@ -1,5 +1,29 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase.js';
+import { normalizePlanId } from '../data/plans.js';
+
+/** Columns the client may PATCH on `public.profiles` (migrations 001 + 006). */
+const PROFILE_PATCH_KEYS = new Set([
+  'first_name',
+  'last_name',
+  'full_name',
+  'job_title',
+  'phone',
+  'address',
+  'avatar_url',
+  'logo_url',
+  'language',
+]);
+
+function sanitizeProfilePatch(partial) {
+  if (!partial || typeof partial !== 'object') return {};
+  const out = {};
+  for (const [k, v] of Object.entries(partial)) {
+    if (!PROFILE_PATCH_KEYS.has(k) || v === undefined) continue;
+    out[k] = v;
+  }
+  return out;
+}
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -38,12 +62,26 @@ export const useAuthStore = create((set, get) => ({
       set({ profile: null });
       return;
     }
-    const profile = data ?? null;
-    // VITE_DEV_USER_PLAN_OVERRIDE — optional; plan gates are off in lib/plan.js during dev
-    // const planOverride = import.meta.env.VITE_DEV_USER_PLAN_OVERRIDE?.trim().toLowerCase();
-    // if (profile && (planOverride === 'pro' || planOverride === 'business')) {
-    //   profile = { ...profile, plan: planOverride };
-    // }
+    let profile = data ?? null;
+    /**
+     * Dev-only: VITE_DEV_USER_PLAN_OVERRIDE replaces `profiles.plan` in the UI (and plan gates).
+     * If set to `pro` / `advanced` while the DB has `ultimate` (e.g. after an invite link), Settings will look wrong.
+     * Production builds never apply this. Remove the env var to see the real database tier.
+     */
+    if (profile && import.meta.env.DEV) {
+      const planOverride = import.meta.env.VITE_DEV_USER_PLAN_OVERRIDE?.trim().toLowerCase();
+      const allowedOverride = new Set(['personal', 'advanced', 'ultimate', 'free', 'pro', 'business']);
+      if (planOverride && allowedOverride.has(planOverride)) {
+        const fromDb = normalizePlanId(profile.plan);
+        const forced = normalizePlanId(planOverride);
+        if (fromDb !== forced) {
+          console.warn(
+            `[auth] VITE_DEV_USER_PLAN_OVERRIDE="${planOverride}" forces UI plan to "${forced}" but profiles.plan in DB is "${fromDb}". Remove it from client/.env and restart Vite so invite / Stripe tiers show correctly.`
+          );
+          profile = { ...profile, plan: forced, _devPlanUiOverride: { databasePlan: fromDb } };
+        }
+      }
+    }
     set({ profile });
   },
 
@@ -136,18 +174,23 @@ export const useAuthStore = create((set, get) => ({
     if (!supabase || !user) {
       return { error: new Error('Not signed in.') };
     }
+    const body = sanitizeProfilePatch(partial);
+    if (Object.keys(body).length === 0) {
+      return { error: new Error('Nothing to update.') };
+    }
     const prev = get().profile;
     const snapshot = prev && prev.id === user.id ? { ...prev } : null;
     if (snapshot) {
-      set({ profile: { ...snapshot, ...partial } });
+      set({ profile: { ...snapshot, ...body } });
     }
-    const { error } = await supabase.from('profiles').update(partial).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update(body).eq('id', user.id);
     if (error) {
+      console.warn('[auth] updateProfile failed:', error.code, error.message, error.details || '', error.hint || '');
       if (snapshot) set({ profile: snapshot });
       return { error };
     }
-    // Refresh in background so UI is not blocked on a second round-trip
-    void get().fetchProfile();
-    return { error };
+    /** Await so callers (e.g. Settings) read a fresh row before showing success — avoids stale form / missing avatar. */
+    await get().fetchProfile();
+    return { error: null };
   },
 }));

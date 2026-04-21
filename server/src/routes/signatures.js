@@ -11,9 +11,32 @@ import {
   resolveBannerUuid,
   uuidToTemplateSlug,
   TEMPLATE_SLUG_TO_UUID,
+  TEMPLATE_10_CANONICAL_COLORS,
+  TEMPLATE_11_CANONICAL_COLORS,
+  TEMPLATE_12_CANONICAL_COLORS,
+  TEMPLATE_13_CANONICAL_COLORS,
+  TEMPLATE_14_CANONICAL_COLORS,
+  TEMPLATE_15_CANONICAL_COLORS,
+  TEMPLATE_16_CANONICAL_COLORS,
+  TEMPLATE_17_CANONICAL_COLORS,
+  TEMPLATE_18_CANONICAL_COLORS,
+  TEMPLATE_19_CANONICAL_COLORS,
+  TEMPLATE_20_CANONICAL_COLORS,
 } from '../lib/templateIds.js';
+import { requireUnderLimit } from '../middleware/planGate.js';
+import { countUserSignatures } from '../lib/planCounts.js';
+import { applyPlanConstraintsToSignatureRow } from '../lib/planSanitize.js';
+
+/** Stored `generated_html` should keep image-only CTA shell before upload (matches live editor preview). */
+const ROW_GENERATE_HTML_OPTIONS = { persistIncompleteBlank: true };
 
 const router = Router();
+
+async function planSanitizeRowForUser(row, userId) {
+  const { data, error } = await supabaseAdmin.from('profiles').select('plan').eq('id', userId).maybeSingle();
+  throwIfSupabaseError(error);
+  applyPlanConstraintsToSignatureRow(row, data?.plan);
+}
 
 function bundleFromBody(body) {
   return body.data && typeof body.data === 'object' ? body.data : {};
@@ -51,6 +74,7 @@ function dbRowFromRequest(body, html) {
       instagram: form.instagram || null,
       github: form.github || null,
       facebook: form.facebook || null,
+      telegram: form.telegram || null,
       medium: form.medium || null,
     },
     banner_config: bundle.banner
@@ -62,6 +86,9 @@ function dbRowFromRequest(body, html) {
           field_2: bundle.banner.field_2,
           field_3: bundle.banner.field_3,
           field_4: bundle.banner.field_4,
+          field_5: bundle.banner.field_5,
+          banner_image_url: bundle.banner.banner_image_url,
+          image_url: bundle.banner.image_url,
         }
       : {},
     generated_html: html || null,
@@ -92,22 +119,29 @@ export function signatureRowToClient(row) {
             instagram: row.social_links?.instagram,
             github: row.social_links?.github,
             facebook: row.social_links?.facebook,
+            telegram: row.social_links?.telegram,
             medium: row.social_links?.medium,
             showBadge: row.show_badge,
             signatureLinkUrl: row.signature_link,
           },
           palette: row.design?.palette || {},
-          banner: row.banner_config?.link_url
-            ? {
-                id: row.banner_config.preset_id,
-                href: row.banner_config.link_url,
-                text: row.banner_config.text,
-                field_1: row.banner_config.field_1,
-                field_2: row.banner_config.field_2,
-                field_3: row.banner_config.field_3,
-                field_4: row.banner_config.field_4,
-              }
-            : null,
+          banner:
+            row.banner_config &&
+            (String(row.banner_config.link_url || row.banner_config.href || '').trim() ||
+              String(row.banner_config.banner_image_url || '').trim())
+              ? {
+                  id: row.banner_config.preset_id,
+                  href: row.banner_config.link_url,
+                  text: row.banner_config.text,
+                  field_1: row.banner_config.field_1,
+                  field_2: row.banner_config.field_2,
+                  field_3: row.banner_config.field_3,
+                  field_4: row.banner_config.field_4,
+                  field_5: row.banner_config.field_5,
+                  banner_image_url: row.banner_config.banner_image_url,
+                  image_url: row.banner_config.image_url,
+                }
+              : null,
         };
 
   return {
@@ -132,47 +166,6 @@ export function signatureRowToClient(row) {
 }
 
 // --- Optional dev override (restore with billing if useful) ---
-// function devPlanOverride() {
-//   const raw = process.env.DEV_USER_PLAN_OVERRIDE?.trim().toLowerCase();
-//   if (raw === 'pro' || raw === 'business') return raw;
-//   return null;
-// }
-
-async function getUserPlan(userId) {
-  // const override = devPlanOverride();
-  // if (override) return override;
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('plan')
-    .eq('id', userId)
-    .maybeSingle();
-  if (error) throw Object.assign(new Error(error.message), { statusCode: 400 });
-  return data?.plan || 'free';
-}
-
-async function countUserSignatures(userId) {
-  const { count, error } = await supabaseAdmin
-    .from('signatures')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-  if (error) throw Object.assign(new Error(error.message), { statusCode: 400 });
-  return count ?? 0;
-}
-
-/** Free-plan signature limit — disabled until billing ships. */
-async function assertFreePlanAllowsAnother(_userId) {
-  return;
-  // const plan = await getUserPlan(userId);
-  // if (plan !== 'free') return;
-  // const n = await countUserSignatures(userId);
-  // if (n >= 1) {
-  //   const e = new Error('Free plan allows 1 signature');
-  //   e.statusCode = 403;
-  //   e.error = 'UPGRADE_REQUIRED';
-  //   throw e;
-  // }
-}
-
 router.get('/', async (req, res, next) => {
   try {
     const { data, error } = await supabaseAdmin
@@ -189,6 +182,7 @@ router.get('/', async (req, res, next) => {
 
 router.post(
   '/',
+  requireUnderLimit('max_active_signatures', countUserSignatures),
   body('label').optional().trim(),
   body('template_id').optional(),
   body('signature_image_url').optional().isString(),
@@ -202,12 +196,11 @@ router.post(
         return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
       }
 
-      await assertFreePlanAllowsAnother(req.user.id);
-
       if (req.body.data && typeof req.body.data === 'object') {
         let html = req.body.html;
         if (!html) html = await generateSignatureHtml(req.body.data);
         const row = dbRowFromRequest({ ...req.body, userId: req.user.id }, html);
+        await planSanitizeRowForUser(row, req.user.id);
         const { data, error } = await supabaseAdmin
           .from('signatures')
           .insert(row)
@@ -239,7 +232,11 @@ router.post(
           social_links: {},
           banner_config: {},
         };
-        row.generated_html = await generateSignatureHtml(rowToGeneratePayload(row));
+        row.generated_html = await generateSignatureHtml(
+          rowToGeneratePayload(row),
+          ROW_GENERATE_HTML_OPTIONS
+        );
+        await planSanitizeRowForUser(row, req.user.id);
         const { data, error } = await supabaseAdmin
           .from('signatures')
           .insert(row)
@@ -253,6 +250,129 @@ router.post(
       const slugInput = String(req.body.template_id || 'template_1').trim();
       const tid = resolveTemplateUuid(slugInput) || TEMPLATE_SLUG_TO_UUID.template_1;
       const canonicalSlug = uuidToTemplateSlug(tid);
+      const design =
+        canonicalSlug === 'template_10'
+          ? {
+              templateId: canonicalSlug,
+              palette: {
+                primary: TEMPLATE_10_CANONICAL_COLORS[0],
+                secondary: TEMPLATE_10_CANONICAL_COLORS[1],
+                accent: TEMPLATE_10_CANONICAL_COLORS[2],
+                text: TEMPLATE_10_CANONICAL_COLORS[3],
+              },
+              colors: [...TEMPLATE_10_CANONICAL_COLORS],
+            }
+            : canonicalSlug === 'template_11'
+            ? {
+                templateId: canonicalSlug,
+                palette: {
+                  primary: TEMPLATE_11_CANONICAL_COLORS[0],
+                  secondary: TEMPLATE_11_CANONICAL_COLORS[1],
+                  accent: TEMPLATE_11_CANONICAL_COLORS[2],
+                  text: TEMPLATE_11_CANONICAL_COLORS[3],
+                },
+                colors: [...TEMPLATE_11_CANONICAL_COLORS],
+              }
+            : canonicalSlug === 'template_12'
+              ? {
+                  templateId: canonicalSlug,
+                  palette: {
+                    primary: TEMPLATE_12_CANONICAL_COLORS[0],
+                    secondary: TEMPLATE_12_CANONICAL_COLORS[1],
+                    accent: TEMPLATE_12_CANONICAL_COLORS[2],
+                    text: TEMPLATE_12_CANONICAL_COLORS[3],
+                  },
+                  colors: [...TEMPLATE_12_CANONICAL_COLORS],
+                }
+              : canonicalSlug === 'template_13'
+                ? {
+                    templateId: canonicalSlug,
+                    palette: {
+                      primary: TEMPLATE_13_CANONICAL_COLORS[0],
+                      secondary: TEMPLATE_13_CANONICAL_COLORS[1],
+                      accent: TEMPLATE_13_CANONICAL_COLORS[2],
+                      text: TEMPLATE_13_CANONICAL_COLORS[3],
+                    },
+                    colors: [...TEMPLATE_13_CANONICAL_COLORS],
+                  }
+                : canonicalSlug === 'template_14'
+                  ? {
+                      templateId: canonicalSlug,
+                      palette: {
+                        primary: TEMPLATE_14_CANONICAL_COLORS[0],
+                        secondary: TEMPLATE_14_CANONICAL_COLORS[1],
+                        accent: TEMPLATE_14_CANONICAL_COLORS[2],
+                        text: TEMPLATE_14_CANONICAL_COLORS[3],
+                      },
+                      colors: [...TEMPLATE_14_CANONICAL_COLORS],
+                    }
+                  : canonicalSlug === 'template_15'
+                    ? {
+                        templateId: canonicalSlug,
+                        palette: {
+                          primary: TEMPLATE_15_CANONICAL_COLORS[0],
+                          secondary: TEMPLATE_15_CANONICAL_COLORS[1],
+                          accent: TEMPLATE_15_CANONICAL_COLORS[2],
+                          text: TEMPLATE_15_CANONICAL_COLORS[3],
+                        },
+                        colors: [...TEMPLATE_15_CANONICAL_COLORS],
+                      }
+                    : canonicalSlug === 'template_16'
+                      ? {
+                          templateId: canonicalSlug,
+                          palette: {
+                            primary: TEMPLATE_16_CANONICAL_COLORS[0],
+                            secondary: TEMPLATE_16_CANONICAL_COLORS[1],
+                            accent: TEMPLATE_16_CANONICAL_COLORS[2],
+                            text: TEMPLATE_16_CANONICAL_COLORS[3],
+                          },
+                          colors: [...TEMPLATE_16_CANONICAL_COLORS],
+                        }
+                      : canonicalSlug === 'template_17'
+                        ? {
+                            templateId: canonicalSlug,
+                            palette: {
+                              primary: TEMPLATE_17_CANONICAL_COLORS[0],
+                              secondary: TEMPLATE_17_CANONICAL_COLORS[1],
+                              accent: TEMPLATE_17_CANONICAL_COLORS[2],
+                              text: TEMPLATE_17_CANONICAL_COLORS[3],
+                            },
+                            colors: [...TEMPLATE_17_CANONICAL_COLORS],
+                          }
+                        : canonicalSlug === 'template_18'
+                          ? {
+                              templateId: canonicalSlug,
+                              palette: {
+                                primary: TEMPLATE_18_CANONICAL_COLORS[0],
+                                secondary: TEMPLATE_18_CANONICAL_COLORS[1],
+                                accent: TEMPLATE_18_CANONICAL_COLORS[2],
+                                text: TEMPLATE_18_CANONICAL_COLORS[3],
+                              },
+                              colors: [...TEMPLATE_18_CANONICAL_COLORS],
+                            }
+                          : canonicalSlug === 'template_19'
+                            ? {
+                                templateId: canonicalSlug,
+                                palette: {
+                                  primary: TEMPLATE_19_CANONICAL_COLORS[0],
+                                  secondary: TEMPLATE_19_CANONICAL_COLORS[1],
+                                  accent: TEMPLATE_19_CANONICAL_COLORS[2],
+                                  text: TEMPLATE_19_CANONICAL_COLORS[3],
+                                },
+                                colors: [...TEMPLATE_19_CANONICAL_COLORS],
+                              }
+                            : canonicalSlug === 'template_20'
+                              ? {
+                                  templateId: canonicalSlug,
+                                  palette: {
+                                    primary: TEMPLATE_20_CANONICAL_COLORS[0],
+                                    secondary: TEMPLATE_20_CANONICAL_COLORS[1],
+                                    accent: TEMPLATE_20_CANONICAL_COLORS[2],
+                                    text: TEMPLATE_20_CANONICAL_COLORS[3],
+                                  },
+                                  colors: [...TEMPLATE_20_CANONICAL_COLORS],
+                                }
+                              : { templateId: canonicalSlug, palette: {} };
       const row = {
         user_id: req.user.id,
         template_id: tid,
@@ -261,11 +381,15 @@ router.post(
         signature_link: null,
         show_badge: true,
         fields: {},
-        design: { templateId: canonicalSlug, palette: {} },
+        design,
         social_links: {},
         banner_config: {},
       };
-      row.generated_html = await generateSignatureHtml(rowToGeneratePayload(row));
+      row.generated_html = await generateSignatureHtml(
+        rowToGeneratePayload(row),
+        ROW_GENERATE_HTML_OPTIONS
+      );
+      await planSanitizeRowForUser(row, req.user.id);
       const { data, error } = await supabaseAdmin
         .from('signatures')
         .insert(row)
@@ -298,7 +422,7 @@ router.post(
       if (!row) return res.status(404).json({ message: 'Signature not found' });
       let html = row.generated_html;
       if (!html) {
-        html = await generateSignatureHtml(rowToGeneratePayload(row));
+        html = await generateSignatureHtml(rowToGeneratePayload(row), ROW_GENERATE_HTML_OPTIONS);
         await supabaseAdmin
           .from('signatures')
           .update({ generated_html: html, updated_at: new Date().toISOString() })
@@ -313,6 +437,7 @@ router.post(
 
 router.post(
   '/:id/duplicate',
+  requireUnderLimit('max_active_signatures', countUserSignatures),
   param('id').isUUID(),
   async (req, res, next) => {
     try {
@@ -320,7 +445,6 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ message: 'Invalid id', errors: errors.array() });
       }
-      await assertFreePlanAllowsAnother(req.user.id);
 
       const { data: orig, error: fe } = await supabaseAdmin
         .from('signatures')
@@ -344,9 +468,11 @@ router.post(
         banner_config: orig.banner_config,
         generated_html: orig.generated_html,
       };
-      if (!copy.generated_html) {
-        copy.generated_html = await generateSignatureHtml(rowToGeneratePayload(copy));
-      }
+      await planSanitizeRowForUser(copy, req.user.id);
+      copy.generated_html = await generateSignatureHtml(
+        rowToGeneratePayload(copy),
+        ROW_GENERATE_HTML_OPTIONS
+      );
       const { data, error } = await supabaseAdmin
         .from('signatures')
         .insert(copy)
@@ -485,9 +611,13 @@ router.put(
           template_id: partial.template_id ?? nextRow.template_id,
           generated_html: html,
         };
-      } else {
-        nextRow.generated_html = await generateSignatureHtml(rowToGeneratePayload(nextRow));
       }
+
+      await planSanitizeRowForUser(nextRow, req.user.id);
+      nextRow.generated_html = await generateSignatureHtml(
+        rowToGeneratePayload(nextRow),
+        ROW_GENERATE_HTML_OPTIONS
+      );
 
       nextRow.updated_at = new Date().toISOString();
 

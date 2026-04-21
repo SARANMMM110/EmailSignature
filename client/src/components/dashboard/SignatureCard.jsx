@@ -16,6 +16,8 @@ import { DEMO_SIGNATURE_DATA, wrapSignatureHtmlForIframe } from '../../data/temp
 import { absoluteAssetUrl } from '../../lib/absoluteAssetUrl.js';
 import { bundleRailPxForSignature, isImageTemplateSignature } from '../../lib/templateIds.js';
 import { useI18n } from '../../hooks/useI18n.js';
+import { usePlanGate } from '../../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../../store/upgradeModalStore.js';
 
 function formatDashboardDate(iso, lang) {
   if (!iso) return '—';
@@ -205,7 +207,7 @@ const PREVIEW_BOX_H = 236;
 const PREVIEW_IFRAME_FLOOR = 100;
 
 /** Centered, tight-height iframe preview — same wrap as template gallery (`TemplateCard`). */
-function SignaturePreviewIframe({ html, label, baseHref, previewWidthPx }) {
+function SignaturePreviewIframe({ html, label, baseHref, previewWidthPx, boxHeight = PREVIEW_BOX_H }) {
   const iframeRef = useRef(null);
   const [naturalH, setNaturalH] = useState(200);
 
@@ -250,13 +252,13 @@ function SignaturePreviewIframe({ html, label, baseHref, previewWidthPx }) {
     };
   }, [srcDoc, measure]);
 
-  const scale = naturalH > PREVIEW_BOX_H ? PREVIEW_BOX_H / naturalH : 1;
+  const scale = naturalH > boxHeight ? boxHeight / naturalH : 1;
   const iframeH = naturalH;
 
   return (
     <div
       className="flex w-full items-center justify-center overflow-hidden bg-[#f4f5f7]"
-      style={{ height: PREVIEW_BOX_H }}
+      style={{ height: boxHeight }}
     >
       <div
         className="flex h-full w-full items-center justify-center px-4 sm:px-5"
@@ -286,9 +288,60 @@ function SignaturePreviewIframe({ html, label, baseHref, previewWidthPx }) {
   );
 }
 
-export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDuplicated }) {
+/**
+ * Dashboard card preview: signature only. CTAs are omitted here so the card stays a single,
+ * scannable block; the card header still shows how many CTA banners the signature has.
+ */
+function SignatureStackedPreview({ html, label, baseHref, previewWidthPx }) {
+  const { signatureHtml, bannerHtml } = useMemo(() => splitSignatureAndBannerHtml(String(html || '')), [html]);
+
+  const hasSplit = Boolean(String(bannerHtml || '').trim() && String(signatureHtml || '').trim());
+  if (!hasSplit) {
+    return (
+      <SignaturePreviewIframe
+        html={html}
+        label={label}
+        baseHref={baseHref}
+        previewWidthPx={previewWidthPx}
+      />
+    );
+  }
+
+  const sigOnly = String(signatureHtml || '').trim();
+  return (
+    <SignaturePreviewIframe
+      html={sigOnly || html}
+      label={`${label} · signature`}
+      baseHref={baseHref}
+      previewWidthPx={previewWidthPx}
+    />
+  );
+}
+
+export function SignatureCard({
+  signature,
+  signatureCount = 0,
+  showToast,
+  onDeleted,
+  onRenamed,
+  onDuplicated,
+}) {
   const navigate = useNavigate();
   const { t, lang } = useI18n();
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
+
+  const ensurePngExport = useCallback(() => {
+    if (!gate.can('png_rich_clipboard_render')) {
+      showUpgradeModal({
+        feature: 'png_rich_clipboard_render',
+        title: 'PNG Clipboard — Advanced Feature',
+        message: 'Copy your signature as a high-quality PNG image directly to clipboard.',
+      });
+      return false;
+    }
+    return true;
+  }, [gate, showUpgradeModal]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -299,6 +352,17 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
 
   const label = signature.label || signature.name || t('card.untitled');
   const html = signature.generated_html || signature.html;
+  const dashboardCtaSlotCount = useMemo(() => {
+    const raw = String(html || '').trim();
+    if (!raw) return 0;
+    const { bannerHtml, bannerSlotHtmls } = splitSignatureAndBannerHtml(raw);
+    if (!String(bannerHtml || '').trim()) return 0;
+    const slots =
+      Array.isArray(bannerSlotHtmls) && bannerSlotHtmls.length > 0
+        ? bannerSlotHtmls.map((s) => String(s || '').trim()).filter(Boolean)
+        : [String(bannerHtml || '').trim()].filter(Boolean);
+    return slots.length;
+  }, [html]);
   const previewRailPx = bundleRailPxForSignature(signature);
   const swatches = pickSwatches(signature);
   const { fullName, email } = contactFromSignature(signature);
@@ -328,6 +392,7 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
   }, [menuOpen]);
 
   const runCopyImageToClipboard = useCallback(async () => {
+    if (!ensurePngExport()) return;
     const { data } = await signaturesAPI.copy(signature.id);
     const copyHtml = data?.html;
     if (!copyHtml?.trim()) {
@@ -376,7 +441,7 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
         setTimeout(() => showToast(imgWarn, 'error'), 500);
       }
     }
-  }, [bannerLink, showToast, signature, signatureLink, t]);
+  }, [bannerLink, ensurePngExport, showToast, signature, signatureLink, t]);
 
   const handleCopyImage = (e) => {
     e?.stopPropagation();
@@ -411,6 +476,7 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
   const handleDownloadMenu = () => {
     setMenuOpen(false);
     if (busy) return;
+    if (!ensurePngExport()) return;
     setBusy(true);
     const base = safeDownloadBase(label);
     void (async () => {
@@ -476,6 +542,7 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
       let manualFallback = fullHtml.trim();
 
       if (bannerHtml?.trim() && signatureHtml?.trim()) {
+        if (!ensurePngExport()) return;
         const railPx = bundleRailPxForSignature(signature);
         const [sigRes, banRes] = await Promise.all([
           signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(signatureHtml, railPx)),
@@ -554,6 +621,13 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
 
   const handleDuplicateMenu = async () => {
     setMenuOpen(false);
+    if (gate.isAtLimit('max_active_signatures', signatureCount)) {
+      showUpgradeModal({
+        feature: 'max_active_signatures',
+        message: `You've reached your ${gate.limitText('max_active_signatures')} signature limit.`,
+      });
+      return;
+    }
     setBusy(true);
     try {
       const { data } = await signaturesAPI.duplicate(signature.id);
@@ -598,6 +672,13 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
           <p className="mt-1 text-xs font-medium text-slate-500">
             {formatDashboardDate(signature.updated_at, lang)}
           </p>
+          {dashboardCtaSlotCount > 0 ? (
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500">
+              {dashboardCtaSlotCount === 1
+                ? t('card.ctaCountOne', { count: dashboardCtaSlotCount })
+                : t('card.ctaCountOther', { count: dashboardCtaSlotCount })}
+            </p>
+          ) : null}
         </div>
 
         <div className="relative mx-3 mb-3 mt-0 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
@@ -638,7 +719,7 @@ export function SignatureCard({ signature, showToast, onDeleted, onRenamed, onDu
             </>
           ) : html ? (
             <>
-              <SignaturePreviewIframe
+              <SignatureStackedPreview
                 html={html}
                 label={label}
                 baseHref={appBaseHref}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { SignatureGrid } from '../components/dashboard/SignatureGrid.jsx';
 import { Toast } from '../components/ui/Toast.jsx';
@@ -8,6 +8,8 @@ import { useToast } from '../hooks/useToast.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
 import { signaturesAPI } from '../lib/api.js';
+import { usePlanGate } from '../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 
 function DashboardSkeleton() {
   return (
@@ -82,6 +84,8 @@ function IconPlusLarge() {
 export function DashboardPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
   const { user, profile, session, loading: authLoading } = useAuth();
   const { toast, showToast, dismiss } = useToast();
   const [signatures, setSignatures] = useState([]);
@@ -128,8 +132,17 @@ export function DashboardPage() {
   }, []);
 
   const tryCreateSignature = useCallback(() => {
+    if (gate.isAtLimit('max_active_signatures', signatures.length)) {
+      const needUlt = gate.planId === 'advanced';
+      showUpgradeModal({
+        feature: 'max_active_signatures',
+        requiredPlan: needUlt ? 'ultimate' : 'advanced',
+        message: `Your ${gate.plan.name} plan includes up to ${gate.limitText('max_active_signatures')} active signatures.`,
+      });
+      return;
+    }
     navigate('/intro-templates');
-  }, [navigate]);
+  }, [gate, navigate, showUpgradeModal, signatures.length]);
 
   const showContent = !authLoading && Boolean(session);
 
@@ -151,16 +164,44 @@ export function DashboardPage() {
             </p>
           </div>
           <div className="shrink-0 md:pb-1">
-            <Link
-              to="/intro-templates"
+            <button
+              type="button"
+              onClick={tryCreateSignature}
               className={primaryCtaClass}
               style={{ background: 'linear-gradient(135deg, #3b5fff, #2563eb)' }}
             >
               <IconPlusLarge />
               {t('dashboard.createSignature')}
-            </Link>
+            </button>
           </div>
         </header>
+
+        {gate.planId !== 'ultimate' && signatures.length > 0 ? (
+          <div className="flex items-center gap-2 px-6 pb-2 md:px-10">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(100, (signatures.length / Math.max(1, Number(gate.limit('max_active_signatures')) || 1)) * 100)}%`,
+                  background:
+                    signatures.length >= gate.limit('max_active_signatures') ? '#dc2626' : '#2563eb',
+                }}
+              />
+            </div>
+            <span className="whitespace-nowrap text-xs font-medium text-slate-500">
+              {signatures.length} / {gate.limitText('max_active_signatures')} signatures
+            </span>
+            {signatures.length >= gate.limit('max_active_signatures') ? (
+              <button
+                type="button"
+                className="whitespace-nowrap text-[11px] font-bold text-[#2563eb] hover:underline"
+                onClick={() => navigate('/settings#plan')}
+              >
+                Upgrade →
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <main className="flex-1 px-6 pb-16 pt-2 md:px-10">
           {loadError && (

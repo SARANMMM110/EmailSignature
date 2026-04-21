@@ -1,13 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { HiOutlineBriefcase, HiOutlineEnvelope, HiOutlineMapPin, HiOutlinePhoto, HiOutlineSparkles } from 'react-icons/hi2';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Button } from '../components/ui/Button.jsx';
+import { PhotoCropModal } from '../components/ui/PhotoCropModal.jsx';
 import { Toast } from '../components/ui/Toast.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
-import { uploadAPI } from '../lib/api.js';
+import { palettesAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
+import { getPlan } from '../data/plans.js';
+import { usePlanGate } from '../hooks/usePlanGate.js';
 import { normalizeLang } from '../i18n/appStrings.js';
+import { useAuthStore } from '../store/authStore.js';
+import { useEditorStore } from '../store/editorStore.js';
 
 const IMAGE_ACCEPT = { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'] };
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -27,10 +33,11 @@ function IconLogout({ className = 'h-4 w-4' }) {
   );
 }
 
-function SectionCard({ icon: Icon, title, description, children }) {
+function SectionCard({ id, icon: Icon, title, description, children }) {
   return (
     <section
-      className="overflow-hidden rounded-2xl border bg-white shadow-[var(--sb-shadow-sm)]"
+      id={id}
+      className="scroll-mt-6 overflow-hidden rounded-2xl border bg-white shadow-[var(--sb-shadow-sm)]"
       style={{ borderColor: 'var(--border-sm)' }}
     >
       <div
@@ -112,6 +119,7 @@ function DropZoneArea({ getRootProps, getInputProps, isDragActive, previewUrl, e
 
 export function SettingsPage() {
   const { t } = useI18n();
+  const gate = usePlanGate();
   const { user, profile, updateProfile, logout } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -120,45 +128,123 @@ export function SettingsPage() {
   const [address, setAddress] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
-  const [saving, setSaving] = useState(false);
+  /** True while the profile write is in flight — button disabled, label stays "Save changes". */
+  const [saveLocked, setSaveLocked] = useState(false);
+  const saveInFlightRef = useRef(false);
   const [toast, setToast] = useState(null);
+  const [avatarCropOpen, setAvatarCropOpen] = useState(false);
+  const [avatarCropObjectUrl, setAvatarCropObjectUrl] = useState(null);
+  const [avatarUploadBusy, setAvatarUploadBusy] = useState(false);
+  const [sigCount, setSigCount] = useState(null);
+  const [paletteCount, setPaletteCount] = useState(null);
 
   const serif = useMemo(() => ({ fontFamily: 'var(--sb-font-serif)' }), []);
 
+  const closeAvatarCropModal = useCallback(() => {
+    setAvatarCropObjectUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setAvatarCropOpen(false);
+  }, []);
+
+  /** Refetch when opening Settings so the form matches DB (avoids empty UI after save or cold load). */
   useEffect(() => {
-    const fn = profile?.first_name || '';
-    const ln = profile?.last_name || '';
+    void useAuthStore.getState().fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [sRes, pRes] = await Promise.all([signaturesAPI.getAll(), palettesAPI.getUser()]);
+        if (cancelled) return;
+        setSigCount((sRes.data?.signatures || []).length);
+        setPaletteCount((pRes.data?.palettes || []).length);
+      } catch {
+        if (!cancelled) {
+          setSigCount(null);
+          setPaletteCount(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  /**
+   * Hydrate the form from `profiles` only once the row is loaded for this user.
+   * Previously, running while `profile` was still null cleared fields and removed the photo preview
+   * when `fetchProfile` or navigation raced with local upload state.
+   */
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!profile || profile.id !== user.id) return;
+
+    const fn = profile.first_name || '';
+    const ln = profile.last_name || '';
     let f = fn;
     let l = ln;
-    if (!f && !l && profile?.full_name) {
+    if (!f && !l && profile.full_name) {
       const parts = String(profile.full_name).trim().split(/\s+/);
       f = parts[0] || '';
       l = parts.slice(1).join(' ') || '';
     }
     setFirstName(f);
     setLastName(l);
-    setJobTitle(profile?.job_title || '');
-    setPhone(profile?.phone || '');
-    setAddress(profile?.address || '');
-    setAvatarUrl(profile?.avatar_url || user?.user_metadata?.avatar_url || '');
-    setLogoUrl(profile?.logo_url || '');
+    setJobTitle(profile.job_title || '');
+    setPhone(profile.phone || '');
+    setAddress(profile.address || '');
+    setAvatarUrl((prev) => {
+      const fromDb = String(profile.avatar_url || '').trim();
+      if (fromDb) return fromDb;
+      const fromMeta = String(user.user_metadata?.avatar_url || '').trim();
+      if (fromMeta) return fromMeta;
+      return String(prev || '').trim();
+    });
+    setLogoUrl((prev) => {
+      const fromDb = String(profile.logo_url || '').trim();
+      if (fromDb) return fromDb;
+      return String(prev || '').trim();
+    });
   }, [profile, user]);
 
-  const onAvatarDrop = useCallback(async (accepted, fileRejections) => {
-    const file = accepted[0];
-    if (fileRejections?.length) {
-      setToast({ message: t('settings.imageReject'), type: 'error' });
-      return;
-    }
-    if (!file) return;
-    try {
-      const { data } = await uploadAPI.uploadPhoto(file);
-      setAvatarUrl(data.url);
-      setToast({ message: t('settings.photoUploaded'), type: 'success' });
-    } catch {
-      setToast({ message: t('settings.uploadFailed'), type: 'error' });
-    }
-  }, [t]);
+  const onAvatarDrop = useCallback(
+    (accepted, fileRejections) => {
+      const file = accepted[0];
+      if (fileRejections?.length) {
+        setToast({ message: t('settings.imageReject'), type: 'error' });
+        return;
+      }
+      if (!file) return;
+      setAvatarCropObjectUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(file);
+      });
+      setAvatarCropOpen(true);
+    },
+    [t]
+  );
+
+  const onAvatarCropConfirm = useCallback(
+    async (blob) => {
+      const file = new File([blob], 'photo.png', { type: 'image/png' });
+      setAvatarUploadBusy(true);
+      try {
+        const { data } = await uploadAPI.uploadPhoto(file);
+        setAvatarUrl(data.url);
+        setToast({ message: t('settings.photoUploaded'), type: 'success' });
+        closeAvatarCropModal();
+      } catch {
+        setToast({ message: t('settings.uploadFailed'), type: 'error' });
+      } finally {
+        setAvatarUploadBusy(false);
+      }
+    },
+    [t, closeAvatarCropModal]
+  );
 
   const onLogoDrop = useCallback(async (accepted, fileRejections) => {
     const file = accepted[0];
@@ -181,6 +267,7 @@ export function SettingsPage() {
     accept: IMAGE_ACCEPT,
     maxSize: MAX_IMAGE_BYTES,
     multiple: false,
+    disabled: avatarCropOpen || avatarUploadBusy,
   });
 
   const logoDrop = useDropzone({
@@ -190,9 +277,9 @@ export function SettingsPage() {
     multiple: false,
   });
 
-  const plan = (profile?.plan || 'free').toLowerCase();
-  const planLabel = plan === 'pro' ? t('settings.planPro') : plan === 'business' ? t('settings.planBusiness') : t('settings.planFree');
-  const isPaidPlan = plan === 'pro' || plan === 'business';
+  const planMeta = getPlan(profile?.plan);
+  const planLabel = planMeta.name;
+  const isPaidPlan = planMeta.id === 'advanced' || planMeta.id === 'ultimate';
 
   const handleSaveAccount = async () => {
     const missing = [];
@@ -208,9 +295,10 @@ export function SettingsPage() {
       return;
     }
 
+    if (saveInFlightRef.current) return;
+
     const combinedName = `${firstName.trim()} ${lastName.trim()}`.trim();
-    setSaving(true);
-    const { error } = await updateProfile({
+    const payload = {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       full_name: combinedName,
@@ -220,26 +308,44 @@ export function SettingsPage() {
       language: normalizeLang(profile?.language),
       avatar_url: avatarUrl.trim(),
       logo_url: logoUrl.trim(),
-    });
-    setSaving(false);
-    if (error) {
+    };
+
+    saveInFlightRef.current = true;
+    setSaveLocked(true);
+    try {
+      const { error } = await updateProfile(payload);
+      if (error) {
+        const msg = String(error.message || '');
+        const code = String(error.code || '');
+        const looksLikeMissingOrStaleColumn =
+          code === 'PGRST204' ||
+          code === '42703' ||
+          /column/i.test(msg) ||
+          /schema cache/i.test(msg);
+        setToast({
+          message: looksLikeMissingOrStaleColumn ? t('settings.migrationHint') : msg || t('settings.saveFailed'),
+          type: 'error',
+        });
+      } else {
+        setToast({ message: t('settings.saved'), type: 'success' });
+        useEditorStore.getState().syncAccountProfileIntoSignature();
+      }
+    } catch (e) {
       setToast({
-        message:
-          error.message?.includes('column') || error.code === '42703'
-            ? t('settings.migrationHint')
-            : error.message || t('settings.saveFailed'),
+        message: e?.message || t('settings.saveFailed'),
         type: 'error',
       });
-      return;
+    } finally {
+      saveInFlightRef.current = false;
+      setSaveLocked(false);
     }
-    setToast({ message: t('settings.saved'), type: 'success' });
   };
 
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[var(--sb-color-bg)]">
+    <div className="flex w-full items-start overflow-x-hidden bg-[var(--sb-color-bg)]">
       <Sidebar />
 
-      <div className="app-canvas app-grid-noise flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+      <div className="app-canvas app-grid-noise min-w-0 flex-1 pb-10">
         <main className="mx-auto w-full max-w-4xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
@@ -258,10 +364,10 @@ export function SettingsPage() {
               <Button
                 type="button"
                 className="!min-h-[42px] w-full !rounded-xl !bg-[var(--sb-color-accent)] !px-5 !text-sm !font-semibold hover:!bg-[var(--sb-color-accent-hover)] sm:w-auto"
-                disabled={saving}
+                disabled={saveLocked}
                 onClick={handleSaveAccount}
               >
-                {saving ? t('settings.saving') : t('settings.save')}
+                {t('settings.save')}
               </Button>
               <button
                 type="button"
@@ -277,10 +383,24 @@ export function SettingsPage() {
           <div className="mt-5 flex flex-col gap-5 pb-6 sm:mt-6 sm:gap-6 sm:pb-8">
             {/* Plan + identity */}
             <SectionCard
+              id="plan"
               icon={HiOutlineSparkles}
               title={t('settings.planIdentityTitle')}
               description={t('settings.planIdentityDesc')}
             >
+              {import.meta.env.DEV && profile?._devPlanUiOverride?.databasePlan ? (
+                <div
+                  className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950"
+                  role="status"
+                >
+                  <strong className="font-semibold">Dev mode:</strong>{' '}
+                  <code className="rounded bg-amber-100/80 px-1.5 py-0.5 text-xs">VITE_DEV_USER_PLAN_OVERRIDE</code> is
+                  forcing this app to use the <strong>{planLabel}</strong> tier, but your database plan is{' '}
+                  <strong>{getPlan(profile._devPlanUiOverride.databasePlan).name}</strong> (for example from a registration
+                  invite). Remove that variable from <code className="text-xs">client/.env</code> and restart Vite so the
+                  UI matches Supabase.
+                </div>
+              ) : null}
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">{t('settings.plan')}</span>
                 <span
@@ -292,6 +412,60 @@ export function SettingsPage() {
                   {planLabel}
                 </span>
               </div>
+
+              {sigCount != null ? (
+                <div className="mb-6 space-y-4">
+                  <div>
+                    <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
+                      <span>Active signatures</span>
+                      <span>
+                        {sigCount} / {gate.limitText('max_active_signatures')}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-[var(--sb-color-accent)] transition-all"
+                        style={{
+                          width:
+                            gate.limit('max_active_signatures') === Infinity
+                              ? '100%'
+                              : `${Math.min(100, (sigCount / Math.max(1, Number(gate.limit('max_active_signatures')) || 1)) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {gate.can('custom_palette_creation') &&
+                  paletteCount != null &&
+                  gate.planId !== 'ultimate' &&
+                  gate.limit('max_saved_custom_palettes') > 0 ? (
+                    <div>
+                      <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
+                        <span>Custom palettes</span>
+                        <span>
+                          {paletteCount} / {gate.limitText('max_saved_custom_palettes')}
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              (paletteCount / Math.max(1, Number(gate.limit('max_saved_custom_palettes')) || 1)) * 100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                  <Link
+                    to="/pricing"
+                    className="inline-flex text-sm font-semibold text-[var(--sb-color-accent)] hover:underline"
+                  >
+                    See full comparison →
+                  </Link>
+                </div>
+              ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -417,6 +591,13 @@ export function SettingsPage() {
           </div>
         </main>
       </div>
+
+      <PhotoCropModal
+        open={avatarCropOpen}
+        imageSrc={avatarCropObjectUrl}
+        onClose={closeAvatarCropModal}
+        onConfirm={onAvatarCropConfirm}
+      />
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} duration={4000} />

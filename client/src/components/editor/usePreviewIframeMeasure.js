@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const FLOOR = 160;
+const DEFAULT_FLOOR = 160;
 
 /**
  * Iframe that hosts `srcDoc` from {@link wrapSignatureHtmlForIframe}; measures `.sig-iframe-host` height.
+ * @param {{ measureFloor?: number, measureCeiling?: number }} [options] — optional clamps for split CTA / shrink-wrap previews.
  */
-export function usePreviewIframeMeasure(srcDoc, frameKey) {
+export function usePreviewIframeMeasure(srcDoc, frameKey, options) {
+  const floorOpt = options?.measureFloor;
+  const ceilingOpt = options?.measureCeiling;
   const iframeRef = useRef(null);
-  const [height, setHeight] = useState(FLOOR);
+  const [height, setHeight] = useState(DEFAULT_FLOOR);
   const [widthPx, setWidthPx] = useState(null);
 
   const measure = useCallback(() => {
     const el = iframeRef.current;
     if (!el) return;
     try {
+      const floor = typeof floorOpt === 'number' && floorOpt > 0 ? floorOpt : DEFAULT_FLOOR;
+      const ceiling =
+        typeof ceilingOpt === 'number' && ceilingOpt >= floor ? ceilingOpt : 8000;
       const doc = el.contentDocument;
       const body = doc?.body;
       if (!body) return;
@@ -40,8 +46,9 @@ export function usePreviewIframeMeasure(srcDoc, frameKey) {
       }
       const raw = host
         ? Math.ceil(padTop + contentH + padBottom)
-        : Math.max(body.scrollHeight, body.offsetHeight, FLOOR);
-      setHeight(Math.max(Math.min(raw, 8000), FLOOR));
+        : Math.max(body.scrollHeight, body.offsetHeight, floor);
+      const clamped = Math.min(Math.max(Math.min(raw, 8000), floor), ceiling);
+      setHeight(clamped);
 
       const zoom = host?.querySelector('.sig-zoom-wrap');
       if (zoom && typeof zoom.getBoundingClientRect === 'function') {
@@ -54,7 +61,7 @@ export function usePreviewIframeMeasure(srcDoc, frameKey) {
       setHeight(280);
       setWidthPx(null);
     }
-  }, []);
+  }, [ceilingOpt, floorOpt]);
 
   useEffect(() => {
     const el = iframeRef.current;

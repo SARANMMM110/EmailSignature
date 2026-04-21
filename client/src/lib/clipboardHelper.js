@@ -1,7 +1,10 @@
 /**
  * Gmail/Outlook paste helpers:
  * - Dual PNG export: two `<table><tr><td><img></td></tr></table>` + `<br>` so each block selects independently.
- * - Fallback: single table + composite PNG, or full `generated_html` fragment when provided.
+ * - “Copy to clipboard” writes **text/html only** (no `image/png` alongside) when paste HTML is available.
+ * - When a hosted export URL exists, paste HTML uses **`<img src=…>`** tables, not the live layout fragment,
+ *   so Gmail does not treat the signature as editable text or duplicate complex blocks.
+ * - Clipboard tries **HTML MIME only** first (no paired `text/plain`), which avoids some Gmail double-inserts.
  */
 
 import { recipientVisibleImageSrc } from './signatureImagePublicUrl.js';
@@ -13,15 +16,32 @@ function escapeAttrUrl(url) {
     .replace(/</g, '&lt;');
 }
 
+/** Same idea as server `httpUrlStringIsPlausible` — block prose / `%20` junk used as “URLs”. */
+function hrefLooksPlausible(uStr) {
+  try {
+    const u = new URL(String(uStr || '').trim());
+    let host = u.hostname;
+    try {
+      host = decodeURIComponent(host.replace(/\+/g, ' '));
+    } catch {
+      return false;
+    }
+    if (/[\s\r\n\t\u00a0<>"'`]/.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function normalizeSignatureHref(raw) {
   let u = String(raw || '').trim();
   if (!u) return '';
   if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
-  return u;
+  return hrefLooksPlausible(u) ? u : '';
 }
 
 function oneImageTable(imgInner) {
-  return `<table cellpadding="0" cellspacing="0" border="0"><tr><td>${imgInner}</td></tr></table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" contenteditable="false"><tr><td contenteditable="false" style="padding:0;margin:0;border:0;">${imgInner}</td></tr></table>`;
 }
 
 /**
@@ -65,24 +85,82 @@ export function buildSignaturePasteHtml(imageUrl, signatureLinkUrl = '') {
 }
 
 /**
- * @param {string} imageUrl — signature PNG (or composite when no banner export)
- * @param {{ signatureLinkUrl?: string, bannerImageUrl?: string, bannerLinkUrl?: string, fragmentHtml?: string }} [options]
+ * When `fetch(imageUrl)` fails (common with storage URLs that omit CORS for anonymous reads),
+ * pasting HTML tables still works in Gmail/Outlook because the client loads images by URL.
  */
-export async function copySignatureImageToClipboard(imageUrl, options = {}) {
-  const src = String(imageUrl || '').trim();
-  if (!src) {
-    throw new Error('No signature image URL — generate the export on the server first.');
-  }
+async function writeClipboardHtmlOnly(htmlString) {
   if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-    throw new Error('Clipboard image copy is not supported in this browser (use HTTPS or localhost).');
+    throw new Error('Clipboard is not available in this browser (use HTTPS or localhost).');
   }
-  const res = await fetch(src);
+  const html = String(htmlString || '').trim();
+  if (!html) throw new Error('No HTML to copy.');
+  const htmlBlob = new Blob([html], { type: 'text/html' });
+  const plain = 'Email signature (HTML). Paste into your signature box with Ctrl+V or Cmd+V.';
+  const plainBlob = new Blob([plain], { type: 'text/plain' });
+
+  const tryHtmlOnly = async (usePromises) => {
+    const item = usePromises
+      ? new ClipboardItem({ 'text/html': Promise.resolve(htmlBlob) })
+      : new ClipboardItem({ 'text/html': htmlBlob });
+    await navigator.clipboard.write([item]);
+  };
+  const tryHtmlAndPlain = async (usePromises) => {
+    const item = usePromises
+      ? new ClipboardItem({
+          'text/html': Promise.resolve(htmlBlob),
+          'text/plain': Promise.resolve(plainBlob),
+        })
+      : new ClipboardItem({
+          'text/html': htmlBlob,
+          'text/plain': plainBlob,
+        });
+    await navigator.clipboard.write([item]);
+  };
+
+  for (const usePromises of [true, false]) {
+    try {
+      await tryHtmlOnly(usePromises);
+      return;
+    } catch {
+      /* continue */
+    }
+  }
+  for (const usePromises of [true, false]) {
+    try {
+      await tryHtmlAndPlain(usePromises);
+      return;
+    } catch {
+      /* continue */
+    }
+  }
+  throw new Error('Could not write HTML to the clipboard.');
+}
+
+async function fetchSignatureImageBlob(imageUrl) {
+  const res = await fetch(String(imageUrl || '').trim(), {
+    mode: 'cors',
+    credentials: 'omit',
+    cache: 'no-store',
+  });
   if (!res.ok) {
     throw new Error(`Could not fetch signature image (${res.status}).`);
   }
   let blob = await res.blob();
   if (!blob.type.startsWith('image/')) {
     blob = new Blob([await blob.arrayBuffer()], { type: 'image/png' });
+  }
+  return blob;
+}
+
+/**
+ * @param {string} imageUrl — signature PNG (or composite when no banner export)
+ * @param {{ signatureLinkUrl?: string, bannerImageUrl?: string, bannerLinkUrl?: string, fragmentHtml?: string }} [options]
+ * @returns {Promise<{ success: true, linked: boolean, mode: 'html' | 'image' }>}
+ */
+export async function copySignatureImageToClipboard(imageUrl, options = {}) {
+  const src = String(imageUrl || '').trim();
+  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+    throw new Error('Clipboard copy is not supported in this browser (use HTTPS or localhost).');
   }
 
   const bannerImg = String(options.bannerImageUrl || '').trim();
@@ -93,57 +171,36 @@ export async function copySignatureImageToClipboard(imageUrl, options = {}) {
   const dualHtml =
     bannerImg && src ? buildDualImagePasteHtml(src, bannerImg, { signatureLinkUrl: sigLink, bannerLinkUrl: banLink }) : '';
 
+  // Prefer rasterized <img> paste when we have export URLs — full `fragment` is live HTML in Gmail
+  // (editable text, spellcheck, and some clients duplicate complex blocks on paste).
   let htmlForMime = '';
   if (dualHtml) {
     htmlForMime = dualHtml;
+  } else if (src) {
+    htmlForMime = buildSignaturePasteHtml(src, sigLink);
   } else if (fragment) {
     htmlForMime = fragment;
-  } else if (sigLink) {
-    htmlForMime = buildSignaturePasteHtml(src, sigLink);
   }
 
-  if (htmlForMime) {
-    const pngType = blob.type?.startsWith('image/') ? blob.type : 'image/png';
-    const pngBlob =
-      blob.type === pngType ? blob : new Blob([await blob.arrayBuffer()], { type: 'image/png' });
-    const htmlBlob = new Blob([htmlForMime], { type: 'text/html' });
+  if (String(htmlForMime || '').trim()) {
+    await writeClipboardHtmlOnly(htmlForMime.trim());
+    return { success: true, linked: Boolean(sigLink || banLink), mode: 'html' };
+  }
 
-    const tryDual = async (usePromises) => {
-      const item = usePromises
-        ? new ClipboardItem({
-            'text/html': Promise.resolve(htmlBlob),
-            [pngType]: Promise.resolve(pngBlob),
-          })
-        : new ClipboardItem({
-            'text/html': htmlBlob,
-            [pngType]: pngBlob,
-          });
-      await navigator.clipboard.write([item]);
-    };
+  if (!src) {
+    throw new Error('No signature image URL — generate the export on the server first.');
+  }
 
-    let ok = false;
-    try {
-      await tryDual(true);
-      ok = true;
-    } catch {
-      try {
-        await tryDual(false);
-        ok = true;
-      } catch (e2) {
-        console.warn('[signature-export] Dual clipboard (promise + sync) failed:', e2);
-      }
-    }
-    if (ok) {
-      console.log('[signature-export] Clipboard: text/html +', pngType);
-      return { success: true, linked: Boolean(sigLink || banLink) };
-    }
-    console.warn(
-      '[signature-export] Rich clipboard unavailable — use “Copy HTML code” in a supported browser.'
+  try {
+    const blob = await fetchSignatureImageBlob(src);
+    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+    return { success: true, linked: false, mode: 'image' };
+  } catch (fetchErr) {
+    console.warn('[signature-export] Image fetch failed (often CORS on storage):', fetchErr);
+    throw new Error(
+      'Could not read the signature PNG in this browser (often blocked when the image host does not allow cross-origin access). Use “Copy HTML code” instead, or open this app over HTTPS.'
     );
   }
-
-  await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-  return { success: true, linked: false };
 }
 
 /**
@@ -176,9 +233,17 @@ export async function copySignaturePasteHtml(
   if (!html) {
     throw new Error('No signature HTML or image URL — generate the signature first.');
   }
-  if (!navigator.clipboard?.writeText) {
-    throw new Error('Clipboard writeText is not available in this context (use HTTPS or localhost).');
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(html);
+      return { success: true };
+    } catch (e) {
+      console.warn('[signature-export] writeText failed, trying HTML clipboard item:', e);
+    }
   }
-  await navigator.clipboard.writeText(html);
-  return { success: true };
+  if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+    await writeClipboardHtmlOnly(html);
+    return { success: true };
+  }
+  throw new Error('Clipboard is not available in this context (use HTTPS or localhost).');
 }

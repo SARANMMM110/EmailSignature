@@ -11,13 +11,32 @@ import { SupportFab } from '../components/ui/SupportFab.jsx';
 import { DEMO_SIGNATURE_DATA, demoHtmlGeneratePayload } from '../data/templatePreviews.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
+import { usePlanGate } from '../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import api, { templatesAPI, signaturesAPI } from '../lib/api.js';
-import { displayNameForTemplateRow, uuidToTemplateSlug } from '../lib/templateIds.js';
+import { lockedTemplateIdsForPlan } from '../lib/templatePlanOrder.js';
+import {
+  displayNameForTemplateRow,
+  TEMPLATE_10_CANONICAL_COLORS,
+  TEMPLATE_11_CANONICAL_COLORS,
+  TEMPLATE_12_CANONICAL_COLORS,
+  TEMPLATE_13_CANONICAL_COLORS,
+  TEMPLATE_14_CANONICAL_COLORS,
+  TEMPLATE_15_CANONICAL_COLORS,
+  TEMPLATE_16_CANONICAL_COLORS,
+  TEMPLATE_17_CANONICAL_COLORS,
+  TEMPLATE_18_CANONICAL_COLORS,
+  TEMPLATE_19_CANONICAL_COLORS,
+  TEMPLATE_20_CANONICAL_COLORS,
+  uuidToTemplateSlug,
+} from '../lib/templateIds.js';
 
 export function TemplateGalleryPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const { user } = useAuth();
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
 
   const [templates, setTemplates] = useState([]);
   const [loadError, setLoadError] = useState('');
@@ -97,6 +116,11 @@ export function TemplateGalleryPage() {
     [templates, filters]
   );
 
+  const lockedTemplateIds = useMemo(
+    () => lockedTemplateIdsForPlan(templates, gate.limit('layout_templates')),
+    [templates, gate]
+  );
+
   const filteredSignatureKey = useMemo(
     () => filtered.map((t) => String(t.id)).sort().join('|'),
     [filtered]
@@ -116,7 +140,11 @@ export function TemplateGalleryPage() {
         filtered.map(async (t) => {
           const slug = uuidToTemplateSlug(t.id);
           try {
-            const { data } = await api.post('/html/generate', demoHtmlGeneratePayload(slug, galleryPreviewColors));
+            /** Intro gallery: demo copy + placeholders only — account data appears after opening in the editor. */
+            const { data } = await api.post(
+              '/html/generate',
+              demoHtmlGeneratePayload(slug, galleryPreviewColors)
+            );
             const html = data?.html?.trim();
             if (html) next[t.id] = html;
           } catch {
@@ -137,6 +165,17 @@ export function TemplateGalleryPage() {
   const handleTemplatePick = useCallback(
     async (template) => {
       if (!template?.id || selectingId) return;
+      if (lockedTemplateIds.has(template.id)) {
+        showUpgradeModal({
+          feature: 'layout_templates',
+          requiredPlan: gate.planId === 'personal' ? 'advanced' : 'ultimate',
+          message:
+            gate.planId === 'personal'
+              ? `Your ${gate.plan.name} plan includes the first ${gate.limitText('layout_templates')} layouts in the catalog. Upgrade to Advanced for 10 templates, or Ultimate for unlimited.`
+              : `Your ${gate.plan.name} plan includes ${gate.limitText('layout_templates')} layouts. Upgrade to Ultimate for unlimited templates.`,
+        });
+        return;
+      }
       setSelectingId(template.id);
       setLoadError('');
       try {
@@ -157,8 +196,16 @@ export function TemplateGalleryPage() {
         setSelectingId(null);
       }
     },
-    [navigate, selectingId, t]
+    [gate.plan, gate.planId, gate.limitText, lockedTemplateIds, navigate, selectingId, showUpgradeModal, t]
   );
+
+  const handleLockedTemplate = useCallback(() => {
+    showUpgradeModal({
+      feature: 'layout_templates',
+      requiredPlan: gate.planId === 'personal' ? 'advanced' : 'ultimate',
+      message: `This layout is not included in your ${gate.plan.name} plan.`,
+    });
+  }, [gate.plan.name, gate.planId, showUpgradeModal]);
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col bg-[#f4f5f7] font-gallery text-[#111827]">
@@ -200,9 +247,36 @@ export function TemplateGalleryPage() {
                   <TemplateCard
                     key={t.id}
                     template={t}
+                    locked={lockedTemplateIds.has(t.id)}
+                    requiredPlanLabel={gate.planId === 'personal' ? 'Advanced' : 'Ultimate'}
+                    onLocked={handleLockedTemplate}
                     onSelect={handleTemplatePick}
                     busy={selectingId === t.id}
-                    paletteColors={galleryPreviewColors}
+                    paletteColors={
+                      uuidToTemplateSlug(t.id) === 'template_10'
+                        ? [...TEMPLATE_10_CANONICAL_COLORS]
+                        : uuidToTemplateSlug(t.id) === 'template_11'
+                          ? [...TEMPLATE_11_CANONICAL_COLORS]
+                          : uuidToTemplateSlug(t.id) === 'template_12'
+                            ? [...TEMPLATE_12_CANONICAL_COLORS]
+                            : uuidToTemplateSlug(t.id) === 'template_13'
+                              ? [...TEMPLATE_13_CANONICAL_COLORS]
+                              : uuidToTemplateSlug(t.id) === 'template_14'
+                                ? [...TEMPLATE_14_CANONICAL_COLORS]
+                                : uuidToTemplateSlug(t.id) === 'template_15'
+                                  ? [...TEMPLATE_15_CANONICAL_COLORS]
+                                  : uuidToTemplateSlug(t.id) === 'template_16'
+                                    ? [...TEMPLATE_16_CANONICAL_COLORS]
+                                    : uuidToTemplateSlug(t.id) === 'template_17'
+                                      ? [...TEMPLATE_17_CANONICAL_COLORS]
+                                      : uuidToTemplateSlug(t.id) === 'template_18'
+                                        ? [...TEMPLATE_18_CANONICAL_COLORS]
+                                        : uuidToTemplateSlug(t.id) === 'template_19'
+                                          ? [...TEMPLATE_19_CANONICAL_COLORS]
+                                          : uuidToTemplateSlug(t.id) === 'template_20'
+                                            ? [...TEMPLATE_20_CANONICAL_COLORS]
+                                            : galleryPreviewColors
+                    }
                     liveHtml={liveHtmlById[t.id] || ''}
                     liveLoading={loadingLivePreviews && !liveHtmlById[t.id]}
                   />

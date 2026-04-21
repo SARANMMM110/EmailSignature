@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout 19 — Business card reference</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --t19-peri: #8e97fd;
+      --t19-peri-deep: #6f78e8;
+      --t19-sage: #bed896;
+      --t19-ink: #000000;
+      --t19-white: #ffffff;
+      --t19-saturn: #f5e6a3;
+      --card-w: 600px;
+      --card-h: 210px;
+      --card-radius: 22px;
+      --frame-radius: 18px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #e8e9f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .shell {
+      width: var(--card-w);
+      max-width: calc(100vw - 48px);
+      padding: 0;
+      border-radius: var(--card-radius);
+      background: transparent;
+      box-shadow:
+        0 18px 40px rgba(45, 55, 120, 0.18),
+        0 4px 12px rgba(45, 55, 120, 0.08);
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      height: var(--card-h);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      background: var(--t19-peri);
+    }
+
+    /* Extra depth: radials + beam (matches server `t19_deck_uri` feel) */
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background:
+        radial-gradient(ellipse 58% 42% at 14% 82%, rgba(99, 105, 190, 0.34) 0%, transparent 58%),
+        radial-gradient(ellipse 44% 38% at 86% 18%, rgba(255, 255, 255, 0.16) 0%, transparent 55%),
+        radial-gradient(ellipse 38% 32% at 52% 6%, rgba(190, 216, 150, 0.12) 0%, transparent 50%),
+        linear-gradient(22deg, transparent 38%, rgba(255, 255, 255, 0.07) 50%, transparent 62%),
+        repeating-linear-gradient(
+          -28deg,
+          transparent 0,
+          transparent 16px,
+          rgba(40, 48, 120, 0.04) 16px,
+          rgba(40, 48, 120, 0.04) 17px
+        );
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 44%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.22;
+      background-image:
+        linear-gradient(var(--t19-white) 1px, transparent 1px),
+        linear-gradient(90deg, var(--t19-white) 1px, transparent 1px);
+      background-size: 14px 14px;
+    }
+
+    .bg-swirl {
+      position: absolute;
+      left: -8%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 58%;
+      height: 130%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+
+    .layout {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: 1fr 38%;
+      height: 100%;
+      align-items: stretch;
+    }
+
+    .left {
+      position: relative;
+      padding: 18px 8px 20px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      min-width: 0;
+    }
+
+    .doodles {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .doodles svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .name {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--t19-sage);
+      margin-bottom: 6px;
+    }
+
+    .role {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--t19-ink);
+      margin-bottom: auto;
+      padding-bottom: 14px;
+    }
+
+    .contacts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      column-gap: 28px;
+      row-gap: 10px;
+      font-size: 11.5px;
+      font-weight: 400;
+      line-height: 1.35;
+      color: var(--t19-ink);
+      max-width: 340px;
+    }
+
+    .contact-cell {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .contact-cell--tight {
+      align-items: center;
+    }
+
+    .contact-cell svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      stroke: var(--t19-ink);
+      stroke-width: 1.65;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      margin-top: 1px;
+    }
+
+    .contact-cell--tight svg {
+      margin-top: 0;
+    }
+
+    .right {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 12px 18px 14px 0;
+    }
+
+    .scribble {
+      position: absolute;
+      left: -12%;
+      top: 6%;
+      width: 72%;
+      height: 42%;
+      z-index: 3;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.06));
+    }
+
+    .scribble path {
+      fill: none;
+      stroke: var(--t19-sage);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .sparkle {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      width: 22px;
+      height: 22px;
+      z-index: 4;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
+    }
+
+    .photo-stack {
+      position: relative;
+      z-index: 2;
+      filter: drop-shadow(6px 10px 18px rgba(25, 30, 80, 0.35));
+    }
+
+    .frame-outer {
+      background: var(--t19-peri);
+      border-radius: var(--frame-radius);
+      padding: 7px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .frame-inner {
+      background: var(--t19-sage);
+      border-radius: calc(var(--frame-radius) - 4px);
+      padding: 6px;
+      line-height: 0;
+    }
+
+    .frame-inner img {
+      display: block;
+      width: 132px;
+      height: 168px;
+      object-fit: cover;
+      object-position: 50% 20%;
+      border-radius: 12px;
+    }
+
+    @media (max-width: 640px) {
+      :root {
+        --card-w: 100%;
+        --card-h: auto;
+      }
+
+      .shell {
+        width: 100%;
+      }
+
+      .card {
+        height: auto;
+        min-height: 200px;
+      }
+
+      .card::after {
+        width: 100%;
+        opacity: 0.14;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+      }
+
+      .right {
+        padding: 0 20px 20px;
+        justify-content: flex-end;
+      }
+
+      .scribble {
+        left: 4%;
+        top: 2%;
+        width: 55%;
+        height: 120px;
+      }
+
+      .frame-inner img {
+        width: 120px;
+        height: 152px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="card">
+      <svg class="bg-swirl" viewBox="0 0 400 400" aria-hidden="true">
+        <path fill="none" stroke="#4a52c4" stroke-width="28" stroke-linecap="round"
+          d="M280 60c40 80-20 200-140 220c-90 14-150-40-130-110c16-58 88-72 150-40" />
+      </svg>
+
+      <div class="layout">
+        <section class="left">
+          <div class="doodles" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
+              <ellipse cx="24" cy="24" rx="10" ry="10" stroke="var(--t19-saturn)" stroke-width="2.2" />
+              <ellipse cx="24" cy="26" rx="22" ry="7" stroke="var(--t19-saturn)" stroke-width="2" transform="rotate(-12 24 26)" />
+            </svg>
+            <svg width="40" height="30" viewBox="0 0 40 30" fill="none" aria-hidden="true">
+              <g fill="var(--t19-white)" fill-opacity="0.95">
+                <rect x="7" y="7" width="17" height="16" rx="2.2" />
+                <circle cx="27.5" cy="15" r="6" />
+              </g>
+              <path d="M2 11L0 9M3 6L1 4M6 3L4 1" stroke="var(--t19-white)" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.78" />
+            </svg>
+          </div>
+
+          <h1 class="name">Rishi Saran</h1>
+          <p class="role">GraphicDesigner</p>
+
+          <div class="contacts">
+            <div class="contact-cell">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>Your Street Address Here</span>
+            </div>
+            <div class="contact-cell contact-cell--tight">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span>yourname@email.com</span>
+            </div>
+            <div class="contact-cell contact-cell--tight">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              <span>+100123456789</span>
+            </div>
+            <div class="contact-cell contact-cell--tight">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span>www.websitename.com</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="right">
+          <svg class="scribble" viewBox="0 0 200 120" aria-hidden="true">
+            <path d="M165 95 C 120 100, 70 90, 45 55 C 25 30, 30 8, 55 12 C 85 18, 95 55, 130 48 C 168 40, 188 12, 172 4" />
+          </svg>
+
+          <svg class="sparkle" viewBox="0 0 32 32" aria-hidden="true">
+            <path fill="var(--t19-white)"
+              d="M16 2 L18.5 12.5 L29 16 L18.5 19.5 L16 30 L13.5 19.5 L3 16 L13.5 12.5 Z" />
+          </svg>
+
+          <div class="photo-stack">
+            <div class="frame-outer">
+              <div class="frame-inner">
+                <img
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop&crop=faces"
+                  width="132"
+                  height="168"
+                  alt="Portrait">
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -37,7 +37,7 @@ function readFromDisk() {
 }
 
 /**
- * Public URL for a layout engine slug (`template_1` … `template_8`).
+ * Public URL for a layout engine slug (`template_1` … `template_19`).
  * Optional `templatePreviewUrls.json` overrides (HTTPS or root-relative `/...`).
  */
 export function getTemplatePreviewUrl(templateSlug) {

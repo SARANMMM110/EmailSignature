@@ -23,7 +23,7 @@ export const LANDING_PALETTE_GRID = [
   LANDING_PALETTE_SWATCHES[5],
   LANDING_PALETTE_SWATCHES[6],
   LANDING_PALETTE_SWATCHES[7],
-  { id: 'p9', name: 'Core', colors: ['#5768f3', '#4752c4', '#b4b9ff', '#0f172a'] },
+  { id: 'p9', name: 'Indigo slate', colors: ['#5768f3', '#4752c4', '#b4b9ff', '#0f172a'] },
 ];
 
 export const LANDING_TEMPLATE_ROWS = [
@@ -35,4 +35,21 @@ export const LANDING_TEMPLATE_ROWS = [
   { id: 'template_6', label: 'Helix', tier: 'pro' },
   { id: 'template_7', label: 'Studio', tier: 'free' },
   { id: 'template_8', label: 'Split', tier: 'free' },
+  { id: 'template_9', label: 'Hero', tier: 'free' },
+  { id: 'template_10', label: 'Lime strip', tier: 'free' },
+  { id: 'template_11', label: 'Lime hello', tier: 'free' },
+  { id: 'template_12', label: 'Resume card', tier: 'free' },
+  { id: 'template_13', label: 'Dark card + rail', tier: 'free' },
+  { id: 'template_14', label: 'Light + orange card', tier: 'free' },
+  { id: 'template_15', label: 'Lime + white card', tier: 'free' },
+  { id: 'template_16', label: 'Navy split + portrait', tier: 'free' },
+  { id: 'template_17', label: 'Lime creative card', tier: 'free' },
+  { id: 'template_18', label: 'Navy Zubrilka card', tier: 'free' },
+  { id: 'template_19', label: 'Periwinkle creative card', tier: 'free' },
+  { id: 'template_20', label: 'Neon dark card', tier: 'free' },
 ];
+
+/** Landing “Templates” section — sample previews only (not the full catalog). */
+export const LANDING_TEMPLATE_SHOWCASE = ['template_17', 'template_18', 'template_19', 'template_20']
+  .map((id) => LANDING_TEMPLATE_ROWS.find((r) => r.id === id))
+  .filter(Boolean);

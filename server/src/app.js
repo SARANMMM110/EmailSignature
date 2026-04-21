@@ -4,8 +4,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { requireAuth } from './middleware/auth.js';
+import { requireAdminJwt } from './middleware/requireAdminJwt.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
+import adminAuthRoutes from './routes/adminAuth.js';
+import publicRegistrationLinks from './routes/publicRegistrationLinks.js';
+import meRoutes from './routes/me.js';
+import adminRoutes from './routes/admin.js';
+import { ensureAdminCredentials } from './services/adminCredentials.js';
 import signaturesRoutes from './routes/signatures.js';
 import templatesRoutes from './routes/templates.js';
 import palettesRoutes from './routes/palettes.js';
@@ -56,6 +62,10 @@ app.get('/health', (req, res) => {
 app.use('/signatures', express.static(path.join(PUBLIC_DIR, 'signatures'), { maxAge: '1d' }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/public/registration-links', publicRegistrationLinks);
+app.use('/api/me', requireAuth, meRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin', requireAdminJwt, adminRoutes);
 app.use('/api', generateSignatureRoutes);
 app.use('/api/landing', landingPreviewRoutes);
 app.use('/api/templates', templatesRoutes);
@@ -68,6 +78,10 @@ app.use('/api/upload', requireAuth, uploadRoutes);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
-});
+ensureAdminCredentials()
+  .catch((e) => console.warn('[admin] ensureAdminCredentials:', e?.message || e))
+  .finally(() => {
+    app.listen(PORT, () => {
+      console.log(`API listening on http://localhost:${PORT}`);
+    });
+  });

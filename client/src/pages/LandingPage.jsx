@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { landingPreviewAPI } from '../lib/api.js';
 import { LANDING_PALETTE_SWATCHES } from '../data/landingPalettes.js';
+import { PLANS, PLAN_ORDER, planHighlights } from '../data/plans.js';
 import { LandingSignatureIframe } from '../components/landing/LandingSignatureIframe.jsx';
 import { LandingTemplateShowcase } from '../components/landing/LandingTemplateShowcase.jsx';
 import { LandingPaletteDemoDark } from '../components/landing/LandingPaletteDemoDark.jsx';
@@ -61,6 +62,10 @@ function IconClose() {
   );
 }
 
+function formatMoney(n) {
+  return `$${Number(n).toFixed(0)}`;
+}
+
 const NAV_LINKS = [
   { href: '#features', label: 'Features' },
   { href: '#templates', label: 'Templates' },
@@ -110,15 +115,15 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens when I change my brand colors?',
-    a: "Just pick a new palette in the editor — your signature updates instantly. If you're on the Pro plan and manage a team, all team signatures update too.",
+    a: 'Pick a new palette in the editor — your live preview and saved signature update instantly. Duplicate signatures on Advanced or Ultimate if you need different brands side by side.',
   },
   {
     q: 'Can I use my own Figma design?',
     a: 'Yes! You can upload your Figma-designed signature as a template. Our system converts it to email-safe HTML automatically.',
   },
   {
-    q: 'Is the free plan really free forever?',
-    a: 'Absolutely. The free plan includes 1 signature and 20+ templates — no time limits, no credit card required.',
+    q: 'Which plan should I start on?',
+    a: 'Most people start on Personal (up to 3 signatures and 5 layouts). Upgrade to Advanced when you want CTA banners, custom palettes, PNG export, or to hide the “Made with” badge.',
   },
   {
     q: 'How do I add the signature to Gmail?',
@@ -126,7 +131,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What's the refund policy?",
-    a: 'We offer a 30-day money-back guarantee on all Pro plans, no questions asked.',
+    a: 'We offer a 30-day money-back guarantee on paid subscriptions when we cannot resolve a legitimate issue.',
   },
 ];
 
@@ -329,7 +334,7 @@ export function LandingPage() {
               <span className="sb-badge-sparkle" aria-hidden>
                 ✨
               </span>
-              New: 70+ professional templates →
+              New: curated layouts & one-click brand palettes →
             </div>
 
             <h1
@@ -352,8 +357,8 @@ export function LandingPage() {
             </h1>
 
             <p className="sb-hero-sub mx-auto mt-6 max-w-[580px] text-[18px] leading-[1.65] text-[var(--text-tertiary)] opacity-0">
-              Create stunning, professional email signatures in minutes. Choose from 70+ templates, customize colors,
-              and install to Gmail or Outlook with one click.
+              Build a clean, on-brand signature in the browser. Pick a layout, adjust colors and copy, then paste it
+              into Gmail, Outlook, or Apple Mail.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3" style={{ gap: '12px' }}>
@@ -372,7 +377,7 @@ export function LandingPage() {
               </button>
             </div>
             <p className="mt-6 text-center text-xs text-[var(--gray-400)]">
-              ✓ Free forever · ✓ No credit card · ✓ Setup in 2 minutes
+              ✓ Plans from $7/mo · ✓ Cancel anytime · ✓ Setup in minutes
             </p>
 
             {/* Hero visual */}
@@ -422,43 +427,8 @@ export function LandingPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="sb-float-card-1 absolute -right-2 top-4 z-10 hidden max-w-[200px] rounded-xl border border-emerald-200 bg-white px-3 py-2 text-left text-xs font-semibold text-emerald-800 shadow-lg sm:block lg:right-[-12px]">
-                Signature copied! ✓
-              </div>
-              <div className="sb-float-card-2 absolute -left-2 bottom-8 z-10 hidden rounded-xl border border-[var(--border-sm)] bg-white px-3 py-2 text-xs font-medium text-[var(--gray-700)] shadow-lg sm:block lg:left-[-8px]">
-                <span className="font-semibold text-[var(--sb-color-accent)]">Ocean Blue</span>
-                <div className="mt-1 flex gap-1">
-                  {['#2563eb', '#1d4ed8', '#93c5fd', '#0f172a'].map((c) => (
-                    <span key={c} className="h-3 w-3 rounded-full" style={{ background: c }} />
-                  ))}
-                </div>
-              </div>
-              <div className="sb-float-card-3 absolute left-4 top-4 z-10 rounded-full border border-[var(--border-sm)] bg-white px-3 py-1 text-xs font-semibold text-[var(--gray-800)] shadow-md">
-                70+ templates
-              </div>
             </div>
           </div>
-        </section>
-
-        {/* SOCIAL PROOF */}
-        <section
-          className="border-y py-5"
-          style={{ borderColor: 'var(--border-sm)', background: 'var(--gray-50)' }}
-        >
-          <ScrollReveal stagger className="mx-auto flex max-w-6xl flex-col flex-wrap items-center justify-center gap-6 px-4 sm:flex-row sm:gap-12 lg:gap-[48px]">
-            <span className="text-sm font-semibold text-[var(--gray-700)]">★★★★★ Rated 4.9/5</span>
-            <span className="text-sm font-medium text-[var(--gray-600)]">10,000+ signatures created</span>
-            <span className="text-sm text-[var(--gray-600)]">Works with Gmail · Outlook · Apple Mail</span>
-            <div className="flex items-center gap-3 text-sm text-[var(--gray-500)]">
-              <span>Used by teams at</span>
-              {['Acme', 'Globex', 'Umbra'].map((x) => (
-                <span key={x} className="font-semibold tracking-tight text-[var(--gray-400)]" style={serif}>
-                  {x}
-                </span>
-              ))}
-            </div>
-          </ScrollReveal>
         </section>
 
         {/* PRODUCT IMMERSIVE */}
@@ -501,7 +471,7 @@ export function LandingPage() {
                       </div>
                       <div>
                         <span className="text-[var(--gray-400)]">Email</span>
-                        <div className="mt-1 rounded border border-[var(--border-sm)] bg-[var(--gray-50)] px-2 py-1.5">James@core.com</div>
+                        <div className="mt-1 rounded border border-[var(--border-sm)] bg-[var(--gray-50)] px-2 py-1.5">james.doe@example.com</div>
                       </div>
                     </div>
                   </div>
@@ -551,8 +521,8 @@ export function LandingPage() {
             <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '24px' }}>
               {[
                 {
-                  title: '70+ Premium Templates',
-                  body: 'Hand-crafted by professional designers for every style',
+                  title: 'Curated professional layouts',
+                  body: 'Designer-quality templates you can swap anytime after saving',
                   badge: null,
                   icon: (
                     <div className="grid grid-cols-2 gap-1">
@@ -590,31 +560,31 @@ export function LandingPage() {
                 },
                 {
                   title: 'One-Click Copy',
-                  body: 'Copies as rich HTML. Just paste — no code, no configuration.',
+                  body: 'Copy as HTML or as a generated image where your browser allows it — then paste into your mail client.',
                   badge: null,
                   icon: <span className="text-3xl">📋</span>,
                 },
                 {
-                  title: 'Team Sync',
-                  body: "Keep every team member's signature on-brand automatically.",
-                  badge: 'Pro',
+                  title: 'Optional CTA banners',
+                  body: 'Add one or two call-to-action strips under your signature, matched to your layout width.',
+                  badge: null,
                   icon: (
-                    <div className="flex -space-x-2">
-                      {['#93c5fd', '#c4b5fd', '#fca5a5'].map((c, i) => (
-                        <span key={i} className="h-10 w-10 rounded-full border-2 border-white ring-1 ring-slate-200" style={{ background: c }} />
-                      ))}
+                    <div className="flex gap-1 rounded-lg border border-[var(--border-sm)] bg-[var(--gray-50)] px-2 py-2">
+                      <span className="h-8 flex-1 rounded bg-[var(--sb-color-accent)]/25" />
+                      <span className="h-8 flex-1 rounded bg-[var(--sb-color-accent)]/40" />
                     </div>
                   ),
                 },
                 {
-                  title: 'Analytics',
-                  body: 'Track clicks on your CTAs. Know which emails convert best.',
-                  badge: 'Business',
+                  title: 'Your data, your fields',
+                  body: 'Only the contact lines you fill in appear in the signature — no fake phone numbers or placeholders in exports.',
+                  badge: null,
                   icon: (
-                    <div className="flex h-12 items-end gap-1">
-                      {[40, 65, 35, 80, 50].map((h, i) => (
-                        <div key={i} className="w-2 rounded-t bg-[var(--sb-color-accent)]" style={{ height: `${h}%` }} />
-                      ))}
+                    <div className="flex flex-col gap-1 text-left text-[10px] font-medium text-[var(--gray-600)]">
+                      <span className="rounded border border-[var(--border-sm)] bg-white px-2 py-1">Email</span>
+                      <span className="rounded border border-dashed border-[var(--gray-300)] bg-white/60 px-2 py-1 text-[var(--gray-400)]">
+                        Phone (optional)
+                      </span>
                     </div>
                   ),
                 },
@@ -663,7 +633,7 @@ export function LandingPage() {
                 {
                   n: '01',
                   title: 'Choose a template',
-                  desc: 'Browse 70+ designs or start from a layout that matches your role and industry.',
+                  desc: 'Browse curated layouts or start from one that matches your role and industry.',
                   mock: 'gallery',
                 },
                 {
@@ -752,7 +722,7 @@ export function LandingPage() {
               Trusted by professionals worldwide
             </h2>
             <p className="mt-4 text-center text-sm font-medium text-[var(--gray-600)]">
-              10,000+ signatures · 4.9★ average · Used in 40+ countries
+              Real stories from people who care about how their email looks.
             </p>
             <div className="sb-testimonial-row relative mt-12 overflow-hidden">
               <div className="sb-testimonial-track gap-6 pr-6">
@@ -786,8 +756,12 @@ export function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <p className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--sb-color-accent)]">Pricing</p>
             <h2 className="mx-auto mt-3 text-center text-[32px] font-normal lg:text-[38px]" style={serif}>
-              Simple pricing. No surprises.
+              Personal, Advanced, and Ultimate
             </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-[var(--gray-600)]">
+              Every plan includes curated email-safe layouts, live preview, and install guides for Gmail, Outlook, and more.
+              Switch plans whenever your needs change.
+            </p>
 
             <div className="mx-auto mt-8 flex justify-center">
               <div className="inline-flex rounded-full border border-[var(--border-sm)] bg-[var(--gray-50)] p-1 text-sm font-semibold">
@@ -803,126 +777,105 @@ export function LandingPage() {
                   className={`rounded-full px-4 py-2 transition ${pricingYearly ? 'bg-white shadow-sm' : 'text-[var(--gray-600)]'}`}
                   onClick={() => setPricingYearly(true)}
                 >
-                  Yearly — save 20%
+                  Yearly — save ~20%
                 </button>
               </div>
             </div>
 
-            <div className="mt-14 flex flex-col gap-8 lg:flex-row lg:items-stretch lg:justify-center">
-              <div
-                className="order-2 flex flex-1 flex-col rounded-2xl border border-[var(--border-sm)] bg-white p-8 lg:order-1 lg:max-w-sm"
-                style={{ borderColor: 'var(--border-sm)' }}
-              >
-                <span className="text-xs font-bold uppercase tracking-wide text-[var(--gray-500)]">Forever free</span>
-                <h3 className="mt-2 text-lg font-bold">Basic</h3>
-                <p className="mt-2 text-4xl font-semibold">
-                  €0<span className="text-base font-medium text-[var(--gray-500)]">/month</span>
-                </p>
-                <p className="mt-1 text-sm text-[var(--gray-600)]">Perfect for individuals</p>
-                <ul className="mt-6 flex-1 space-y-2 text-sm text-[var(--gray-700)]">
-                  {[
-                    { ok: true, t: '1 signature' },
-                    { ok: true, t: 'Free templates (20+)' },
-                    { ok: true, t: 'All email clients' },
-                    { ok: true, t: 'Color palettes' },
-                    { ok: false, t: 'Pro templates' },
-                    { ok: false, t: 'Custom colors' },
-                    { ok: false, t: 'Remove branding' },
-                  ].map((row) => (
-                    <li key={row.t} className={row.ok ? '' : 'text-[var(--gray-400)]'}>
-                      {row.ok ? '✓' : '✗'} {row.t}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  to="/signup"
-                  className="mt-8 block w-full rounded-xl border border-[var(--border-sm)] py-3 text-center text-sm font-semibold transition hover:bg-[var(--gray-50)]"
-                >
-                  Get started free
-                </Link>
-              </div>
+            <p className="mx-auto mt-5 max-w-lg text-center text-sm text-[var(--gray-600)]">
+              <Link to="/pricing" className="font-semibold text-[var(--sb-color-accent)] underline-offset-2 hover:underline">
+                View the full feature comparison →
+              </Link>
+            </p>
 
-              <div
-                className="order-1 flex flex-1 flex-col rounded-2xl border-2 bg-white p-8 shadow-xl lg:order-2 lg:max-w-sm"
-                style={{
-                  borderColor: 'var(--sb-color-accent)',
-                  boxShadow: '0 0 0 1px rgb(37 99 235 / 0.08), 0 20px 50px -12px rgb(37 99 235 / 0.25)',
-                }}
-              >
-                <span className="w-fit rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                  Most popular
-                </span>
-                <span className="mt-2 text-xs font-bold uppercase tracking-wide text-[var(--gray-500)]">Best value</span>
-                <h3 className="mt-1 text-lg font-bold">Pro</h3>
-                <p className="mt-2 text-4xl font-semibold">
-                  €29
-                  <span className="text-base font-medium text-[var(--gray-500)]">/year</span>
-                </p>
-                {pricingYearly ? (
-                  <p className="text-sm text-[var(--gray-600)]">
-                    €2.42/month · <span className="line-through text-[var(--gray-400)]">€49/year</span>
-                  </p>
-                ) : (
-                  <p className="text-sm text-[var(--gray-600)]">Switch to yearly to save 20%</p>
-                )}
-                <p className="mt-1 text-sm text-[var(--gray-600)]">For serious professionals</p>
-                <ul className="mt-6 flex-1 space-y-2 text-sm text-[var(--gray-700)]">
-                  {[
-                    { ok: true, t: 'Everything in Free' },
-                    { ok: true, t: 'Unlimited signatures' },
-                    { ok: true, t: 'All 70+ templates' },
-                    { ok: true, t: 'Custom colors & fonts' },
-                    { ok: true, t: 'Remove branding' },
-                    { ok: true, t: 'Priority support' },
-                    { ok: false, t: 'Team management' },
-                    { ok: false, t: 'Analytics' },
-                  ].map((row) => (
-                    <li key={row.t} className={row.ok ? '' : 'text-[var(--gray-400)]'}>
-                      {row.ok ? '✓' : '✗'} {row.t}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  to="/signup"
-                  className="mt-8 block w-full rounded-xl bg-[var(--sb-color-accent)] py-3.5 text-center text-base font-semibold text-white transition hover:bg-[var(--sb-color-accent-hover)]"
-                >
-                  Start Pro — €29/year
-                </Link>
-                <p className="mt-3 text-center text-xs text-[var(--gray-500)]">30-day money-back guarantee</p>
-              </div>
+            <div className="mt-14 grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-6">
+              {PLAN_ORDER.map((pid) => {
+                const p = PLANS[pid];
+                const popular = pid === 'advanced';
+                const displayMonth = pricingYearly ? p.price_yearly_per_month : p.price_monthly;
+                const crossed = pricingYearly ? p.price_monthly : null;
+                const highlights = planHighlights(pid);
 
-              <div
-                className="order-3 flex flex-1 flex-col rounded-2xl border border-[var(--border-sm)] bg-white p-8 lg:max-w-sm"
-                style={{ borderColor: 'var(--border-sm)' }}
-              >
-                <span className="text-xs font-bold uppercase tracking-wide text-[var(--gray-500)]">For teams</span>
-                <h3 className="mt-2 text-lg font-bold">Business</h3>
-                <p className="mt-2 text-4xl font-semibold">Custom</p>
-                <p className="mt-1 text-sm text-[var(--gray-600)]">For teams of 5+</p>
-                <ul className="mt-6 flex-1 space-y-2 text-sm text-[var(--gray-700)]">
-                  {[
-                    'Everything in Pro',
-                    'Team management',
-                    'Brand lock (enforce company colors)',
-                    'Click analytics',
-                    'SSO / SAML',
-                    'Dedicated support',
-                    'Custom onboarding',
-                  ].map((t) => (
-                    <li key={t}>✓ {t}</li>
-                  ))}
-                </ul>
-                <a
-                  href="mailto:sales@signaturestudio.io?subject=Business%20plan"
-                  className="mt-8 block w-full rounded-xl border border-[var(--border-sm)] py-3 text-center text-sm font-semibold transition hover:bg-[var(--gray-50)]"
-                >
-                  Contact sales →
-                </a>
-              </div>
+                return (
+                  <div
+                    key={pid}
+                    className={`relative flex flex-col rounded-2xl border bg-white p-8 ${
+                      popular ? 'border-2 shadow-xl lg:z-[1] lg:scale-[1.02]' : ''
+                    }`}
+                    style={
+                      popular
+                        ? {
+                            borderColor: 'var(--sb-color-accent)',
+                            boxShadow: '0 0 0 1px rgb(37 99 235 / 0.08), 0 20px 50px -12px rgb(37 99 235 / 0.2)',
+                          }
+                        : { borderColor: 'var(--border-sm)' }
+                    }
+                  >
+                    {p.badge ? (
+                      <span
+                        className={`absolute right-5 top-5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase text-white ${
+                          popular ? 'bg-[var(--sb-color-accent)]' : 'bg-[var(--gray-800)]'
+                        }`}
+                      >
+                        {p.badge}
+                      </span>
+                    ) : null}
+
+                    <h3 className="pr-16 text-2xl font-bold text-[var(--gray-950)]">{p.name}</h3>
+                    <p className="mt-2 text-sm leading-snug text-[var(--gray-600)]">{p.tagline}</p>
+
+                    <div className="mt-6 border-t border-[var(--border-sm)] pt-6">
+                      {pricingYearly && crossed ? (
+                        <p className="text-sm text-[var(--gray-400)]">
+                          <span className="line-through decoration-[var(--gray-300)]">{formatMoney(crossed)}/mo</span>
+                          <span className="ml-2 font-medium text-[var(--gray-500)]">list price</span>
+                        </p>
+                      ) : null}
+                      <div className="mt-1 flex flex-wrap items-baseline gap-1">
+                        <span className="text-4xl font-semibold tracking-tight text-[var(--gray-950)]">{formatMoney(displayMonth)}</span>
+                        <span className="text-lg font-medium text-[var(--gray-500)]">/mo</span>
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--gray-600)]">
+                        {pricingYearly ? (
+                          <>
+                            Billed <span className="font-semibold text-[var(--gray-800)]">{formatMoney(p.price_yearly)}</span>/year
+                          </>
+                        ) : (
+                          'Billed monthly · cancel anytime'
+                        )}
+                      </p>
+                    </div>
+
+                    <Link
+                      to="/signup"
+                      className="mt-8 block w-full rounded-xl py-3.5 text-center text-base font-semibold text-white shadow-md transition hover:brightness-105"
+                      style={{ backgroundColor: p.color }}
+                    >
+                      {p.cta}
+                    </Link>
+
+                    <div className="mt-8 flex-1">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--gray-400)]">What&apos;s included</p>
+                      <ul className="mt-4 space-y-2.5 text-sm text-[var(--gray-700)]">
+                        {highlights.map((line) => (
+                          <li key={line} className="flex gap-2">
+                            <span className="shrink-0 text-emerald-600" aria-hidden>
+                              ✓
+                            </span>
+                            <span>{line}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <p className="mt-10 text-center text-xs text-[var(--gray-500)]">
-              💳 Secure payment by Stripe · Cancel anytime · All prices + VAT
+            <p className="mt-8 text-center text-xs text-[var(--gray-500)]">30-day money-back on paid plans when we cannot resolve a legitimate issue.</p>
+
+            <p className="mt-6 text-center text-xs text-[var(--gray-500)]">
+              💳 Secure payment by Stripe · Cancel anytime · Prices in USD
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs font-semibold text-[var(--gray-400)]">
               {['Visa', 'Mastercard', 'AMEX', 'PayPal', 'Apple Pay'].map((x) => (

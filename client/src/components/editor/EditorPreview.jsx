@@ -5,107 +5,30 @@ import {
   HiOutlineDocumentDuplicate,
   HiOutlinePencilSquare,
   HiOutlineSwatch,
-  HiOutlineXMark,
 } from 'react-icons/hi2';
 import { Button } from '../ui/Button.jsx';
 import { useEditorStore } from '../../store/editorStore.js';
+import { useI18n } from '../../hooks/useI18n.js';
 import {
-  editorPreviewShellMaxPx,
+  editorBlankBannerPreviewIframeHeightPx,
+  editorSplitCtaIframeHeightCeilingPx,
   wrapSignatureHtmlForIframe,
 } from '../../data/templatePreviews.js';
 import { splitSignatureAndBannerHtml } from '../../lib/splitSignatureBannerHtml.js';
-import { bundleRailPxForSignature } from '../../lib/templateIds.js';
-import { usePreviewIframeMeasure } from './usePreviewIframeMeasure.js';
+import {
+  BLANK_IMAGE_BANNER_UUID,
+  bundleRailPxForSignature,
+  isBlankImageBannerPreset,
+  normalizeSignatureTemplateSlug,
+} from '../../lib/templateIds.js';
+import { hashSrcDoc, PreviewIconButton, PreviewDeleteButton, PreviewIframeBlock } from './previewBits/index.js';
 
-/** Floor for iframe height while loading or if measurement fails. */
-const PREVIEW_IFRAME_HEIGHT_FLOOR = 200;
 /** Signature preview needs a taller floor so the card is not clipped before measure runs. */
 const SIG_PREVIEW_IFRAME_MIN_H = 320;
+/** Shorter floor for stacked CTA strip iframes (book-a-call / webinar rows). */
+const CTA_PREVIEW_IFRAME_MIN_H = 112;
 const PREVIEW_LOADING_P =
   '<p style="font-family:Arial,sans-serif;padding:8px;color:#94a3b8">Loading preview…</p>';
-
-function PreviewIconButton({ title, onClick, children }) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-[0.98] sm:h-10 sm:w-10"
-    >
-      {children}
-    </button>
-  );
-}
-
-function PreviewDeleteButton({ title, onClick }) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onClick();
-      }}
-      className="relative z-20 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:text-slate-800 active:scale-[0.98] sm:h-10 sm:w-10"
-    >
-      <HiOutlineXMark className="h-5 w-5" strokeWidth={2} aria-hidden />
-    </button>
-  );
-}
-
-function hashSrcDoc(s) {
-  let h = 0;
-  const cap = Math.min(s.length, 8000);
-  for (let i = 0; i < cap; i++) h = (h * 33 + s.charCodeAt(i)) | 0;
-  return `${s.length}-${h}`;
-}
-
-function PreviewIframeBlock({
-  srcDoc,
-  frameKey,
-  minHeightFloor = PREVIEW_IFRAME_HEIGHT_FLOOR,
-  lockRailPx = null,
-}) {
-  const { iframeRef, height, widthPx, measure } = usePreviewIframeMeasure(srcDoc, frameKey);
-  const locked = lockRailPx != null && lockRailPx > 0;
-  return (
-    <div
-      className={
-        locked
-          ? 'mx-auto w-full'
-          : widthPx == null
-            ? 'w-full max-w-[min(100%,min(1100px,96vw))]'
-            : ''
-      }
-      style={
-        locked
-          ? { maxWidth: `min(100%, ${editorPreviewShellMaxPx(lockRailPx)}px)` }
-          : widthPx != null
-            ? { width: `${widthPx}px`, maxWidth: '100%' }
-            : undefined
-      }
-    >
-      <iframe
-        key={frameKey}
-        ref={iframeRef}
-        title="Preview"
-        scrolling="no"
-        srcDoc={srcDoc}
-        onLoad={measure}
-        className="block w-full bg-transparent"
-        style={{
-          border: 'none',
-          minHeight: minHeightFloor,
-          height,
-          display: 'block',
-          overflowX: 'hidden',
-          overflowY: 'hidden',
-        }}
-      />
-    </div>
-  );
-}
 
 export function EditorPreview({
   saveStatus,
@@ -116,34 +39,71 @@ export function EditorPreview({
 }) {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { t } = useI18n();
 
   const generatedHTML = useEditorStore((s) => s.generatedHTML);
+  const previewSlotBundle = useEditorStore((s) => s.previewSlotBundle);
   const previewError = useEditorStore((s) => s.previewError);
   const refreshPreviewNow = useEditorStore((s) => s.refreshPreviewNow);
-  const signature = useEditorStore((s) => s.signature);
-  const setBanner = useEditorStore((s) => s.setBanner);
+  const clearPrimaryBanner = useEditorStore((s) => s.clearPrimaryBanner);
   const setSecondaryBanner = useEditorStore((s) => s.setSecondaryBanner);
+  const setBanner = useEditorStore((s) => s.setBanner);
+  const signature = useEditorStore((s) => s.signature);
 
   const bc = signature?.banner_config || {};
   const hasBannerConfigured = Boolean(
     signature?.banner_id || String(bc.link_url || bc.href || '').trim()
   );
   const base = `/editor/${id}`;
-  const goInfo = () => navigate(base);
-  const goInfoBanner = () => navigate(base, { state: { myInfoSubTab: 'banner' } });
+  const goInfo = () =>
+    navigate(`${base}#editor-myinfo-signature`, { state: { myInfoSubTab: 'signature' } });
   const goPalettes = () => navigate(`${base}/palettes`);
   const goLayouts = () => navigate(`${base}/layouts`);
   const goBanners = () => navigate(`${base}/banners`);
+
+  const goMyInfoBanner = useCallback(
+    (slotIndex) => {
+      const hash = slotIndex === 1 ? 'editor-myinfo-banner-2' : 'editor-myinfo-banner';
+      navigate(`${base}#${hash}`, {
+        state: { myInfoSubTab: 'banner' },
+      });
+    },
+    [navigate, base]
+  );
+
+  const applyImageOnlyBanner = useCallback(() => {
+    void setBanner(BLANK_IMAGE_BANNER_UUID);
+  }, [setBanner]);
 
   const appBaseHref =
     typeof window !== 'undefined' && window.location?.origin
       ? `${window.location.origin}/`
       : '';
 
-  const { signatureHtml, bannerHtml, bannerSlotHtmls } = useMemo(
-    () => splitSignatureAndBannerHtml(generatedHTML),
-    [generatedHTML]
-  );
+  const { signatureHtml, bannerHtml, bannerSlotHtmls } = useMemo(() => {
+    const b = previewSlotBundle;
+    if (
+      b &&
+      typeof b.signatureHtml === 'string' &&
+      b.signatureHtml.trim() &&
+      Array.isArray(b.bannerSlotHtmls) &&
+      b.bannerSlotHtmls.length > 0
+    ) {
+      const slots = b.bannerSlotHtmls.map((s) => String(s || '').trim()).filter(Boolean);
+      return {
+        signatureHtml: b.signatureHtml.trim(),
+        bannerHtml: slots[0] || '',
+        bannerSlotHtmls: slots,
+      };
+    }
+    const split = splitSignatureAndBannerHtml(generatedHTML);
+    return {
+      signatureHtml: String(split.signatureHtml || '').trim(),
+      bannerHtml: split.bannerHtml,
+      bannerSlotHtmls: split.bannerSlotHtmls,
+    };
+  }, [generatedHTML, previewSlotBundle]);
+
   const hasSplitBanner = Boolean(bannerHtml);
   const bannerPreviewSlots = useMemo(() => {
     if (!bannerHtml?.trim()) return [];
@@ -154,36 +114,69 @@ export function EditorPreview({
     return slots.filter((s) => String(s || '').trim());
   }, [bannerHtml, bannerSlotHtmls]);
 
-  const previewLockRailPx = useMemo(() => bundleRailPxForSignature(signature), [signature]);
+  const useStackedCtaFrames = Boolean(
+    hasSplitBanner && signatureHtml && bannerPreviewSlots.length > 0
+  );
 
-  const sigInner = hasSplitBanner ? signatureHtml || PREVIEW_LOADING_P : generatedHTML || PREVIEW_LOADING_P;
+  const previewLockRailPx = useMemo(() => bundleRailPxForSignature(signature), [signature]);
+  const splitCtaIframeHeightCeiling = useMemo(
+    () => editorSplitCtaIframeHeightCeilingPx(previewLockRailPx),
+    [previewLockRailPx]
+  );
+  const blankStripPreviewIframeH = useMemo(
+    () => editorBlankBannerPreviewIframeHeightPx(previewLockRailPx),
+    [previewLockRailPx]
+  );
+  const slot0IsBlankStrip = isBlankImageBannerPreset(bc.preset_id, signature?.banner_id);
+  const slot1IsBlankStrip =
+    Boolean(bc.secondary_banner_id) &&
+    isBlankImageBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
+  const layoutSlug = useMemo(
+    () => normalizeSignatureTemplateSlug(signature?.design, signature?.template_id),
+    [signature?.design, signature?.template_id]
+  );
 
   const bareWrapOptions = useMemo(
     () => ({
       bare: true,
       baseHref: appBaseHref,
       editorLockRailPx: previewLockRailPx,
+      previewWidthPx: previewLockRailPx,
+      includeArchivoFont: layoutSlug === 'template_13' || layoutSlug === 'template_14',
     }),
-    [appBaseHref, previewLockRailPx]
+    [appBaseHref, previewLockRailPx, layoutSlug]
   );
 
-  const sigSrcDoc = useMemo(
-    () => wrapSignatureHtmlForIframe(sigInner, bareWrapOptions),
-    [sigInner, bareWrapOptions]
+  const combinedSrcDoc = useMemo(
+    () => wrapSignatureHtmlForIframe(generatedHTML || PREVIEW_LOADING_P, bareWrapOptions),
+    [generatedHTML, bareWrapOptions]
   );
-  const bannerSrcDocs = useMemo(
+  const combinedFrameKey = useMemo(() => hashSrcDoc(combinedSrcDoc), [combinedSrcDoc]);
+
+  const signatureOnlySrcDoc = useMemo(
+    () => wrapSignatureHtmlForIframe(signatureHtml || PREVIEW_LOADING_P, bareWrapOptions),
+    [signatureHtml, bareWrapOptions]
+  );
+  const signatureOnlyFrameKey = useMemo(() => hashSrcDoc(signatureOnlySrcDoc), [signatureOnlySrcDoc]);
+
+  const ctaSlotFrames = useMemo(
     () =>
-      bannerPreviewSlots.map((slotHtml) =>
-        wrapSignatureHtmlForIframe(slotHtml || PREVIEW_LOADING_P, bareWrapOptions)
-      ),
+      bannerPreviewSlots.map((slotHtml) => ({
+        srcDoc: wrapSignatureHtmlForIframe(String(slotHtml || '').trim(), bareWrapOptions),
+      })),
     [bannerPreviewSlots, bareWrapOptions]
   );
 
-  const sigFrameKey = useMemo(() => hashSrcDoc(sigSrcDoc), [sigSrcDoc]);
-  const banFrameKeys = useMemo(
-    () => bannerSrcDocs.map((doc) => hashSrcDoc(doc)),
-    [bannerSrcDocs]
+  const removeCtaAtSlot = useCallback(
+    (slotIndex) => {
+      void (async () => {
+        if (slotIndex === 0) await clearPrimaryBanner();
+        else await setSecondaryBanner(null);
+      })();
+    },
+    [clearPrimaryBanner, setSecondaryBanner]
   );
+
   const saveHint =
     saving || saveStatus === 'saving'
       ? 'Saving…'
@@ -193,21 +186,36 @@ export function EditorPreview({
           ? 'Save failed'
           : null;
 
-  const onRemoveBannerSlot = useCallback(
-    (slotIndex) => {
-      if (slotIndex === 0) setBanner(null);
-      else setSecondaryBanner(null);
-    },
-    [setBanner, setSecondaryBanner]
-  );
-
-  const splitStack = hasSplitBanner;
   const previewMaxW = 'max-w-[min(100%,min(1100px,96vw))]';
-  const stackGap = splitStack ? 'gap-5' : 'gap-7';
-  const sectionGap = splitStack ? 'gap-2' : 'gap-3';
-  const previewHeadingClass = splitStack
-    ? 'text-[13px] font-semibold tracking-tight text-slate-600 sm:text-sm'
-    : 'text-[17px] font-semibold tracking-tight text-[#0d0f14] sm:text-[18px]';
+  const stackGap = useStackedCtaFrames ? 'gap-8 sm:gap-10' : 'gap-7';
+  const sectionInnerGap = 'gap-2 sm:gap-2.5';
+  const sectionHeaderClass =
+    'relative z-20 flex w-full min-w-0 items-center justify-between gap-3 border-b border-slate-200/80 px-0.5 pb-3 sm:gap-4 sm:pb-3.5';
+  const titleClass = 'text-[17px] font-semibold tracking-tight text-[#0d0f14] sm:text-[18px]';
+
+  const previewBg =
+    layoutSlug === 'template_15' ||
+    layoutSlug === 'template_16' ||
+    layoutSlug === 'template_17' ||
+    layoutSlug === 'template_18' ||
+    layoutSlug === 'template_19' ||
+    layoutSlug === 'template_20'
+      ? '#ffffff'
+      : 'linear-gradient(180deg, #fafbfc 0%, #f5f6f8 40%, #eef0f3 100%)';
+
+  const previewHeaderActions = (
+    <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+      <PreviewIconButton title="My information" onClick={goInfo}>
+        <HiOutlinePencilSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
+      </PreviewIconButton>
+      <PreviewIconButton title="Palettes" onClick={goPalettes}>
+        <HiOutlineSwatch className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
+      </PreviewIconButton>
+      <PreviewIconButton title="Layouts" onClick={goLayouts}>
+        <HiOutlineDocumentDuplicate className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
+      </PreviewIconButton>
+    </div>
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
@@ -215,11 +223,10 @@ export function EditorPreview({
         className="flex min-h-0 w-full flex-1 flex-col items-center justify-start overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-5 sm:py-5"
         style={{
           WebkitOverflowScrolling: 'touch',
-          background:
-            'linear-gradient(180deg, #fafbfc 0%, #f5f6f8 40%, #eef0f3 100%)',
+          background: previewBg,
         }}
       >
-        <div className={`mx-auto flex w-full ${previewMaxW} flex-col pb-4`}>
+        <div className={`mx-auto flex w-full ${previewMaxW} flex-col pb-4 lg:pb-6`}>
           <div className={`mx-auto flex w-full flex-col ${stackGap}`}>
             {previewError ? (
               <div
@@ -237,91 +244,97 @@ export function EditorPreview({
                 </button>
               </div>
             ) : null}
-            <section className={`flex w-full min-w-0 flex-col ${sectionGap}`}>
-              <div
-                className={`flex w-full min-w-0 justify-between gap-3 px-0.5 sm:gap-4 ${
-                  splitStack ? 'items-center' : 'items-start'
-                }`}
-              >
-                <div className={`min-w-0 flex-1 ${splitStack ? 'pt-0' : 'pt-0.5'}`}>
-                  <h2
-                    className={`leading-tight ${previewHeadingClass}`}
-                    aria-label={`My signature: ${signature?.label || 'Untitled'}`}
-                  >
+
+            {/* My signature — title row + preview (matches mock: no date line under title) */}
+            <section className={`relative z-10 flex w-full min-w-0 flex-col ${sectionInnerGap}`}>
+              <div className={sectionHeaderClass}>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <h2 className={titleClass} aria-label={`My signature: ${signature?.label || 'Untitled'}`}>
                     My signature
                   </h2>
-                  {saveHint ? (
-                    <p className={splitStack ? 'mt-0 text-[11px] text-slate-400' : 'mt-0.5 text-xs text-[#8b91a0]'}>
-                      {saveHint}
-                    </p>
-                  ) : null}
+                  {saveHint ? <p className="mt-0.5 text-xs text-[#8b91a0]">{saveHint}</p> : null}
                 </div>
-                <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-                  <PreviewIconButton title="My information" onClick={goInfo}>
-                    <HiOutlinePencilSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
-                  </PreviewIconButton>
-                  <PreviewIconButton title="Palettes" onClick={goPalettes}>
-                    <HiOutlineSwatch className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
-                  </PreviewIconButton>
-                  <PreviewIconButton title="Layouts" onClick={goLayouts}>
-                    <HiOutlineDocumentDuplicate
-                      className="h-[18px] w-[18px] sm:h-5 sm:w-5"
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                  </PreviewIconButton>
+                {previewHeaderActions}
+              </div>
+              {useStackedCtaFrames ? (
+                <div className="flex w-full min-w-0 justify-center">
+                  <PreviewIframeBlock
+                    srcDoc={signatureOnlySrcDoc}
+                    frameKey={signatureOnlyFrameKey}
+                    minHeightFloor={SIG_PREVIEW_IFRAME_MIN_H}
+                    lockRailPx={previewLockRailPx}
+                  />
                 </div>
-              </div>
-              <div className={`flex w-full min-w-0 justify-center ${splitStack ? 'min-h-0' : 'min-h-[240px]'}`}>
-                <PreviewIframeBlock
-                  srcDoc={sigSrcDoc}
-                  frameKey={sigFrameKey}
-                  minHeightFloor={SIG_PREVIEW_IFRAME_MIN_H}
-                  lockRailPx={previewLockRailPx}
-                />
-              </div>
+              ) : (
+                <div className="flex min-h-[240px] w-full min-w-0 justify-center">
+                  <PreviewIframeBlock
+                    srcDoc={combinedSrcDoc}
+                    frameKey={combinedFrameKey}
+                    minHeightFloor={SIG_PREVIEW_IFRAME_MIN_H}
+                    lockRailPx={previewLockRailPx}
+                  />
+                </div>
+              )}
             </section>
 
-            {hasSplitBanner
-              ? bannerPreviewSlots.map((_, slotIdx) => (
-                  <section key={slotIdx} className={`relative z-10 flex w-full min-w-0 flex-col ${sectionGap}`}>
-                    <div className="relative z-20 flex w-full min-w-0 items-center justify-between gap-3 bg-transparent px-0.5 py-0 sm:gap-4">
-                      <h3 className={`min-w-0 flex-1 leading-tight ${previewHeadingClass}`}>
-                        Banner {slotIdx + 1}
-                      </h3>
-                      <div className="relative z-20 flex shrink-0 items-center gap-0.5 sm:gap-1">
-                        <PreviewIconButton title="Edit banner" onClick={goInfoBanner}>
+            {/* Banner 1 / Banner 2 — each: title row + edit/delete + iframe (mock layout) */}
+            {useStackedCtaFrames
+              ? ctaSlotFrames.map((frame, i) => {
+                  const slotIsBlank = i === 0 ? slot0IsBlankStrip : slot1IsBlankStrip;
+                  const fixedBlankH = slotIsBlank ? blankStripPreviewIframeH : null;
+                  return (
+                  <section
+                    key={`cta-section-${i}-${hashSrcDoc(frame.srcDoc)}`}
+                    className={`relative z-10 flex w-full min-w-0 flex-col ${sectionInnerGap}`}
+                  >
+                    <div className={sectionHeaderClass}>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <h2 className={titleClass}>{t('editor.bannerSlot', { n: i + 1 })}</h2>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+                        <PreviewIconButton
+                          title={t('editor.editBannerSlot', { n: i + 1 })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            goMyInfoBanner(i);
+                          }}
+                        >
                           <HiOutlinePencilSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
                         </PreviewIconButton>
-                        <PreviewDeleteButton
-                          title={slotIdx === 0 ? 'Remove all banners' : 'Remove this banner'}
-                          onClick={() => onRemoveBannerSlot(slotIdx)}
-                        />
+                        <PreviewDeleteButton title={t('editor.removeCta')} onClick={() => removeCtaAtSlot(i)} />
                       </div>
                     </div>
-                    <div className={`flex w-full justify-center ${splitStack ? 'min-h-0' : 'min-h-[120px]'}`}>
+                    <div className="w-full min-w-0">
                       <PreviewIframeBlock
-                        srcDoc={bannerSrcDocs[slotIdx] ?? PREVIEW_LOADING_P}
-                        frameKey={banFrameKeys[slotIdx] ?? `ban-${slotIdx}`}
-                        minHeightFloor={PREVIEW_IFRAME_HEIGHT_FLOOR}
+                        srcDoc={frame.srcDoc}
+                        frameKey={hashSrcDoc(frame.srcDoc)}
+                        minHeightFloor={fixedBlankH ?? CTA_PREVIEW_IFRAME_MIN_H}
                         lockRailPx={previewLockRailPx}
+                        measureFloor={fixedBlankH ?? 40}
+                        measureCeiling={fixedBlankH ?? splitCtaIframeHeightCeiling}
                       />
                     </div>
                   </section>
-                ))
+                  );
+                })
               : null}
 
             {hasSplitBanner ? null : hasBannerConfigured ? null : (
               <div className="rounded-[14px] border border-dashed border-slate-400/35 bg-transparent px-5 py-4 text-center sm:px-8 sm:py-5">
-                <p className="text-sm leading-relaxed text-[#4a5060]">
-                  Need a CTA banner for your email signature?
-                </p>
+                <p className="text-sm leading-relaxed text-[#4a5060]">{t('editor.needCtaPrompt')}</p>
+                <button
+                  type="button"
+                  onClick={applyImageOnlyBanner}
+                  className="mt-3 inline-flex w-full max-w-[280px] items-center justify-center rounded-full bg-[#2d65f0] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2557d6]"
+                >
+                  {t('editor.addImageOnlyStrip')}
+                </button>
                 <button
                   type="button"
                   onClick={goBanners}
-                  className="mt-2 text-sm font-semibold text-[#2d5be3] underline-offset-4 hover:underline"
+                  className="mt-2 block w-full text-sm font-semibold text-[#2d5be3] underline-offset-4 hover:underline"
                 >
-                  Add CTA banner now →
+                  {t('editor.browseAllCtaStyles')}
                 </button>
               </div>
             )}

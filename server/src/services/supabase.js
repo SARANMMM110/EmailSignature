@@ -1,7 +1,14 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** `server/.env` — works when Node is started from repo root (e.g. `node server/src/scripts/seedTemplates.js`). */
+const serverEnvPath = path.join(__dirname, '..', '..', '.env');
+
 dotenv.config();
+dotenv.config({ path: serverEnvPath });
 
 const url = process.env.SUPABASE_URL?.trim();
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();

@@ -3,6 +3,8 @@ import { body, param, validationResult } from 'express-validator';
 import { supabaseAdmin } from '../services/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 import { throwIfSupabaseError } from '../lib/supabaseRestError.js';
+import { requireFeature, requireUnderLimit } from '../middleware/planGate.js';
+import { countUserPalettes } from '../lib/planCounts.js';
 
 const router = Router();
 
@@ -50,6 +52,8 @@ router.get('/user', requireAuth, async (req, res, next) => {
 router.post(
   '/user',
   requireAuth,
+  requireFeature('custom_palette_creation'),
+  requireUnderLimit('max_saved_custom_palettes', countUserPalettes),
   body('name').trim().notEmpty().withMessage('name is required'),
   body('colors').isArray({ min: 4, max: 4 }).withMessage('colors must be an array of 4 hex strings'),
   async (req, res, next) => {

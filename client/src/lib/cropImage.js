@@ -57,6 +57,7 @@ export async function getCroppedImageBlob(imageSrc, pixelCrop, rotation = 0, fli
 
   croppedCanvas.width = pixelCrop.width;
   croppedCanvas.height = pixelCrop.height;
+  croppedCtx.clearRect(0, 0, pixelCrop.width, pixelCrop.height);
 
   croppedCtx.drawImage(
     canvas,
@@ -76,8 +77,7 @@ export async function getCroppedImageBlob(imageSrc, pixelCrop, rotation = 0, fli
         if (!blob) reject(new Error('Empty image'));
         else resolve(blob);
       },
-      'image/jpeg',
-      0.92
+      'image/png'
     );
   });
 }

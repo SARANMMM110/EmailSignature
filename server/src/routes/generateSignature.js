@@ -1,6 +1,7 @@
 /**
  * POST /api/generate-signature — render HTML to PNG via Puppeteer, upload to Supabase Storage when
  * configured (public HTTPS URL for email clients), else save under /public/signatures.
+ * Authenticated users need `copy_html_to_clipboard` (Personal+). Plan flag `png_rich_clipboard_render` matches Personal+ for client gates.
  */
 import { Router } from 'express';
 import puppeteer from 'puppeteer';
@@ -9,6 +10,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { uploadGeneratedSignaturePng } from '../services/signatureExportStorage.js';
+import { optionalAuth } from '../middleware/optionalAuth.js';
+import { supabaseAdmin } from '../services/supabase.js';
+import { PLANS, normalizePlanId, minPlanForFeature } from '../data/plans.js';
 
 const router = Router();
 
@@ -34,6 +38,7 @@ function wrapDocument(fragmentHtml) {
   <meta charset="utf-8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
     html, body {
@@ -60,11 +65,27 @@ function wrapDocument(fragmentHtml) {
 </html>`;
 }
 
-router.post('/generate-signature', async (req, res, next) => {
+router.post('/generate-signature', optionalAuth, async (req, res, next) => {
   try {
     const html = typeof req.body?.html === 'string' ? req.body.html.trim() : '';
     if (!html) {
       return res.status(400).json({ error: 'Missing "html" string in JSON body' });
+    }
+
+    if (req.user && supabaseAdmin) {
+      const { data } = await supabaseAdmin.from('profiles').select('plan').eq('id', req.user.id).maybeSingle();
+      const pid = normalizePlanId(data?.plan);
+      const plan = PLANS[pid] || PLANS.personal;
+      // Server PNG is used for "Copy HTML code" (hosted img URLs), not only Advanced+ clipboard image.
+      if (!plan.features.copy_html_to_clipboard) {
+        return res.status(403).json({
+          error: 'PLAN_FEATURE_REQUIRED',
+          feature: 'copy_html_to_clipboard',
+          current_plan: pid,
+          required_plan: minPlanForFeature('copy_html_to_clipboard'),
+          message: 'Signature image export requires a plan that includes copy HTML to clipboard.',
+        });
+      }
     }
 
     const port = Number(process.env.PORT) || 3001;

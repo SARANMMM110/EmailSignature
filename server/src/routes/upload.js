@@ -4,9 +4,12 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { supabaseAdmin, getStorageBucket } from '../services/supabase.js';
 import { buildEmaileeTableHtml } from '../lib/emaileeHtml.js';
+import { getPlan, normalizePlanId } from '../data/plans.js';
+import { requireFeature } from '../middleware/planGate.js';
 
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_SIZE = 5 * 1024 * 1024;
+/** Multer ceiling; per-plan limits enforced in `enforcePlanUploadBytes` after auth. */
+const MAX_SIZE = 28 * 1024 * 1024;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,6 +21,34 @@ const upload = multer({
 });
 
 const router = Router();
+
+async function enforcePlanUploadBytes(req, res, next) {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ message: 'Storage not configured' });
+    }
+    if (!req.file) return next();
+    const { data, error } = await supabaseAdmin.from('profiles').select('plan').eq('id', req.user.id).maybeSingle();
+    if (error) {
+      const err = new Error(error.message || 'Could not load profile');
+      err.statusCode = 400;
+      return next(err);
+    }
+    const plan = getPlan(data?.plan);
+    const maxB = plan.limits.media_upload_limit_mb * 1024 * 1024;
+    if (req.file.size > maxB) {
+      return res.status(413).json({
+        error: 'FILE_TOO_LARGE',
+        max_mb: plan.limits.media_upload_limit_mb,
+        plan: normalizePlanId(data?.plan),
+        message: `File exceeds ${plan.limits.media_upload_limit_mb}MB limit for the ${plan.name} plan.`,
+      });
+    }
+    return next();
+  } catch (e) {
+    return next(e);
+  }
+}
 
 async function uploadBuffer(path, buffer, contentType) {
   const bucket = getStorageBucket();
@@ -39,7 +70,7 @@ async function uploadBuffer(path, buffer, contentType) {
   return pub.publicUrl;
 }
 
-router.post('/photo', upload.single('image'), async (req, res, next) => {
+router.post('/photo', upload.single('image'), enforcePlanUploadBytes, async (req, res, next) => {
   try {
     if (!supabaseAdmin) {
       return res.status(503).json({ message: 'Storage not configured' });
@@ -50,18 +81,18 @@ router.post('/photo', upload.single('image'), async (req, res, next) => {
     const buf = await sharp(req.file.buffer)
       .rotate()
       .resize(200, 200, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 88, mozjpeg: true })
+      .png({ compressionLevel: 9 })
       .toBuffer();
-    const name = `${randomUUID()}.jpg`;
+    const name = `${randomUUID()}.png`;
     const path = `photos/${req.user.id}/${name}`;
-    const url = await uploadBuffer(path, buf, 'image/jpeg');
+    const url = await uploadBuffer(path, buf, 'image/png');
     res.json({ url });
   } catch (e) {
     next(e);
   }
 });
 
-router.post('/logo', upload.single('image'), async (req, res, next) => {
+router.post('/logo', upload.single('image'), enforcePlanUploadBytes, async (req, res, next) => {
   try {
     if (!supabaseAdmin) {
       return res.status(503).json({ message: 'Storage not configured' });
@@ -83,9 +114,36 @@ router.post('/logo', upload.single('image'), async (req, res, next) => {
   }
 });
 
+/** CTA strip / image-only banner — sized to typical signature rail width (email-safe). */
+router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ message: 'Storage not configured' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'Missing image field (multipart file)' });
+    }
+    /** Blank / CTA image canvas — matches engine blank strip ratio (`72/560` of width 720). */
+    const BANNER_MAX_W = 720;
+    const BANNER_MAX_H = Math.round((BANNER_MAX_W * 72) / 560);
+    /** Fill the strip (center crop); avoids letterboxed “postage stamp” in the banner preview. */
+    const buf = await sharp(req.file.buffer)
+      .rotate()
+      .resize(BANNER_MAX_W, BANNER_MAX_H, { fit: 'cover', position: 'centre' })
+      .jpeg({ quality: 86, mozjpeg: true })
+      .toBuffer();
+    const name = `${randomUUID()}.jpg`;
+    const path = `banners/${req.user.id}/${name}`;
+    const url = await uploadBuffer(path, buf, 'image/jpeg');
+    res.json({ url });
+  } catch (e) {
+    next(e);
+  }
+});
+
 const emaileeUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: MAX_SIZE },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype === 'image/png') cb(null, true);
     else cb(new Error('Only PNG is allowed for Emailee export'), false);
@@ -98,6 +156,7 @@ const emaileeUpload = multer({
  */
 router.post(
   '/emailee-export',
+  requireFeature('hosted_png_image_url_flow'),
   emaileeUpload.fields([
     { name: 'signature', maxCount: 1 },
     { name: 'banner', maxCount: 1 },

@@ -2,10 +2,10 @@
  * Long-form install copy (Emailee-style). {{BRAND}} is replaced at render time.
  */
 export const INSTALL_GUIDES = {
-  gmail: `Adding your {{BRAND}} signature to Gmail can significantly enhance your email interactions by providing a professional touch. Here's a straightforward guide to help you integrate your custom {{BRAND}} signature into Gmail.
+  gmail: `Adding your {{BRAND}} signature to Gmail gives every message a consistent, professional footer. This guide walks you through it in Gmail on the web.
 
-Step 1: Copy Your Signature to Clipboard
-Once you've finished creating and customizing your signature in {{BRAND}}, navigate to the final editing screen. Click on "Copy to Clipboard" to copy your entire signature, ensuring all formatting is included.
+Step 1: Copy your signature
+On the install screen in {{BRAND}}, use “Copy to clipboard” for a rich paste (image plus layout where supported). If that fails, use “Copy HTML code” and paste the same way. Then continue with the steps below.
 
 Step 2: Open Gmail Settings
 Log into your Gmail account and click on the gear icon in the upper right corner to open the quick settings menu. From there, click "See all settings" to access the full settings menu.

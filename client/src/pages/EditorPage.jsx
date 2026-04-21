@@ -6,7 +6,8 @@ import { Toast } from '../components/ui/Toast.jsx';
 import { MyInformationTab } from '../components/editor/tabs/MyInformationTab.jsx';
 import { PalettesTab } from '../components/editor/tabs/PalettesTab.jsx';
 import { LayoutsTab } from '../components/editor/tabs/LayoutsTab.jsx';
-import { BannersTab } from '../components/editor/tabs/BannersTab.jsx';
+import { BannersLayoutTab } from '../components/editor/tabs/BannersLayoutTab.jsx';
+import { useAuth } from '../hooks/useAuth.js';
 import { useEditorStore } from '../store/editorStore.js';
 
 function tabFromPathname(pathname) {
@@ -20,8 +21,10 @@ export function EditorPage() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile, user } = useAuth();
 
   const loadSignature = useEditorStore((s) => s.loadSignature);
+  const syncAccountProfileIntoSignature = useEditorStore((s) => s.syncAccountProfileIntoSignature);
   const resetEditor = useEditorStore((s) => s.resetEditor);
   const saveSignature = useEditorStore((s) => s.saveSignature);
   const openInstallModal = useEditorStore((s) => s.openInstallModal);
@@ -46,6 +49,12 @@ export function EditorPage() {
     loadSignature(id).catch(() => navigate('/dashboard', { replace: true }));
     return () => resetEditor();
   }, [id, loadSignature, navigate, resetEditor]);
+
+  /** If profile arrives after the row was merged with demo copy, swap placeholders for account data. */
+  useEffect(() => {
+    if (!id || id === 'new' || isLoading) return;
+    syncAccountProfileIntoSignature();
+  }, [id, isLoading, profile, user, syncAccountProfileIntoSignature]);
 
   useEffect(() => {
     const onBeforeUnload = (e) => {
@@ -110,7 +119,9 @@ export function EditorPage() {
         {sidebarTab === 'info' && <MyInformationTab onToast={(m, t) => setToast({ message: m, type: t })} />}
         {sidebarTab === 'palettes' && <PalettesTab />}
         {sidebarTab === 'layouts' && <LayoutsTab />}
-        {sidebarTab === 'banners' && <BannersTab />}
+        {sidebarTab === 'banners' && (
+          <BannersLayoutTab onToast={(m, ty) => setToast({ message: m, type: ty })} />
+        )}
       </EditorLayout>
 
       <InstallModal

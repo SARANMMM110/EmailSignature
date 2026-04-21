@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { query, validationResult } from 'express-validator';
 import { supabaseAdmin } from '../services/supabase.js';
 import { throwIfSupabaseError } from '../lib/supabaseRestError.js';
+import { mergeEditorBannerCatalog } from '../lib/editorBanners.js';
+import { BANNER_SLUG_TO_UUID } from '../lib/templateIds.js';
 
 const router = Router();
 
@@ -17,16 +19,17 @@ router.get(
       const { tier } = req.query;
 
       if (!supabaseAdmin) {
+        const offline = mergeEditorBannerCatalog([
+          {
+            id: BANNER_SLUG_TO_UUID.webinar,
+            name: 'Webinar',
+            tier: 'pro',
+            color_count: 6,
+            is_active: true,
+          },
+        ]);
         return res.json({
-          banners: [
-            {
-              id: 'b0000003-0000-4000-8000-000000000003',
-              name: 'Webinar',
-              tier: 'pro',
-              color_count: 6,
-              is_active: true,
-            },
-          ].filter((b) => !tier || b.tier === tier),
+          banners: offline.filter((b) => !tier || b.tier === tier),
         });
       }
 
@@ -34,7 +37,9 @@ router.get(
       if (tier) q = q.eq('tier', tier);
       const { data, error } = await q.order('created_at', { ascending: true });
       throwIfSupabaseError(error);
-      res.json({ banners: data || [] });
+      const merged = mergeEditorBannerCatalog(data);
+      const banners = tier ? merged.filter((b) => b.tier === tier) : merged;
+      res.json({ banners });
     } catch (e) {
       next(e);
     }

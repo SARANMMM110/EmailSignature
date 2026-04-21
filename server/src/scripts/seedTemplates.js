@@ -12,6 +12,16 @@ const BANNER_KEY_BY_SLUG = {
   download: 'banner_3',
   webinar: 'banner_1',
   'need-call': 'banner_4',
+  blank: 'banner_blank',
+  'mindscope-ats': 'banner_5',
+  'mailchimp-campaign': 'banner_6',
+  'explore-world-banner': 'banner_7',
+  'boost-improve-banner': 'banner_8',
+  'online-loan-banner': 'banner_9',
+  'business-city-banner': 'banner_10',
+  'leave-review-banner': 'banner_11',
+  'seo-whitepaper-banner': 'banner_12',
+  'green-gradient-cta-banner': 'banner_13',
 };
 
 async function seedTemplates() {
@@ -62,13 +72,43 @@ async function seedBanners() {
           ? 'Webinar'
           : slug === 'need-call'
             ? 'Need a call'
-            : 'Book a call';
+            : slug === 'blank'
+              ? 'Image only'
+              : slug === 'mindscope-ats'
+                ? 'Mindscope ATS'
+                : slug === 'mailchimp-campaign'
+                  ? 'Campaign strip'
+                  : slug === 'explore-world-banner'
+                    ? 'Explore your world'
+                    : slug === 'boost-improve-banner'
+                      ? 'Boost & improve'
+                      : slug === 'online-loan-banner'
+                        ? 'Online loan'
+                        : slug === 'business-city-banner'
+                          ? 'Business city'
+                          : slug === 'leave-review-banner'
+                            ? 'Leave a review'
+                            : slug === 'seo-whitepaper-banner'
+                              ? 'SEO whitepaper'
+                              : 'Book a call';
     const { error } = await supabaseAdmin.from('banners').upsert(
       {
         id: uuid,
         name,
         html_structure: html,
-        tier: slug === 'webinar' ? 'pro' : 'free',
+        tier:
+          slug === 'webinar' ||
+          slug === 'mindscope-ats' ||
+          slug === 'mailchimp-campaign' ||
+          slug === 'explore-world-banner' ||
+          slug === 'boost-improve-banner' ||
+          slug === 'online-loan-banner' ||
+          slug === 'business-city-banner' ||
+          slug === 'leave-review-banner' ||
+          slug === 'seo-whitepaper-banner' ||
+          slug === 'green-gradient-cta-banner'
+            ? 'pro'
+            : 'free',
         is_active: true,
       },
       { onConflict: 'id' }

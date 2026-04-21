@@ -11,17 +11,41 @@ import {
   engineSlugForGalleryPreview,
   TEMPLATE_SLUG_TO_UUID,
   isWebinarBannerPreset,
+  isBlankImageBannerPreset,
+  isDownloadBannerPreset,
+  isNeedCallBannerPreset,
+  isMindscopeBannerPreset,
+  isMailchimpBannerPreset,
+  isExploreWorldBannerPreset,
+  isBoostImproveBannerPreset,
+  isOnlineLoanBannerPreset,
+  isBusinessCityBannerPreset,
+  isLeaveReviewBannerPreset,
+  isSeoWhitepaperBannerPreset,
+  isGreenGradientCtaBannerPreset,
   WEBINAR_BANNER_UUID,
+  BLANK_IMAGE_BANNER_UUID,
+  MINDSCOPE_BANNER_UUID,
+  MAILCHIMP_BANNER_UUID,
+  EXPLORE_WORLD_BANNER_UUID,
+  BOOST_IMPROVE_BANNER_UUID,
+  ONLINE_LOAN_BANNER_UUID,
+  BUSINESS_CITY_BANNER_UUID,
+  LEAVE_REVIEW_BANNER_UUID,
+  SEO_WHITEPAPER_BANNER_UUID,
+  GREEN_GRADIENT_CTA_BANNER_UUID,
 } from '../lib/templateIds.js';
 import { filterAndSortEditorBanners } from '../lib/editorBanners.js';
 import { DEMO_SIGNATURE_DATA } from '../data/templatePreviews.js';
 import {
-  hasPersistedMyInfoDraft,
-  mergeDraftIntoSignature,
+  applyProfileOverDemoPlaceholders,
+  mergeProfileIntoSignature,
   pickDraftPayload,
-  starterFieldsWithSavedMyInfo,
+  profileHasPrefillableContent,
+  starterFieldsWithProfile,
   writeMyInfoDraft,
 } from '../lib/myInfoDraft.js';
+import { useAuthStore } from './authStore.js';
 
 /** UUID → Handlebars template key (must match server seed + templateIds) */
 const BANNER_UUID_TO_PRESET = {
@@ -29,6 +53,16 @@ const BANNER_UUID_TO_PRESET = {
   'b0000002-0000-4000-8000-000000000002': 'download',
   'b0000003-0000-4000-8000-000000000003': 'webinar',
   'b0000004-0000-4000-8000-000000000004': 'need-call',
+  'b0000005-0000-4000-8000-000000000005': 'blank-image',
+  [String(MINDSCOPE_BANNER_UUID).toLowerCase()]: 'mindscope-ats',
+  [String(MAILCHIMP_BANNER_UUID).toLowerCase()]: 'mailchimp-campaign',
+  [String(EXPLORE_WORLD_BANNER_UUID).toLowerCase()]: 'explore-world-banner',
+  [String(BOOST_IMPROVE_BANNER_UUID).toLowerCase()]: 'boost-improve-banner',
+  [String(ONLINE_LOAN_BANNER_UUID).toLowerCase()]: 'online-loan-banner',
+  [String(BUSINESS_CITY_BANNER_UUID).toLowerCase()]: 'business-city-banner',
+  [String(LEAVE_REVIEW_BANNER_UUID).toLowerCase()]: 'leave-review-banner',
+  [String(SEO_WHITEPAPER_BANNER_UUID).toLowerCase()]: 'seo-whitepaper-banner',
+  [String(GREEN_GRADIENT_CTA_BANNER_UUID).toLowerCase()]: 'green-gradient-cta-banner',
 };
 
 function bannerPresetFromRow(b) {
@@ -38,8 +72,89 @@ function bannerPresetFromRow(b) {
   if (id.includes('download')) return 'download';
   if (id.includes('webinar')) return 'webinar';
   if (id.includes('need')) return 'need-call';
+  if (id === String(BLANK_IMAGE_BANNER_UUID).toLowerCase()) return 'blank-image';
+  if (id === String(MINDSCOPE_BANNER_UUID).toLowerCase() || id.includes('mindscope')) return 'mindscope-ats';
+  if (id === String(MAILCHIMP_BANNER_UUID).toLowerCase() || id.includes('mailchimp')) return 'mailchimp-campaign';
+  if (
+    id === String(EXPLORE_WORLD_BANNER_UUID).toLowerCase() ||
+    id.includes('explore-world') ||
+    id.includes('explore-your-world')
+  ) {
+    return 'explore-world-banner';
+  }
+  if (
+    id === String(BOOST_IMPROVE_BANNER_UUID).toLowerCase() ||
+    id.includes('boost-improve')
+  ) {
+    return 'boost-improve-banner';
+  }
+  if (id === String(ONLINE_LOAN_BANNER_UUID).toLowerCase() || id.includes('online-loan')) {
+    return 'online-loan-banner';
+  }
+  if (id === String(BUSINESS_CITY_BANNER_UUID).toLowerCase() || id.includes('business-city')) {
+    return 'business-city-banner';
+  }
+  if (id === String(LEAVE_REVIEW_BANNER_UUID).toLowerCase() || id.includes('leave-review')) {
+    return 'leave-review-banner';
+  }
+  if (id === String(SEO_WHITEPAPER_BANNER_UUID).toLowerCase() || id.includes('seo-whitepaper')) {
+    return 'seo-whitepaper-banner';
+  }
+  if (id === String(GREEN_GRADIENT_CTA_BANNER_UUID).toLowerCase() || id.includes('green-gradient-cta')) {
+    return 'green-gradient-cta-banner';
+  }
   if (id.includes('book') || id.includes('call')) return 'book-call';
   return String(b.id);
+}
+
+/** Case-insensitive catalog lookup (API UUID casing can differ from editor clicks). */
+function findBannerInCatalog(list, bannerId) {
+  const target = String(bannerId || '').trim().toLowerCase();
+  if (!target) return undefined;
+  return (list || []).find((x) => String(x?.id || '').trim().toLowerCase() === target);
+}
+
+/** When no catalog row matches, infer preset from banner UUID / slug (must stay aligned with {@link bannerPresetFromRow}). */
+function bannerPresetFromBannerId(bannerId) {
+  const id = String(bannerId || '').trim().toLowerCase();
+  if (!id) return 'book-call';
+  if (BANNER_UUID_TO_PRESET[id]) return BANNER_UUID_TO_PRESET[id];
+  if (id.includes('download')) return 'download';
+  if (id.includes('webinar')) return 'webinar';
+  if (id.includes('need')) return 'need-call';
+  if (id === String(BLANK_IMAGE_BANNER_UUID).toLowerCase()) return 'blank-image';
+  if (id === String(MINDSCOPE_BANNER_UUID).toLowerCase() || id.includes('mindscope')) return 'mindscope-ats';
+  if (id === String(MAILCHIMP_BANNER_UUID).toLowerCase() || id.includes('mailchimp')) return 'mailchimp-campaign';
+  if (
+    id === String(EXPLORE_WORLD_BANNER_UUID).toLowerCase() ||
+    id.includes('explore-world') ||
+    id.includes('explore-your-world')
+  ) {
+    return 'explore-world-banner';
+  }
+  if (
+    id === String(BOOST_IMPROVE_BANNER_UUID).toLowerCase() ||
+    id.includes('boost-improve')
+  ) {
+    return 'boost-improve-banner';
+  }
+  if (id === String(ONLINE_LOAN_BANNER_UUID).toLowerCase() || id.includes('online-loan')) {
+    return 'online-loan-banner';
+  }
+  if (id === String(BUSINESS_CITY_BANNER_UUID).toLowerCase() || id.includes('business-city')) {
+    return 'business-city-banner';
+  }
+  if (id === String(LEAVE_REVIEW_BANNER_UUID).toLowerCase() || id.includes('leave-review')) {
+    return 'leave-review-banner';
+  }
+  if (id === String(SEO_WHITEPAPER_BANNER_UUID).toLowerCase() || id.includes('seo-whitepaper')) {
+    return 'seo-whitepaper-banner';
+  }
+  if (id === String(GREEN_GRADIENT_CTA_BANNER_UUID).toLowerCase() || id.includes('green-gradient-cta')) {
+    return 'green-gradient-cta-banner';
+  }
+  if (id.includes('book') || id.includes('call')) return 'book-call';
+  return 'book-call';
 }
 
 /** Keys for a stacked second CTA — preserved when changing the primary banner. */
@@ -50,6 +165,193 @@ function pickSecondaryBannerConfig(bc) {
     if (k.startsWith('secondary_')) out[k] = bc[k];
   }
   return out;
+}
+
+/** When removing the main CTA but a stacked second exists, promote second → primary. */
+function mapSecondaryToPrimaryBannerConfig(prev) {
+  if (!prev || typeof prev !== 'object') return {};
+  const secPreset = prev.secondary_preset_id || 'book-call';
+  const secBannerId = prev.secondary_banner_id;
+  const isWeb = isWebinarBannerPreset(secPreset, secBannerId);
+  const isDownload = isDownloadBannerPreset(secPreset, secBannerId);
+  const isNeed = isNeedCallBannerPreset(secPreset, secBannerId);
+  const isMindscope = isMindscopeBannerPreset(secPreset, secBannerId);
+  const isMailchimp = isMailchimpBannerPreset(secPreset, secBannerId);
+  const isExploreWorld = isExploreWorldBannerPreset(secPreset, secBannerId);
+  const isBoostImprove = isBoostImproveBannerPreset(secPreset, secBannerId);
+  const isOnlineLoan = isOnlineLoanBannerPreset(secPreset, secBannerId);
+  const isBusinessCity = isBusinessCityBannerPreset(secPreset, secBannerId);
+  const isLeaveReview = isLeaveReviewBannerPreset(secPreset, secBannerId);
+  const isSeoWhitepaper = isSeoWhitepaperBannerPreset(secPreset, secBannerId);
+  const isGreenGradientCta = isGreenGradientCtaBannerPreset(secPreset, secBannerId);
+  const isBook =
+    !isWeb &&
+    !isDownload &&
+    !isNeed &&
+    !isMindscope &&
+    !isMailchimp &&
+    !isExploreWorld &&
+    !isBoostImprove &&
+    !isOnlineLoan &&
+    !isBusinessCity &&
+    !isLeaveReview &&
+    !isSeoWhitepaper &&
+    !isGreenGradientCta &&
+    /book|call/i.test(String(secPreset));
+  const isBlank = isBlankImageBannerPreset(secPreset, secBannerId);
+  const link = prev.secondary_link_url || prev.secondary_href || 'https://';
+
+  if (isBlank) {
+    return {
+      preset_id: secPreset,
+      link_url: prev.secondary_link_url || prev.secondary_href || '',
+      href: '',
+      text: '',
+      banner_image_url: prev.secondary_banner_image_url ?? '',
+    };
+  }
+  if (isWeb) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_field_3 ?? prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+      field_3: prev.secondary_field_3 ?? '',
+      field_4: prev.secondary_field_4 ?? '',
+      field_5: prev.secondary_field_5 ?? '',
+      banner_image_url: prev.secondary_banner_image_url ?? prev.banner_image_url ?? '',
+    };
+  }
+  if (isMindscope) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+      field_3: prev.secondary_field_3 ?? '',
+      field_4: prev.secondary_field_4 ?? '',
+      field_5: prev.secondary_field_5 ?? '',
+      banner_image_url: prev.secondary_banner_image_url ?? '',
+    };
+  }
+  if (isMailchimp) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+    };
+  }
+  if (isExploreWorld) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+      field_3: prev.secondary_field_3 ?? '',
+      field_4: prev.secondary_field_4 ?? '',
+      field_5: prev.secondary_field_5 ?? '',
+    };
+  }
+  if (isBoostImprove) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+      field_3: prev.secondary_field_3 ?? '',
+      field_4: prev.secondary_field_4 ?? '',
+    };
+  }
+  if (isOnlineLoan) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+      field_3: prev.secondary_field_3 ?? '',
+      banner_image_url: prev.secondary_banner_image_url ?? '',
+    };
+  }
+  if (isBusinessCity) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+      field_3: prev.secondary_field_3 ?? '',
+      field_4: prev.secondary_field_4 ?? '',
+      field_5: prev.secondary_field_5 ?? '',
+    };
+  }
+  if (isLeaveReview) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+    };
+  }
+  if (isSeoWhitepaper) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+    };
+  }
+  if (isGreenGradientCta) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: String(prev.secondary_text ?? ''),
+      field_1: prev.secondary_field_1 ?? '',
+    };
+  }
+  if (isBook) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: prev.secondary_text ?? '',
+      field_2: prev.secondary_field_2 ?? '',
+    };
+  }
+  if (isDownload || isNeed) {
+    return {
+      preset_id: secPreset,
+      link_url: link,
+      href: '',
+      text: prev.secondary_text ?? '',
+      field_1: prev.secondary_field_1 ?? '',
+    };
+  }
+  return {
+    preset_id: secPreset,
+    link_url: link,
+    href: '',
+    text: prev.secondary_text ?? '',
+    field_2: prev.secondary_field_2 ?? '',
+    banner_image_url: prev.secondary_banner_image_url ?? '',
+  };
 }
 
 /** Stale `fields._bundle.banner` otherwise wins in server `rowToGeneratePayload` / regenerate. */
@@ -86,6 +388,7 @@ function hasAnyPersonalFieldContent(fields) {
     'jobTitle',
     'company',
     'companyName',
+    'tagline',
     'phone',
     'email',
     'website',
@@ -108,15 +411,18 @@ function withStarterContentIfEmpty(sig) {
   if (!sig) return null;
   const apiFields = sig.fields || {};
   const apiSocial = sig.social_links || {};
-  /** Empty row from POST /signatures — demo + palette defaults; My info from local draft if any. */
+  /** Empty row from POST /signatures — demo + palette defaults; personal fields from account profile. */
   const pristineFromApi =
     !hasAnyPersonalFieldContent(apiFields) && !hasAnySocialContent(apiSocial);
+  const { profile, user } = useAuthStore.getState();
 
   if (pristineFromApi) {
     const demo = DEMO_SIGNATURE_DATA;
-    const { fields: mergedFields, social_links: mergedSocial } = starterFieldsWithSavedMyInfo(
+    const { fields: mergedFields, social_links: mergedSocial } = starterFieldsWithProfile(
       demo.fields,
-      demo.social_links
+      demo.social_links,
+      profile,
+      user
     );
     const fields = { ...mergedFields };
     if (!signatureLayoutSupportsLogo(sig)) {
@@ -142,7 +448,7 @@ function withStarterContentIfEmpty(sig) {
     };
   }
 
-  return mergeDraftIntoSignature(sig);
+  return mergeProfileIntoSignature(sig, profile, user);
 }
 
 export function clientSignatureFromApi(sig) {
@@ -152,6 +458,7 @@ export function clientSignatureFromApi(sig) {
   return {
     id: sig.id,
     label: sig.label || sig.name || 'My signature',
+    updated_at: sig.updated_at || null,
     template_id: sig.template_id,
     banner_id: sig.banner_id ?? null,
     fields: { ...(sig.fields || {}) },
@@ -182,6 +489,29 @@ function buildPutBody(signature) {
   };
 }
 
+/**
+ * True when the primary CTA is actually usable for HTML generation (link, or blank-image with URL).
+ * `banner_id` alone can be stale without `banner_config` — treat that as "no primary" for stacking logic.
+ */
+export function signatureHasRenderablePrimaryBanner(sig) {
+  if (!sig) return false;
+  const bannerCfg = sig.banner_config || {};
+  const blankPrimary =
+    isBlankImageBannerPreset(bannerCfg.preset_id, sig.banner_id) &&
+    String(bannerCfg.banner_image_url || '').trim();
+  return Boolean(String(bannerCfg.link_url || bannerCfg.href || '').trim() || blankPrimary);
+}
+
+/** Live HTML preview: include primary CTA in POST /html/generate even when image-only strip has no file yet. */
+function signaturePrimaryBannerIncludedInPreviewPayload(sig) {
+  if (!sig) return false;
+  const bannerCfg = sig.banner_config || {};
+  if (sig.banner_id && isBlankImageBannerPreset(bannerCfg.preset_id, sig.banner_id)) {
+    return true;
+  }
+  return signatureHasRenderablePrimaryBanner(sig);
+}
+
 /** Payload for POST /api/html/generate (matches server handlebars engine). */
 export function signatureToEditorPayload(sig) {
   if (!sig) return {};
@@ -197,10 +527,9 @@ export function signatureToEditorPayload(sig) {
     text: colors[3] || pal.text || '#0f172a',
   };
   const bannerCfg = sig.banner_config || {};
-  const banner =
-    bannerCfg.link_url || bannerCfg.href
-      ? {
-          id: bannerCfg.preset_id || 'book-call',
+  const banner = signaturePrimaryBannerIncludedInPreviewPayload(sig)
+    ? {
+          id: sig.banner_id || bannerCfg.preset_id || 'book-call',
           href: bannerCfg.link_url || bannerCfg.href || 'https://',
           link_url: bannerCfg.link_url || bannerCfg.href || '',
           text: bannerCfg.text || '',
@@ -208,6 +537,9 @@ export function signatureToEditorPayload(sig) {
           field_2: bannerCfg.field_2,
           field_3: bannerCfg.field_3,
           field_4: bannerCfg.field_4,
+          field_5: bannerCfg.field_5,
+          banner_image_url: bannerCfg.banner_image_url,
+          image_url: bannerCfg.image_url,
           secondary_link_url: bannerCfg.secondary_link_url,
           secondary_href: bannerCfg.secondary_href,
           secondary_text: bannerCfg.secondary_text,
@@ -215,8 +547,10 @@ export function signatureToEditorPayload(sig) {
           secondary_field_2: bannerCfg.secondary_field_2,
           secondary_field_3: bannerCfg.secondary_field_3,
           secondary_field_4: bannerCfg.secondary_field_4,
+          secondary_field_5: bannerCfg.secondary_field_5,
           secondary_preset_id: bannerCfg.secondary_preset_id,
           secondary_banner_id: bannerCfg.secondary_banner_id,
+          secondary_banner_image_url: bannerCfg.secondary_banner_image_url,
         }
       : null;
 
@@ -241,6 +575,7 @@ export function signatureToEditorPayload(sig) {
       instagram: social.instagram || '',
       github: social.github || '',
       facebook: social.facebook || '',
+      telegram: social.telegram || '',
       medium: social.medium || '',
       showBadge: sig.show_badge !== false,
       signatureLinkUrl: sig.signature_link || '',
@@ -356,20 +691,47 @@ const persistMyInfoDraft = debounce(() => {
   writeMyInfoDraft(fields, social_links);
 }, 400);
 
+/** Server-computed iframe parts for editor preview (one CTA per slot). */
+function previewSlotBundleFromGenerateResponse(data) {
+  const ps = data?.previewSlots;
+  if (
+    ps &&
+    typeof ps.signatureHtml === 'string' &&
+    ps.signatureHtml.trim() &&
+    Array.isArray(ps.bannerSlotHtmls) &&
+    ps.bannerSlotHtmls.length > 0
+  ) {
+    return {
+      signatureHtml: ps.signatureHtml.trim(),
+      bannerSlotHtmls: ps.bannerSlotHtmls.map((s) => String(s || '').trim()).filter(Boolean),
+    };
+  }
+  return null;
+}
+
 /** Live preview: refresh shortly after typing stops (300ms — balances API load vs responsiveness). */
 const runDebouncedPreview = debounce(async () => {
   const seq = ++htmlPreviewSeq;
   const sig = useEditorStore.getState().signature;
   if (!sig) return;
   try {
-    const { data } = await api.post('/html/generate', signatureToEditorPayload(sig));
+    const { data } = await api.post('/html/generate', {
+      ...signatureToEditorPayload(sig),
+      includePreviewSlots: true,
+    });
     if (seq !== htmlPreviewSeq) return;
     const html = data?.html || '';
     if (html) {
-      useEditorStore.setState({ generatedHTML: html });
+      useEditorStore.setState({
+        generatedHTML: html,
+        previewSlotBundle: previewSlotBundleFromGenerateResponse(data),
+      });
       runPuppeteerExport(html);
-    } else if (import.meta.env.DEV) {
-      console.warn('[editor] /html/generate returned empty html');
+    } else {
+      useEditorStore.setState({ previewSlotBundle: null });
+      if (import.meta.env.DEV) {
+        console.warn('[editor] /html/generate returned empty html');
+      }
     }
   } catch (e) {
     if (import.meta.env.DEV) {
@@ -408,6 +770,8 @@ export const useEditorStore = create((set, get) => ({
   isDirty: false,
   isSaving: false,
   generatedHTML: '',
+  /** When set, editor preview uses these strings per iframe (from POST /html/generate + includePreviewSlots). */
+  previewSlotBundle: null,
   /** Set when POST /api/html/generate fails or returns empty — drives preview panel message + retry */
   previewError: null,
   /** Signature-only PNG (or composite when no CTA) from POST /api/generate-signature */
@@ -442,6 +806,7 @@ export const useEditorStore = create((set, get) => ({
       set({
         signature: nextSig,
         generatedHTML: gh,
+        previewSlotBundle: null,
         isDirty: false,
         isSaving: false,
         saveStatus: 'saved',
@@ -455,6 +820,19 @@ export const useEditorStore = create((set, get) => ({
     }, 2500);
   },
 
+  /** When profile loads or updates, fill empty fields from account data and replace any demo placeholders. */
+  syncAccountProfileIntoSignature: () => {
+    const sig = get().signature;
+    if (!sig) return;
+    const { profile, user } = useAuthStore.getState();
+    const merged = mergeProfileIntoSignature(sig, profile, user);
+    const next = applyProfileOverDemoPlaceholders(merged, profile, user, DEMO_SIGNATURE_DATA.fields);
+    if (next === sig) return;
+    set({ signature: next, isDirty: true, saveStatus: 'idle' });
+    get().refreshPreviewNow();
+    get().scheduleAutosave();
+  },
+
   loadSignature: async (id) => {
     putBodySnapshotAtRequest = null;
     if (!id || id === 'new') {
@@ -463,6 +841,7 @@ export const useEditorStore = create((set, get) => ({
         signature: null,
         isLoading: false,
         generatedHTML: '',
+        previewSlotBundle: null,
         previewError: null,
         exportImageUrl: '',
         exportBannerImageUrl: '',
@@ -481,12 +860,20 @@ export const useEditorStore = create((set, get) => ({
       const pristineFromApi =
         !hasAnyPersonalFieldContent(apiSig.fields || {}) &&
         !hasAnySocialContent(apiSig.social_links || {});
-      const sig = withStarterContentIfEmpty(apiSig);
-      const seedFromSavedMyInfo = pristineFromApi && hasPersistedMyInfoDraft();
+      const { profile, user } = useAuthStore.getState();
+      const sig = applyProfileOverDemoPlaceholders(
+        withStarterContentIfEmpty(apiSig),
+        profile,
+        user,
+        DEMO_SIGNATURE_DATA.fields
+      );
+      const seedFromProfilePrefill =
+        pristineFromApi && profileHasPrefillableContent(profile, user);
       set({
         signatureId: id,
         signature: sig,
         generatedHTML: sig?.generated_html || '',
+        previewSlotBundle: null,
         previewError: null,
         exportImageUrl: '',
         exportBannerImageUrl: '',
@@ -494,12 +881,12 @@ export const useEditorStore = create((set, get) => ({
         exportImageWarning: null,
         exportGenerating: false,
         isLoading: false,
-        isDirty: seedFromSavedMyInfo,
+        isDirty: seedFromProfilePrefill,
         saveStatus: 'idle',
       });
       queueMicrotask(() => {
         useEditorStore.getState().refreshPreviewNow();
-        if (seedFromSavedMyInfo) useEditorStore.getState().scheduleAutosave();
+        if (seedFromProfilePrefill) useEditorStore.getState().scheduleAutosave();
       });
     } catch (e) {
       console.error(e);
@@ -618,8 +1005,8 @@ export const useEditorStore = create((set, get) => ({
     get().scheduleAutosave();
   },
 
+  /** Always refetches — avoids stale catalog (e.g. new banner rows) and UUID casing mismatches in cached rows. */
   ensureBannersCache: async () => {
-    if (get().bannersCache) return get().bannersCache;
     try {
       const { data } = await bannersAPI.getAll();
       const raw = data?.banners || [];
@@ -651,43 +1038,165 @@ export const useEditorStore = create((set, get) => ({
       return;
     }
     const list = await get().ensureBannersCache();
-    const b = list.find((x) => x.id === bannerId);
-    const pid = bannerPresetFromRow(b);
-    const isWebinar = isWebinarBannerPreset(pid, b?.id);
-    const text = isWebinar
-      ? 'Book my seat'
-      : /book|call/i.test(pid)
-        ? 'Book a call today'
-        : b?.name || 'Learn more';
+    const b = findBannerInCatalog(list, bannerId);
+    const pid = b ? bannerPresetFromRow(b) : bannerPresetFromBannerId(bannerId);
+    const bidForFlags = b?.id ?? bannerId;
+    const isWebinar = isWebinarBannerPreset(pid, bidForFlags);
+    const isMindscope = isMindscopeBannerPreset(pid, bidForFlags);
+    const isMailchimp = isMailchimpBannerPreset(pid, bidForFlags);
+    const isExploreWorld = isExploreWorldBannerPreset(pid, bidForFlags);
+    const isBoostImprove = isBoostImproveBannerPreset(pid, bidForFlags);
+    const isOnlineLoan = isOnlineLoanBannerPreset(pid, bidForFlags);
+    const isBusinessCity = isBusinessCityBannerPreset(pid, bidForFlags);
+    const isLeaveReview = isLeaveReviewBannerPreset(pid, bidForFlags);
+    const isSeoWhitepaper = isSeoWhitepaperBannerPreset(pid, bidForFlags);
+    const isGreenGradientCta = isGreenGradientCtaBannerPreset(pid, bidForFlags);
+    const isDownload = isDownloadBannerPreset(pid, bidForFlags);
+    const isBlank = String(bidForFlags || '').toLowerCase() === String(BLANK_IMAGE_BANNER_UUID).toLowerCase();
+    const text = isBlank
+      ? ''
+      : isMindscope
+        ? 'Try For Free!'
+        : isMailchimp
+          ? 'Get Started'
+          : isExploreWorld
+            ? 'Learn More'
+            : isBoostImprove
+              ? 'Click Here'
+              : isOnlineLoan
+                ? 'CHCI PŮJČIT'
+                : isBusinessCity
+                  ? 'LEARN MORE'
+                  : isLeaveReview
+                    ? ''
+                    : isSeoWhitepaper
+                      ? ''
+                      : isGreenGradientCta
+                        ? 'Book a call'
+                        : isWebinar
+                          ? 'Call to action'
+                          : /book|call/i.test(pid)
+                            ? 'Book a call today'
+                            : b?.name || 'Learn more';
     const webinarFields = isWebinar
       ? {
-          field_1: 'Email Marketing 101 Webinar',
-          field_2: 'Only 10 seats available!',
-          field_3: 'Book my seat',
-          field_4: '88',
+          field_1: 'Digital marketing\nexpert',
+          field_2: 'Projecting your brand into\nthe distant.',
+          field_3: 'Call to action',
+          field_4: '80',
+          field_5: '',
         }
       : {};
+    const mindscopeFields = isMindscope
+      ? {
+          field_1: 'Applicant Tracking\nSystem & Recruiting CRM',
+          field_2: 'Make Hiring ',
+          field_3: 'Easy!',
+          field_4: 'No credit card required',
+          field_5: 'MINDSCOPE',
+        }
+      : {};
+    const mailchimpFields = isMailchimp
+      ? {
+          field_1: "The industry's leading email marketing solution.",
+        }
+      : {};
+    const exploreWorldFields = isExploreWorld
+      ? {
+          field_1: 'explore',
+          field_2: 'log',
+          field_3: 'Explore Your',
+          field_4: 'WORLD',
+          field_5: 'www.example.com',
+        }
+      : {};
+    const boostImproveFields = isBoostImprove
+      ? {
+          field_1: 'Mighty',
+          field_2: 'LOGO',
+          field_3: 'Boost and Improve',
+          field_4: 'Your Immune System',
+        }
+      : {};
+    const onlineLoanFields = isOnlineLoan
+      ? {
+          field_1: 'Online půjčka pro',
+          field_2: 'každého',
+          field_3: 'REVOLIO',
+        }
+      : {};
+    const businessCityFields = isBusinessCity
+      ? {
+          field_1: 'BUSINESS',
+          field_2: 'BANNER',
+          field_3: 'DESIGN',
+          field_4: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.',
+          field_5: 'COMPANY',
+        }
+      : {};
+    const leaveReviewFields = isLeaveReview
+      ? {
+          field_1: 'Leave us a review',
+          field_2: 'on Trustpilot',
+        }
+      : {};
+    const seoWhitepaperFields = isSeoWhitepaper
+      ? {
+          field_1: 'SEO Whitepaper',
+          field_2: 'Free top 10 SEO tips PDF',
+        }
+      : {};
+    const greenGradientCtaFields = isGreenGradientCta
+      ? {
+          field_1: 'A better\nfuture awaits',
+        }
+      : {};
+    /** Ensures `field_1` is persisted for resume/download strip (server + editor payload). */
+    const downloadFields = isDownload ? { field_1: 'Download my Resume' } : {};
     const prev = sig.banner_config || {};
-    let preserved = pickSecondaryBannerConfig(prev);
-    if (preserved.secondary_banner_id && String(preserved.secondary_banner_id) === String(bannerId)) {
-      preserved = {};
-    }
+    const preserved = pickSecondaryBannerConfig(prev);
     set({
       signature: {
         ...sig,
         banner_id: bannerId,
         banner_config: {
           preset_id: pid,
-          link_url: 'https://',
+          link_url: isBlank ? '' : 'https://',
           text,
+          banner_image_url:
+            isBlank
+              ? ''
+              : isWebinar ||
+                  isMailchimp ||
+                  isExploreWorld ||
+                  isBoostImprove ||
+                  isBusinessCity ||
+                  isLeaveReview ||
+                  isSeoWhitepaper ||
+                  isGreenGradientCta
+                ? ''
+                : isOnlineLoan
+                  ? ''
+                  : prev.banner_image_url || '',
           ...webinarFields,
+          ...mindscopeFields,
+          ...mailchimpFields,
+          ...exploreWorldFields,
+          ...boostImproveFields,
+          ...onlineLoanFields,
+          ...businessCityFields,
+          ...leaveReviewFields,
+          ...seoWhitepaperFields,
+          ...greenGradientCtaFields,
+          ...downloadFields,
           ...preserved,
         },
       },
       isDirty: true,
       saveStatus: 'idle',
     });
-    runDebouncedPreview();
+    runDebouncedPreview.cancel();
+    void get().refreshPreviewNow();
     get().scheduleAutosave();
   },
 
@@ -710,28 +1219,139 @@ export const useEditorStore = create((set, get) => ({
       get().scheduleAutosave();
       return;
     }
-    if (String(bannerId) === String(sig.banner_id)) return;
     const list = await get().ensureBannersCache();
-    const b = list.find((x) => x.id === bannerId);
-    const pid = bannerPresetFromRow(b);
-    const isWebinar = isWebinarBannerPreset(pid, b?.id);
-    const secText = isWebinar
-      ? 'Book my seat'
-      : /book|call/i.test(pid)
-        ? 'Book a call today'
-        : b?.name || 'Learn more';
+    const b = findBannerInCatalog(list, bannerId);
+    const pid = b ? bannerPresetFromRow(b) : bannerPresetFromBannerId(bannerId);
+    const bidForFlags = b?.id ?? bannerId;
+    const isWebinar = isWebinarBannerPreset(pid, bidForFlags);
+    const isMindscope = isMindscopeBannerPreset(pid, bidForFlags);
+    const isMailchimp = isMailchimpBannerPreset(pid, bidForFlags);
+    const isExploreWorld = isExploreWorldBannerPreset(pid, bidForFlags);
+    const isBoostImprove = isBoostImproveBannerPreset(pid, bidForFlags);
+    const isOnlineLoan = isOnlineLoanBannerPreset(pid, bidForFlags);
+    const isBusinessCity = isBusinessCityBannerPreset(pid, bidForFlags);
+    const isLeaveReview = isLeaveReviewBannerPreset(pid, bidForFlags);
+    const isSeoWhitepaper = isSeoWhitepaperBannerPreset(pid, bidForFlags);
+    const isGreenGradientCta = isGreenGradientCtaBannerPreset(pid, bidForFlags);
+    const isDownload = isDownloadBannerPreset(pid, bidForFlags);
+    const isSecBlank = String(bidForFlags || '').toLowerCase() === String(BLANK_IMAGE_BANNER_UUID).toLowerCase();
+    const secText = isSecBlank
+      ? ''
+      : isMindscope
+        ? 'Try For Free!'
+        : isMailchimp
+          ? 'Get Started'
+          : isExploreWorld
+            ? 'Learn More'
+            : isBoostImprove
+              ? 'Click Here'
+              : isOnlineLoan
+                ? 'CHCI PŮJČIT'
+                : isBusinessCity
+                  ? 'LEARN MORE'
+                  : isLeaveReview
+                    ? ''
+                    : isSeoWhitepaper
+                      ? ''
+                      : isGreenGradientCta
+                        ? 'Book a call'
+                        : isWebinar
+                          ? 'Call to action'
+                          : /book|call/i.test(pid)
+                            ? 'Book a call today'
+                            : b?.name || 'Learn more';
     const baseCfg = { ...prev };
     for (const k of Object.keys(baseCfg)) {
       if (k.startsWith('secondary_')) delete baseCfg[k];
     }
     const webinarSecondary = isWebinar
       ? {
-          secondary_field_1: 'Email Marketing 101 Webinar',
-          secondary_field_2: 'Only 10 seats available!',
-          secondary_field_3: 'Book my seat',
-          secondary_field_4: '88',
+          secondary_field_1: 'Digital marketing\nexpert',
+          secondary_field_2: 'Projecting your brand into\nthe distant.',
+          secondary_field_3: 'Call to action',
+          secondary_field_4: '80',
+          secondary_field_5: '',
+          secondary_banner_image_url: '',
         }
       : {};
+    const mindscopeSecondary = isMindscope
+      ? {
+          secondary_field_1: 'Applicant Tracking\nSystem & Recruiting CRM',
+          secondary_field_2: 'Make Hiring ',
+          secondary_field_3: 'Easy!',
+          secondary_field_4: 'No credit card required',
+          secondary_field_5: 'MINDSCOPE',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const mailchimpSecondary = isMailchimp
+      ? {
+          secondary_field_1: "The industry's leading email marketing solution.",
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const exploreWorldSecondary = isExploreWorld
+      ? {
+          secondary_field_1: 'explore',
+          secondary_field_2: 'log',
+          secondary_field_3: 'Explore Your',
+          secondary_field_4: 'WORLD',
+          secondary_field_5: 'www.example.com',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const boostImproveSecondary = isBoostImprove
+      ? {
+          secondary_field_1: 'Mighty',
+          secondary_field_2: 'LOGO',
+          secondary_field_3: 'Boost and Improve',
+          secondary_field_4: 'Your Immune System',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const onlineLoanSecondary = isOnlineLoan
+      ? {
+          secondary_field_1: 'Online půjčka pro',
+          secondary_field_2: 'každého',
+          secondary_field_3: 'REVOLIO',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const businessCitySecondary = isBusinessCity
+      ? {
+          secondary_field_1: 'BUSINESS',
+          secondary_field_2: 'BANNER',
+          secondary_field_3: 'DESIGN',
+          secondary_field_4:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.',
+          secondary_field_5: 'COMPANY',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const leaveReviewSecondary = isLeaveReview
+      ? {
+          secondary_field_1: 'Leave us a review',
+          secondary_field_2: 'on Trustpilot',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const seoWhitepaperSecondary = isSeoWhitepaper
+      ? {
+          secondary_field_1: 'SEO Whitepaper',
+          secondary_field_2: 'Free top 10 SEO tips PDF',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const greenGradientCtaSecondary = isGreenGradientCta
+      ? {
+          secondary_field_1: 'A better\nfuture awaits',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const downloadSecondary = isDownload
+      ? { secondary_field_1: 'Download my Resume', secondary_banner_image_url: '' }
+      : {};
+    const blankSecondary = isSecBlank ? { secondary_banner_image_url: '' } : {};
     set({
       signature: {
         ...sig,
@@ -739,17 +1359,54 @@ export const useEditorStore = create((set, get) => ({
           ...baseCfg,
           secondary_banner_id: bannerId,
           secondary_preset_id: pid,
-          secondary_link_url: 'https://',
+          secondary_link_url: isSecBlank ? '' : 'https://',
           secondary_href: '',
           secondary_text: secText,
           ...webinarSecondary,
+          ...mindscopeSecondary,
+          ...mailchimpSecondary,
+          ...exploreWorldSecondary,
+          ...boostImproveSecondary,
+          ...onlineLoanSecondary,
+          ...businessCitySecondary,
+          ...leaveReviewSecondary,
+          ...seoWhitepaperSecondary,
+          ...greenGradientCtaSecondary,
+          ...downloadSecondary,
+          ...blankSecondary,
         },
       },
       isDirty: true,
       saveStatus: 'idle',
     });
-    runDebouncedPreview();
+    runDebouncedPreview.cancel();
+    void get().refreshPreviewNow();
     get().scheduleAutosave();
+  },
+
+  /** Remove main CTA only; if a second CTA exists, it becomes the main strip. */
+  clearPrimaryBanner: async () => {
+    const sig = get().signature;
+    if (!sig?.banner_id) return;
+    const prev = sig.banner_config || {};
+    if (prev.secondary_banner_id) {
+      const nextCfg = mapSecondaryToPrimaryBannerConfig(prev);
+      set({
+        signature: {
+          ...sig,
+          banner_id: prev.secondary_banner_id,
+          banner_config: nextCfg,
+          fields: fieldsWithoutBundleBanner(sig.fields || {}),
+        },
+        isDirty: true,
+        saveStatus: 'idle',
+      });
+      runDebouncedPreview.cancel();
+      void get().refreshPreviewNow();
+      get().scheduleAutosave();
+      return;
+    }
+    await get().setBanner(null);
   },
 
   /** Debounced PUT to persist the signature (~2s after edits). */
@@ -769,14 +1426,22 @@ export const useEditorStore = create((set, get) => ({
     if (!sig) return;
     set({ previewError: null });
     try {
-      const { data } = await api.post('/html/generate', signatureToEditorPayload(sig));
+      const { data } = await api.post('/html/generate', {
+        ...signatureToEditorPayload(sig),
+        includePreviewSlots: true,
+      });
       if (seq !== htmlPreviewSeq) return;
       const html = data?.html || '';
       if (html) {
-        set({ generatedHTML: html, previewError: null });
+        set({
+          generatedHTML: html,
+          previewSlotBundle: previewSlotBundleFromGenerateResponse(data),
+          previewError: null,
+        });
         runPuppeteerExport(html);
       } else {
         set({
+          previewSlotBundle: null,
           previewError:
             'Preview is empty. Check that the API server is running and POST /api/html/generate succeeds.',
         });
@@ -796,7 +1461,7 @@ export const useEditorStore = create((set, get) => ({
           : import.meta.env.DEV
             ? ' In dev, ensure the API is on port 3001 and Vite proxies /api (see vite.config.js).'
             : '';
-      set({ previewError: `${msg}${hint}` });
+      set({ previewError: `${msg}${hint}`, previewSlotBundle: null });
       if (import.meta.env.DEV) {
         console.warn('[editor] Live preview failed (POST /api/html/generate):', msg);
       }
@@ -822,6 +1487,7 @@ export const useEditorStore = create((set, get) => ({
       isDirty: false,
       isSaving: false,
       generatedHTML: '',
+      previewSlotBundle: null,
       previewError: null,
       exportImageUrl: '',
       exportBannerImageUrl: '',

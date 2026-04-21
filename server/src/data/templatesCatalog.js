@@ -2,8 +2,16 @@ import { TEMPLATE_META } from '../templates/signatureTemplates.js';
 
 const MAX_CATALOG = 500;
 
-const AVAILABLE_IDS = () =>
-  Object.keys(TEMPLATE_META).length ? Object.keys(TEMPLATE_META).sort() : ['template_1'];
+const AVAILABLE_IDS = () => {
+  const keys = Object.keys(TEMPLATE_META);
+  if (!keys.length) return ['template_1'];
+  return keys.sort((a, b) => {
+    const ma = /^template_(\d+)$/i.exec(a);
+    const mb = /^template_(\d+)$/i.exec(b);
+    if (ma && mb) return parseInt(ma[1], 10) - parseInt(mb[1], 10);
+    return a.localeCompare(b);
+  });
+};
 
 /**
  * How many layout rows to expose in GET /api/templates (one row per defined {@link TEMPLATE_META} entry).

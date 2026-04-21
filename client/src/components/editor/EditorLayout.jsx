@@ -89,7 +89,7 @@ export function EditorLayout({
               <NavLink
                 key={id}
                 to={`${editorBasePath}${suffix}`}
-                end={suffix === ''}
+                end
                 title={label}
                 className={({ isActive }) =>
                   [
@@ -114,16 +114,18 @@ export function EditorLayout({
           </nav>
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row lg:overflow-hidden">
           <section
-            className="w-full max-w-none shrink-0 overflow-y-auto border-b border-slate-200/90 bg-[var(--sb-color-bg,#f8fafc)] lg:w-[420px] lg:min-w-[420px] lg:max-w-[420px] lg:border-b-0 lg:border-r lg:border-slate-200/90"
+            className="flex max-h-[55vh] min-h-0 w-full max-w-none shrink-0 flex-col overflow-hidden border-b border-slate-200/90 bg-[var(--sb-color-bg,#f8fafc)] lg:max-h-none lg:h-full lg:w-[420px] lg:min-h-0 lg:min-w-[420px] lg:max-w-[420px] lg:border-b-0 lg:border-r lg:border-slate-200/90"
             aria-label="Editor controls"
           >
-            <div className="mx-auto w-full max-w-[420px] px-5 py-6 md:px-6 md:py-7">{children}</div>
+            <div className="mx-auto min-h-0 w-full max-w-[420px] flex-1 overflow-y-auto px-5 py-6 md:px-6 md:py-7">
+              {children}
+            </div>
           </section>
 
           <section
-            className="min-h-[min(50vh,420px)] min-w-0 flex-1 overflow-hidden bg-transparent lg:min-h-0"
+            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent lg:min-h-0"
             aria-label="Preview"
           >
             <EditorPreview

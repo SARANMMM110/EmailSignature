@@ -8,8 +8,26 @@ import {
   FilterSidebar,
 } from '../../templates/FilterSidebar.jsx';
 import { TemplateCard } from '../../templates/TemplateCard.jsx';
-import { displayNameForTemplateRow, uuidToTemplateSlug } from '../../../lib/templateIds.js';
+import {
+  displayNameForTemplateRow,
+  TEMPLATE_10_CANONICAL_COLORS,
+  TEMPLATE_11_CANONICAL_COLORS,
+  TEMPLATE_12_CANONICAL_COLORS,
+  TEMPLATE_13_CANONICAL_COLORS,
+  TEMPLATE_14_CANONICAL_COLORS,
+  TEMPLATE_15_CANONICAL_COLORS,
+  TEMPLATE_16_CANONICAL_COLORS,
+  TEMPLATE_17_CANONICAL_COLORS,
+  TEMPLATE_18_CANONICAL_COLORS,
+  TEMPLATE_19_CANONICAL_COLORS,
+  TEMPLATE_20_CANONICAL_COLORS,
+  uuidToTemplateSlug,
+} from '../../../lib/templateIds.js';
 import { resolvePaletteColorsFromDesign } from '../../../lib/resolveDesignPalette.js';
+import { useAuth } from '../../../hooks/useAuth.js';
+import { usePlanGate } from '../../../hooks/usePlanGate.js';
+import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
+import { lockedTemplateIdsForPlan } from '../../../lib/templatePlanOrder.js';
 import { useEditorStore } from '../../../store/editorStore.js';
 
 function IconSlidersGray() {
@@ -25,6 +43,9 @@ function IconSlidersGray() {
 }
 
 export function LayoutsTab() {
+  const { user, profile } = useAuth();
+  const gate = usePlanGate();
+  const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(defaultTemplateFilters);
@@ -90,6 +111,11 @@ export function LayoutsTab() {
 
   const filtered = useMemo(() => filterTemplatesBySidebar(enriched, filters), [enriched, filters]);
 
+  const lockedTemplateIds = useMemo(
+    () => lockedTemplateIdsForPlan(enriched, gate.limit('layout_templates')),
+    [enriched, gate]
+  );
+
   const filteredSignatureKey = useMemo(
     () => filtered.map((t) => String(t.id)).sort().join('|'),
     [filtered]
@@ -109,7 +135,10 @@ export function LayoutsTab() {
         filtered.map(async (t) => {
           const slug = uuidToTemplateSlug(t.id);
           try {
-            const { data } = await api.post('/html/generate', demoHtmlGeneratePayload(slug, galleryPalette));
+            const { data } = await api.post(
+              '/html/generate',
+              demoHtmlGeneratePayload(slug, galleryPalette, { profile, user })
+            );
             const html = data?.html?.trim();
             if (html) next[t.id] = html;
           } catch {
@@ -125,7 +154,7 @@ export function LayoutsTab() {
     return () => {
       cancelled = true;
     };
-  }, [filteredSignatureKey, galleryPalette, filtered.length]);
+  }, [filteredSignatureKey, galleryPalette, filtered.length, profile, user]);
 
   const filterButtonLabel =
     filters.plan.free || filters.plan.pro || filters.style.design || filters.style.minimalist || filters.logo.with || filters.logo.without
@@ -168,31 +197,6 @@ export function LayoutsTab() {
         </div>
       </header>
 
-      <div
-        className="relative mb-6 overflow-hidden rounded-2xl px-4 py-4 shadow-[0_2px_12px_-2px_rgba(15,23,42,0.08)] ring-1 ring-white/60"
-        style={{
-          background:
-            'linear-gradient(125deg, #fce7f3 0%, #fecdd3 12%, #fed7aa 32%, #fde68a 48%, #bfdbfe 68%, #ddd6fe 88%, #e9d5ff 100%)',
-        }}
-      >
-        <div className="relative z-[1]">
-          <span className="text-[1.15rem] leading-none" aria-hidden>
-            👑
-          </span>
-          <p className="mt-2 text-[15px] font-bold leading-snug text-[#111827]">Do you need a custom signature?</p>
-          <p className="mt-1.5 max-w-[95%] text-[12px] leading-relaxed text-[#374151]">
-            Do you need an email signature designed by a professional graphic designer?{' '}
-            <a
-              href="mailto:support@example.com"
-              className="font-semibold text-[#1d4ed8] underline decoration-[#1d4ed8]/40 underline-offset-2 transition hover:text-[#1e40af]"
-            >
-              Discover our offer
-            </a>
-            .
-          </p>
-        </div>
-      </div>
-
       <p className="mb-5 text-[11px] leading-relaxed text-slate-500">
         Your details and palette stay when you switch — click a card to apply the layout.
       </p>
@@ -206,14 +210,51 @@ export function LayoutsTab() {
         {!loading &&
           filtered.map((t) => {
             const active = uuidToTemplateSlug(current) === uuidToTemplateSlug(t.id);
+            const locked = lockedTemplateIds.has(t.id);
             return (
               <li key={t.id}>
                 <TemplateCard
                   template={t}
                   selected={active}
                   disabled={editorSaving}
-                  onSelect={() => setTemplate(t.id)}
-                  paletteColors={paletteSwatches}
+                  locked={locked}
+                  requiredPlanLabel={gate.planId === 'personal' ? 'Advanced' : 'Ultimate'}
+                  onLocked={() =>
+                    showUpgradeModal({
+                      feature: 'layout_templates',
+                      requiredPlan: gate.planId === 'personal' ? 'advanced' : 'ultimate',
+                      message: `This layout is not included in your ${gate.plan.name} plan.`,
+                    })
+                  }
+                  onSelect={() => {
+                    if (locked) return;
+                    setTemplate(t.id);
+                  }}
+                  paletteColors={
+                    uuidToTemplateSlug(t.id) === 'template_10'
+                      ? [...TEMPLATE_10_CANONICAL_COLORS]
+                      : uuidToTemplateSlug(t.id) === 'template_11'
+                        ? [...TEMPLATE_11_CANONICAL_COLORS]
+                        : uuidToTemplateSlug(t.id) === 'template_12'
+                          ? [...TEMPLATE_12_CANONICAL_COLORS]
+                          : uuidToTemplateSlug(t.id) === 'template_13'
+                            ? [...TEMPLATE_13_CANONICAL_COLORS]
+                            : uuidToTemplateSlug(t.id) === 'template_14'
+                              ? [...TEMPLATE_14_CANONICAL_COLORS]
+                              : uuidToTemplateSlug(t.id) === 'template_15'
+                                ? [...TEMPLATE_15_CANONICAL_COLORS]
+                                : uuidToTemplateSlug(t.id) === 'template_16'
+                                  ? [...TEMPLATE_16_CANONICAL_COLORS]
+                                  : uuidToTemplateSlug(t.id) === 'template_17'
+                                    ? [...TEMPLATE_17_CANONICAL_COLORS]
+                                    : uuidToTemplateSlug(t.id) === 'template_18'
+                                      ? [...TEMPLATE_18_CANONICAL_COLORS]
+                                      : uuidToTemplateSlug(t.id) === 'template_19'
+                                        ? [...TEMPLATE_19_CANONICAL_COLORS]
+                                        : uuidToTemplateSlug(t.id) === 'template_20'
+                                          ? [...TEMPLATE_20_CANONICAL_COLORS]
+                                          : paletteSwatches
+                  }
                   liveHtml={liveHtmlById[t.id] || ''}
                   liveLoading={loadingLivePreviews && !liveHtmlById[t.id]}
                 />

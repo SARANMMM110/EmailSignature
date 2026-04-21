@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore.js';
+import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import { supabase, isSupabaseConfigured } from './supabase.js';
 
 const GET_SESSION_TIMEOUT_MS = 8000;
@@ -42,6 +43,11 @@ const base =
     ? ''
     : (viteApi || 'http://localhost:3001').replace(/\/$/, '');
 
+/** Absolute API origin (no trailing slash) for unauthenticated `fetch` calls. */
+export function getApiOrigin() {
+  return base || (typeof window !== 'undefined' ? window.location.origin : '');
+}
+
 export const api = axios.create({
   baseURL: `${base}/api`,
   headers: {
@@ -69,8 +75,33 @@ api.interceptors.response.use(
     const data = err.response?.data;
     const reqUrl = err.config?.url || '';
     const isPublicLandingPreview = typeof reqUrl === 'string' && reqUrl.includes('/landing/');
-    if (status === 401 && !isPublicLandingPreview && !window.location.pathname.startsWith('/login')) {
-      window.location.assign('/login');
+    const isPublicApi = typeof reqUrl === 'string' && reqUrl.includes('/public/');
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const onAdminLogin = path === '/admin/login';
+    const onMainLogin = path === '/login' || path === '/signup';
+    if (status === 401 && !isPublicLandingPreview && !isPublicApi && !onAdminLogin && !onMainLogin) {
+      const dest = path.startsWith('/admin') ? '/admin/login' : '/login';
+      window.location.assign(dest);
+    }
+    if (status === 403 && data?.error === 'PLAN_FEATURE_REQUIRED') {
+      useUpgradeModalStore.getState().showUpgradeModal({
+        feature: data.feature,
+        requiredPlan: data.required_plan,
+        message: data.message,
+      });
+    }
+    if (status === 403 && data?.error === 'PLAN_LIMIT_REACHED') {
+      useUpgradeModalStore.getState().showUpgradeModal({
+        feature: data.limit || data.feature,
+        requiredPlan: data.required_plan,
+        message: data.message,
+      });
+    }
+    if (status === 413 && data?.error === 'FILE_TOO_LARGE') {
+      useUpgradeModalStore.getState().showUpgradeModal({
+        feature: 'media_upload_limit_mb',
+        message: data.message,
+      });
     }
     // if (status === 403 && data?.error === 'UPGRADE_REQUIRED') {
     //   window.dispatchEvent(
@@ -117,6 +148,15 @@ export const landingPreviewAPI = {
   signatureHtmlBatch: (body) => api.post('/landing/signature-html-batch', body),
 };
 
+/** Validate a signup ref without sending a Bearer token (avoids 401 redirect). */
+export async function getPublicRegistrationLinkPreview(code) {
+  const origin = getApiOrigin();
+  const res = await fetch(`${origin}/api/public/registration-links/${encodeURIComponent(code)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { valid: false, ...data };
+  return data;
+}
+
 /** Puppeteer PNG export — public route; returns { url, base64?, dataUrl? } */
 export const signatureExportAPI = {
   generateImage: (html) => api.post('/generate-signature', { html }),
@@ -132,6 +172,12 @@ export const uploadAPI = {
     const form = new FormData();
     form.append('image', file);
     return api.post('/upload/logo', form);
+  },
+  /** Resized on server to 720×93 JPEG (`cover`, center) so the strip is always filled edge-to-edge. */
+  uploadBannerImage: (file) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.post('/upload/banner-image', form);
   },
   /** Upload rendered signature (+ optional banner) PNGs; returns public URLs and Emailee-style HTML. */
   emaileeExport: (signatureBlob, bannerBlob = null) => {

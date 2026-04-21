@@ -1030,17 +1030,17 @@ function getSignatureApiBase() {
 const DEMO = {
   name: 'James Doe',
   title: 'Software Engineer',
-  company: 'Core',
+  company: 'Acme Studio',
   phone: '+(91) 9865456739',
-  email: 'James@core.com',
-  website: 'www.core.com',
+  email: 'james.doe@example.com',
+  website: 'www.example.com',
   addressLine1: 'Office 60, Calicut',
   addressLine2: 'kerala, India',
   photo: 'https://i.pravatar.cc/200?img=12',
 };
 
 const PALETTES = [
-  { id:'periwinkle', name:'Periwinkle (Core)', c:['#5768f3','#4752c4','#b4b9ff','#0f172a'] },
+  { id:'periwinkle', name:'Periwinkle', c:['#5768f3','#4752c4','#b4b9ff','#0f172a'] },
   { id:'ocean',   name:'Ocean Blue',    c:['#1e3a5f','#2d6a9f','#a8d4f5','#eef5ff'] },
   { id:'midnight',name:'Midnight',      c:['#0f172a','#1e293b','#94a3b8','#f1f5f9'] },
   { id:'forest',  name:'Forest',        c:['#14532d','#16a34a','#86efac','#f0fdf4'] },
@@ -1053,16 +1053,12 @@ const PALETTES = [
   { id:'gold',    name:'Gold',          c:['#78350f','#d97706','#fde68a','#fffbeb'] },
 ];
 
-function coreWordmark(P) {
-  return '<svg width="58" height="20" viewBox="0 0 60 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block" aria-hidden="true"><g clip-path="url(#cb_core)"><path d="M14.5872 5.23031C14.7415 5.38552 14.925 5.50864 15.1271 5.5926C15.3292 5.67654 15.5459 5.71969 15.7648 5.71949C15.9836 5.71931 16.2003 5.67582 16.4023 5.59152C16.6042 5.50724 16.7875 5.38383 16.9416 5.22838C17.0956 5.07294 17.2174 4.88853 17.2999 4.68582C17.3823 4.48309 17.4239 4.26606 17.4221 4.04724C17.4203 3.82838 17.3752 3.61206 17.2895 3.4107C17.2037 3.20936 17.0789 3.02698 16.9223 2.87408C15.5264 1.49216 13.752 0.555125 11.8236 0.181427C9.89516 -0.19227 7.8992 0.0141443 6.08808 0.7746C4.27697 1.53504 2.73195 2.81535 1.64835 4.45373C0.564575 6.09211 -0.0089619 8.01495 0.000105884 9.97921C0.00899928 11.9434 0.600148 13.8611 1.69875 15.4895C2.79733 17.1178 4.35404 18.384 6.17214 19.1277C7.99014 19.8717 9.98786 20.0599 11.9128 19.6683C13.8377 19.277 15.6034 18.3238 16.9867 16.9292C17.14 16.7745 17.2614 16.591 17.3438 16.3893C17.4262 16.1877 17.4681 15.9718 17.4671 15.7538C17.4661 15.536 17.4222 15.3205 17.3379 15.1196C17.2536 14.9187 17.1305 14.7365 16.9758 14.583C16.821 14.4298 16.6376 14.3084 16.4359 14.2261C16.2343 14.1436 16.0184 14.1017 15.8005 14.1026C15.5827 14.1037 15.3672 14.1476 15.1663 14.2318C14.9654 14.3162 14.7831 14.4393 14.6298 14.594C13.708 15.524 12.5312 16.1599 11.2481 16.4212C9.96497 16.6824 8.63323 16.5572 7.42121 16.0616C6.20927 15.566 5.17137 14.7222 4.43895 13.6367C3.70655 12.5513 3.31246 11.2731 3.30636 9.96369C3.30042 8.65428 3.68285 7.37247 4.40529 6.28039C5.12776 5.18831 6.15783 4.33496 7.36524 3.82826C8.57259 3.32156 9.90314 3.18427 11.1886 3.43375C12.474 3.6832 13.6566 4.30824 14.5869 5.22979L14.5872 5.23031Z" fill="' + P + '"/><path d="M6.99097 9.93358C6.99097 11.4221 8.19756 12.6286 9.686 12.6286C11.1744 12.6286 12.3811 11.4221 12.3811 9.93358C12.3811 8.44514 11.1744 7.23853 9.686 7.23853C8.19756 7.23853 6.99097 8.44514 6.99097 9.93358Z" fill="#2F2F2F"/><path d="M25.5933 17.2788C24.2503 17.2788 23.0364 16.9775 21.9516 16.3748C20.8668 15.7549 20.0145 14.894 19.3946 13.792C18.7748 12.6728 18.4648 11.3814 18.4648 9.91786C18.4648 8.4715 18.7834 7.18872 19.4205 6.06952C20.0576 4.95032 20.927 4.08938 22.0291 3.48674C23.1311 2.88409 24.3621 2.58276 25.7225 2.58276C27.0828 2.58276 28.3138 2.88409 29.4158 3.48674C30.5179 4.08938 31.3873 4.95032 32.0244 6.06952C32.6616 7.18872 32.9801 8.4715 32.9801 9.91786C32.9801 11.3642 32.6529 12.647 31.9986 13.7662C31.3444 14.8854 30.4489 15.7549 29.3125 16.3748C28.1934 16.9775 26.9537 17.2788 25.5933 17.2788ZM25.5933 14.7218C26.3509 14.7218 27.057 14.541 27.7112 14.1795C28.3827 13.8179 28.9251 13.2755 29.3384 12.5523C29.7516 11.8291 29.9582 10.951 29.9582 9.91786C29.9582 8.88475 29.7601 8.01521 29.3642 7.30925C28.9682 6.58607 28.4429 6.04369 27.7887 5.6821C27.1344 5.32051 26.4284 5.13972 25.6708 5.13972C24.9133 5.13972 24.2072 5.32051 23.5529 5.6821C22.9158 6.04369 22.408 6.58607 22.0291 7.30925C21.6502 8.01521 21.4609 8.88475 21.4609 9.91786C21.4609 11.4503 21.8483 12.6384 22.6231 13.4821C23.4152 14.3086 24.4052 14.7218 25.5933 14.7218ZM38.835 4.88144C39.2656 4.15826 39.8338 3.59865 40.5397 3.20263C41.2629 2.78939 42.1152 2.58276 43.0966 2.58276V5.63045H42.3476C41.1941 5.63045 40.316 5.92315 39.7132 6.50859C39.1279 7.09403 38.835 8.10992 38.835 9.55627V17.0463H35.8907V2.81521L38.835 2.81521V4.88144ZM58.8462 9.5821C58.8462 10.1159 58.8119 10.598 58.7429 11.0285H47.8694C47.9554 12.1649 48.3774 13.0775 49.135 13.7662C49.8925 14.455 50.8223 14.7993 51.9244 14.7993C53.5084 14.7993 54.6278 14.1364 55.282 12.8106H58.4588C58.0283 14.1192 57.2449 15.1953 56.1085 16.0391C54.9893 16.8655 53.5946 17.2788 51.9244 17.2788C50.564 17.2788 49.3416 16.9775 48.2568 16.3748C47.1893 15.7549 46.3456 14.894 45.7257 13.792C45.1231 12.6728 44.8217 11.3814 44.8217 9.91786C44.8217 8.45428 45.1144 7.17151 45.6999 6.06952C46.3025 4.95032 47.1377 4.08938 48.2052 3.48674C49.2899 2.88409 50.5297 2.58276 51.9244 2.58276C53.2674 2.58276 54.464 2.87547 55.5144 3.46091C56.5648 4.04635 57.3826 4.87284 57.9681 5.94038C58.5536 6.99072 58.8462 8.20462 58.8462 9.5821ZM55.7727 8.6523C55.7554 7.56753 55.368 6.69799 54.6105 6.04369C53.8529 5.38939 52.9144 5.06223 51.7952 5.06223C50.7794 5.06223 49.9098 5.38939 49.1866 6.04369C48.4634 6.68078 48.0329 7.55031 47.8952 8.6523H55.7727Z" fill="' + P + '"/></g><defs><clipPath id="cb_core"><rect width="60" height="19.8675" fill="white"/></clipPath></defs></svg>';
-}
-
 function buildCoreSplitHtml(P) {
   P = P || '#5768f3';
   const webFull = /^https?:\/\//i.test(DEMO.website) ? DEMO.website : 'https://' + DEMO.website;
   const ae = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const tx = (s) => ae(String(s));
-  const brand = /^core$/i.test(DEMO.company) ? coreWordmark(P) : '<span style="font-size:17px;font-weight:700;color:' + P + ';line-height:1.2;font-family:\'Montserrat\',\'Poppins\',\'Roboto\',Helvetica,Arial,sans-serif;">' + tx(DEMO.company) + '</span>';
+  const brand = '<span style="font-size:17px;font-weight:700;color:' + P + ';line-height:1.2;font-family:\'Montserrat\',\'Poppins\',\'Roboto\',Helvetica,Arial,sans-serif;">' + tx(DEMO.company) + '</span>';
   const leftStack =
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="center" style="border-collapse:collapse;margin:0 auto;">' +
     '<tr><td align="center" style="padding:0 0 6px 0;font-size:16px;font-weight:700;color:' + P + ';line-height:1.25;font-family:\'Montserrat\',\'Poppins\',\'Roboto\',Helvetica,Arial,sans-serif;">' + tx(DEMO.name) + '</td></tr>' +
@@ -1092,7 +1088,7 @@ function buildCoreSplitHtml(P) {
 
 const TEMPLATES = [{
   id: 'core-split',
-  name: 'Core split card',
+  name: 'Split card',
   tier: 'free',
   style: 'design',
   isNew: true,
@@ -1107,7 +1103,7 @@ let selectedId = null;
 let activeClient = 'gmail';
 
 /* ══════════════════════════════════════════
-   PREVIEW — Core split card (matches SignatureBuilder layout 1)
+   PREVIEW — Split card (matches SignatureBuilder layout 1)
 ══════════════════════════════════════════ */
 function renderMinimalPreview(p) {
   return buildCoreSplitHtml(p[0]);
@@ -1458,7 +1454,7 @@ async function doCopyImage() {
     btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Copied!`;
     btn.classList.add('btn-success');
     btn.classList.remove('btn-primary');
-    showToast('Copied signature image — paste in Gmail / Outlook (Ctrl+V / Cmd+V).');
+    showToast('Signature Copied');
     setTimeout(() => {
       btn.innerHTML = origHtml;
       btn.classList.remove('btn-success');
@@ -1487,7 +1483,7 @@ async function doCopyHtmlCode() {
     console.log('[signature-export] HTML string (writeText):\n', pasteHtml);
     console.log('[signature-export] Image URL in snippet:', url);
     await navigator.clipboard.writeText(pasteHtml);
-    showToast('Copied HTML code (plain text).');
+    showToast('HTML Copied');
   } catch (err) {
     console.error(err);
     showToast(err.message || 'Copy failed — is the API running on port 3001?');

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { landingPreviewAPI } from '../../lib/api.js';
-import { LANDING_PALETTE_SWATCHES, LANDING_TEMPLATE_ROWS } from '../../data/landingPalettes.js';
+import { LANDING_PALETTE_SWATCHES, LANDING_TEMPLATE_SHOWCASE } from '../../data/landingPalettes.js';
 import { LandingSignatureIframe } from './LandingSignatureIframe.jsx';
 
-const IDS = LANDING_TEMPLATE_ROWS.map((r) => r.id);
+const IDS = LANDING_TEMPLATE_SHOWCASE.map((r) => r.id);
 
 function paletteToApi(colors) {
   return {
@@ -62,7 +62,7 @@ export function LandingTemplateShowcase() {
           Pick your signature. Make it yours.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-center text-[var(--text-tertiary)]">
-          Every template adapts to your brand colors instantly.
+          A sample of our latest layouts — every design adapts to your brand colors in one click.
         </p>
 
         <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -89,15 +89,15 @@ export function LandingTemplateShowcase() {
           <p className="mt-6 text-center text-sm text-amber-700">{error}</p>
         ) : null}
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {LANDING_TEMPLATE_ROWS.map((row) => (
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {LANDING_TEMPLATE_SHOWCASE.map((row) => (
             <div
               key={row.id}
               className="group relative overflow-hidden rounded-2xl border bg-white shadow-md transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1 hover:border-[var(--sb-color-accent)] hover:shadow-lg"
               style={{ borderColor: 'var(--border-sm)' }}
             >
               <span className="absolute right-3 top-3 z-10 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                {row.tier}
+                Sample
               </span>
               <div className="p-3 transition-opacity duration-300" style={{ transitionProperty: 'opacity, filter' }}>
                 <LandingSignatureIframe
@@ -108,7 +108,7 @@ export function LandingTemplateShowcase() {
               </div>
               <div className="border-t px-4 py-3" style={{ borderColor: 'var(--border-sm)' }}>
                 <p className="font-semibold text-[var(--gray-950)]">{row.label}</p>
-                <p className="text-xs text-[var(--text-tertiary)]">{row.id}</p>
+                <p className="text-xs text-[var(--text-tertiary)]">Layout {row.id.replace('template_', '')}</p>
               </div>
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/0 opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:bg-white/70 group-hover:opacity-100">
                 <Link
@@ -122,14 +122,22 @@ export function LandingTemplateShowcase() {
           ))}
         </div>
 
-        <p className="mt-10 text-center text-sm text-[var(--text-tertiary)]">… and 60+ more templates</p>
-        <div className="mt-4 flex justify-center">
+        <p className="mt-10 text-center text-sm text-[var(--text-tertiary)]">
+          Many more professional layouts are available after you sign in — pick the one that fits your brand.
+        </p>
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link
             to="/signup"
             className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold text-[var(--gray-950)] transition hover:border-[var(--sb-color-accent)] hover:text-[var(--sb-color-accent)]"
             style={{ borderColor: 'var(--border-sm)' }}
           >
-            Browse all templates →
+            Get started free →
+          </Link>
+          <Link
+            to="/pricing"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--sb-color-accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-95"
+          >
+            View plans & full comparison
           </Link>
         </div>
       </div>

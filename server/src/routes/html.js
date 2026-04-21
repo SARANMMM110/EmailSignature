@@ -19,7 +19,11 @@ router.post(
       }
       const forPaste =
         req.body.forPaste === true || req.body.forPaste === 'true' || req.body.forPaste === 1;
-      const html = await generateSignatureHtml(
+      const includePreviewSlots =
+        req.body.includePreviewSlots === true ||
+        req.body.includePreviewSlots === 'true' ||
+        req.body.includePreviewSlots === 1;
+      const result = await generateSignatureHtml(
         {
           templateId: req.body.templateId,
           form: req.body.form,
@@ -27,9 +31,14 @@ router.post(
           design: req.body.design,
           banner: req.body.banner,
         },
-        { forPaste }
+        { forPaste, includePreviewSlots }
       );
-      res.json({ html });
+      if (includePreviewSlots && result && typeof result === 'object' && 'html' in result) {
+        res.json({ html: result.html, previewSlots: result.previewSlots ?? null });
+      } else {
+        const html = typeof result === 'object' && result?.html != null ? result.html : result;
+        res.json({ html });
+      }
     } catch (e) {
       next(e);
     }
