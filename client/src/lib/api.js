@@ -37,7 +37,7 @@ async function resolveAccessToken() {
 const viteApi = import.meta.env.VITE_API_URL?.toString().trim();
 if (import.meta.env.PROD && !viteApi) {
   console.error(
-    '[api] Missing VITE_API_URL. In Vercel → Settings → Environment Variables, add VITE_API_URL=https://your-deployed-api.example (no trailing slash), apply to Production, then Redeploy. Otherwise requests default to http://localhost:3001 and the browser blocks them.'
+    '[api] Missing VITE_API_URL at build time — bundle fell back to http://localhost:3001. On Hetzner/self-host, set VITE_API_URL before `npm run build`, or rely on same-origin rewrite (see first request interceptor). Hosted CI: add the env var and redeploy.'
   );
 }
 
@@ -83,6 +83,12 @@ if (import.meta.env.PROD && typeof window !== 'undefined' && rawApiBaseURL.start
 
 /** Absolute API origin (no `/api` suffix) for unauthenticated `fetch` calls. */
 export function getApiOrigin() {
+  if (typeof window !== 'undefined' && import.meta.env.PROD) {
+    const o = apiSiteOrigin.replace(/\/+$/, '');
+    if (!o || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(o)) {
+      return window.location.origin;
+    }
+  }
   return (
     apiSiteOrigin || (typeof window !== 'undefined' ? window.location.origin : '')
   );
@@ -96,6 +102,33 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 60000,
+});
+
+/**
+ * Self‑hosted (Hetzner, etc.): `vite build` often runs without `VITE_API_URL`, so the bundle bakes
+ * `http://localhost:3001/api/` or `/api/`. Browsers then resolve `signatures` wrong → `GET /signatures` 404.
+ * Render/Vercel inject env at build time; this fixes production at **request** time when base is clearly wrong.
+ */
+function shouldRewriteApiBaseForBrowserProd(base) {
+  if (typeof window === 'undefined' || !import.meta.env.PROD) return false;
+  const b = String(base || '');
+  if (!b || b.startsWith('/')) return true;
+  try {
+    const u = new URL(b);
+    const h = u.hostname.toLowerCase();
+    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
+  } catch {
+    return true;
+  }
+}
+
+api.interceptors.request.use((config) => {
+  const effectiveBase = config.baseURL ?? api.defaults.baseURL;
+  if (shouldRewriteApiBaseForBrowserProd(effectiveBase)) {
+    const origin = window.location.origin.replace(/\/$/, '');
+    config.baseURL = `${origin}/api/`;
+  }
+  return config;
 });
 
 /**
