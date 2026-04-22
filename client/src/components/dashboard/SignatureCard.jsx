@@ -13,7 +13,7 @@ import { ManualHtmlCopyModal } from '../ui/ManualHtmlCopyModal.jsx';
 import { Input } from '../ui/Input.jsx';
 import { Button } from '../ui/Button.jsx';
 import { DEMO_SIGNATURE_DATA, wrapSignatureHtmlForIframe } from '../../data/templatePreviews.js';
-import { absoluteAssetUrl } from '../../lib/absoluteAssetUrl.js';
+import { absoluteAssetUrl, isBareSignaturesCollectionUrl } from '../../lib/absoluteAssetUrl.js';
 import { bundleRailPxForSignature, isImageTemplateSignature } from '../../lib/templateIds.js';
 import { useI18n } from '../../hooks/useI18n.js';
 import { usePlanGate } from '../../hooks/usePlanGate.js';
@@ -375,7 +375,9 @@ export function SignatureCard({
     signature.design?.signatureImageUrl || signature.fields?.signature_image_url || ''
   ).trim();
   const rasterPreviewUrl =
-    isImageTemplateSignature(signature) && designImgRaw ? absoluteAssetUrl(designImgRaw) : '';
+    isImageTemplateSignature(signature) && designImgRaw && !isBareSignaturesCollectionUrl(designImgRaw)
+      ? absoluteAssetUrl(designImgRaw)
+      : '';
   const showRasterPreview = Boolean(rasterPreviewUrl);
   const signatureLink = String(signature.signature_link || '').trim();
   const bannerLink = String(

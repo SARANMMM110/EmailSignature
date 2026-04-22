@@ -110,6 +110,12 @@ export const api = axios.create({
  * and subtle axios/URL joins that still produced `GET /signatures` from `/dashboard`.
  * Skip only when `VITE_API_URL` points at a **different** hostname (separate API subdomain).
  */
+/** Treat apex and `www` as the same host so `VITE_API_URL` can differ only by www from the tab URL. */
+function canonicalSiteHost(hostname) {
+  const h = String(hostname || '').toLowerCase();
+  return h.startsWith('www.') ? h.slice(4) : h;
+}
+
 function shouldForceSameOriginApiBase() {
   if (typeof window === 'undefined' || !import.meta.env.PROD) return false;
   const pageHost = window.location.hostname.toLowerCase();
@@ -118,7 +124,7 @@ function shouldForceSameOriginApiBase() {
   if (!/^https?:\/\//i.test(raw)) return true;
   try {
     const h = new URL(raw).hostname.toLowerCase();
-    return h === pageHost;
+    return canonicalSiteHost(h) === canonicalSiteHost(pageHost);
   } catch {
     return true;
   }
