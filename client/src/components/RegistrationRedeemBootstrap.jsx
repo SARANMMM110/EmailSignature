@@ -17,7 +17,7 @@ export function RegistrationRedeemBootstrap() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.post('/me/redeem-registration-link', { code });
+        const { data } = await api.post('me/redeem-registration-link', { code });
         if (!cancelled && data?.ok) {
           sessionStorage.removeItem(REGISTRATION_REF_STORAGE_KEY);
         }

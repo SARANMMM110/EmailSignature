@@ -715,7 +715,7 @@ const runDebouncedPreview = debounce(async () => {
   const sig = useEditorStore.getState().signature;
   if (!sig) return;
   try {
-    const { data } = await api.post('/html/generate', {
+    const { data } = await api.post('html/generate', {
       ...signatureToEditorPayload(sig),
       includePreviewSlots: true,
     });
@@ -1426,7 +1426,7 @@ export const useEditorStore = create((set, get) => ({
     if (!sig) return;
     set({ previewError: null });
     try {
-      const { data } = await api.post('/html/generate', {
+      const { data } = await api.post('html/generate', {
         ...signatureToEditorPayload(sig),
         includePreviewSlots: true,
       });
