@@ -30,7 +30,9 @@ async function resolveAccessToken() {
 /**
  * In Vite dev, default to same-origin `/api` so the dev-server proxy forwards to the API.
  * That avoids CORS when the app is opened as `127.0.0.1` while CLIENT_URL is `localhost` (or vice versa).
- * Set VITE_API_URL to override (e.g. point at a remote API).
+ * Set VITE_API_URL to the API **site origin** only, e.g. `https://api.example.com` or `https://example.com`
+ * if the Express app serves `/api/*` on the same host. Do **not** append `/api` here — we add it once below.
+ * (If you already used `…/api` in Vercel, we strip a single trailing `/api` so you do not get `/api/api/…`.)
  */
 const viteApi = import.meta.env.VITE_API_URL?.toString().trim();
 if (import.meta.env.PROD && !viteApi) {
@@ -38,18 +40,36 @@ if (import.meta.env.PROD && !viteApi) {
     '[api] Missing VITE_API_URL. In Vercel → Settings → Environment Variables, add VITE_API_URL=https://your-deployed-api.example (no trailing slash), apply to Production, then Redeploy. Otherwise requests default to http://localhost:3001 and the browser blocks them.'
   );
 }
-const base =
+
+/** HTTPS origin only — no path, no trailing `/api` (avoids `…/api/api` when env was pasted with `/api`). */
+function normalizeApiSiteOrigin(raw) {
+  const s = String(raw || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!s) return '';
+  return s.replace(/\/api$/i, '');
+}
+
+const apiSiteOrigin =
   import.meta.env.DEV && !viteApi
     ? ''
-    : (viteApi || 'http://localhost:3001').replace(/\/$/, '');
+    : normalizeApiSiteOrigin(viteApi || 'http://localhost:3001');
 
-/** Absolute API origin (no trailing slash) for unauthenticated `fetch` calls. */
+/** Same-origin `/api/` in Vite dev; otherwise `https://host/api/` (trailing slash helps URL resolution). */
+const apiBaseURL =
+  import.meta.env.DEV && !viteApi ? '/api/' : `${apiSiteOrigin.replace(/\/+$/, '')}/api/`;
+
+/** Absolute API origin (no `/api` suffix) for unauthenticated `fetch` calls. */
 export function getApiOrigin() {
-  return base || (typeof window !== 'undefined' ? window.location.origin : '');
+  return (
+    apiSiteOrigin || (typeof window !== 'undefined' ? window.location.origin : '')
+  );
 }
 
 export const api = axios.create({
-  baseURL: `${base}/api`,
+  baseURL: apiBaseURL,
+  /** Safer URL joining with `baseURL` + paths that start with `/`. */
+  allowAbsoluteUrls: false,
   headers: {
     'Content-Type': 'application/json',
   },
