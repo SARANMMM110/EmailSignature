@@ -94,8 +94,10 @@ router.post('/generate-signature', optionalAuth, async (req, res, next) => {
       ''
     );
 
+    const executablePath = String(process.env.PUPPETEER_EXECUTABLE_PATH || '').trim();
     const browser = await puppeteer.launch({
       headless: true,
+      ...(executablePath ? { executablePath } : {}),
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
 
