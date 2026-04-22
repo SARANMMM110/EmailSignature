@@ -104,38 +104,38 @@ export const api = axios.create({
   timeout: 60000,
 });
 
-/**
- * Production browser: pin `baseURL` to `window.location.origin + '/api/'` whenever the API is meant to be
- * same‑host (typical nginx + Express). Fixes: missing `VITE_API_URL`, baked localhost, relative `/api/`,
- * and subtle axios/URL joins that still produced `GET /signatures` from `/dashboard`.
- * Skip only when `VITE_API_URL` points at a **different** hostname (separate API subdomain).
- */
-/** Treat apex and `www` as the same host so `VITE_API_URL` can differ only by www from the tab URL. */
+/** Treat apex and `www` as the same host for comparing `VITE_API_URL` to the page. */
 function canonicalSiteHost(hostname) {
   const h = String(hostname || '').toLowerCase();
   return h.startsWith('www.') ? h.slice(4) : h;
 }
 
-function shouldForceSameOriginApiBase() {
+/**
+ * Use the baked `baseURL` from `VITE_API_URL` (true cross-origin API) only when that URL targets a **different**
+ * non-localhost host than the current tab. Otherwise always rewrite to `window.origin + '/api/…'` so
+ * wrong baked hosts (another server name, localhost, `/api` only) never produce `GET /signatures` on `/dashboard`.
+ * Split-origin deploys: set `VITE_API_CROSS_ORIGIN=true` at build time, or put the real API host in `VITE_API_URL`.
+ */
+function shouldUseBakedCrossOriginApi() {
   if (typeof window === 'undefined' || !import.meta.env.PROD) return false;
-  const pageHost = window.location.hostname.toLowerCase();
+  if (import.meta.env.VITE_API_CROSS_ORIGIN === 'true') return true;
   const raw = normalizeApiSiteOrigin(viteApi || '');
-  if (!raw || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(raw)) return true;
-  if (!/^https?:\/\//i.test(raw)) return true;
+  if (!raw || !/^https?:\/\//i.test(raw)) return false;
   try {
-    const h = new URL(raw).hostname.toLowerCase();
-    return canonicalSiteHost(h) === canonicalSiteHost(pageHost);
+    const apiHost = new URL(raw).hostname.toLowerCase();
+    if (/^(localhost|127\.0\.0\.1|\[::1\])$/i.test(apiHost)) return false;
+    return canonicalSiteHost(apiHost) !== canonicalSiteHost(window.location.hostname);
   } catch {
-    return true;
+    return false;
   }
 }
 
 /**
- * Same-origin production: turn `signatures` into `https://host/api/signatures` so axios never joins
- * against the page path (which produced `GET /signatures` from `/dashboard`). Cross-subdomain API skips this.
+ * Production + same-tab API: absolute `https://this-host/api/<path>` so list/signatures never hits `/signatures`.
  */
 api.interceptors.request.use((config) => {
-  if (!shouldForceSameOriginApiBase()) return config;
+  if (typeof window === 'undefined' || !import.meta.env.PROD) return config;
+  if (shouldUseBakedCrossOriginApi()) return config;
   const u = config.url;
   if (typeof u !== 'string' || /^https?:\/\//i.test(u)) return config;
   const origin = window.location.origin.replace(/\/$/, '');

@@ -112,7 +112,13 @@ export function DashboardPage() {
         setSignatures(data?.signatures || []);
       } catch (e) {
         if (gen !== fetchGenRef.current) return;
-        setLoadError(e.response?.data?.message || e.message || t('dashboard.loadFailed'));
+        const status = e.response?.status;
+        const tried = e.config?.url ? ` — ${String(e.config.url)}` : '';
+        setLoadError(
+          e.response?.data?.message ||
+            (status === 404 ? `${t('dashboard.loadFailed')}${tried}` : e.message) ||
+            t('dashboard.loadFailed')
+        );
       } finally {
         if (gen === fetchGenRef.current) setLoading(false);
       }
