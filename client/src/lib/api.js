@@ -105,26 +105,27 @@ export const api = axios.create({
 });
 
 /**
- * Self‑hosted (Hetzner, etc.): `vite build` often runs without `VITE_API_URL`, so the bundle bakes
- * `http://localhost:3001/api/` or `/api/`. Browsers then resolve `signatures` wrong → `GET /signatures` 404.
- * Render/Vercel inject env at build time; this fixes production at **request** time when base is clearly wrong.
+ * Production browser: pin `baseURL` to `window.location.origin + '/api/'` whenever the API is meant to be
+ * same‑host (typical nginx + Express). Fixes: missing `VITE_API_URL`, baked localhost, relative `/api/`,
+ * and subtle axios/URL joins that still produced `GET /signatures` from `/dashboard`.
+ * Skip only when `VITE_API_URL` points at a **different** hostname (separate API subdomain).
  */
-function shouldRewriteApiBaseForBrowserProd(base) {
+function shouldForceSameOriginApiBase() {
   if (typeof window === 'undefined' || !import.meta.env.PROD) return false;
-  const b = String(base || '');
-  if (!b || b.startsWith('/')) return true;
+  const pageHost = window.location.hostname.toLowerCase();
+  const raw = normalizeApiSiteOrigin(viteApi || '');
+  if (!raw || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(raw)) return true;
+  if (!/^https?:\/\//i.test(raw)) return true;
   try {
-    const u = new URL(b);
-    const h = u.hostname.toLowerCase();
-    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
+    const h = new URL(raw).hostname.toLowerCase();
+    return h === pageHost;
   } catch {
     return true;
   }
 }
 
 api.interceptors.request.use((config) => {
-  const effectiveBase = config.baseURL ?? api.defaults.baseURL;
-  if (shouldRewriteApiBaseForBrowserProd(effectiveBase)) {
+  if (shouldForceSameOriginApiBase()) {
     const origin = window.location.origin.replace(/\/$/, '');
     config.baseURL = `${origin}/api/`;
   }
