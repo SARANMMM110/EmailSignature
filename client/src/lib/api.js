@@ -55,9 +55,31 @@ const apiSiteOrigin =
     ? ''
     : normalizeApiSiteOrigin(viteApi || 'http://localhost:3001');
 
-/** Same-origin `/api/` in Vite dev; otherwise `https://host/api/` (trailing slash helps URL resolution). */
-const apiBaseURL =
+/** Before coercion: same-origin `/api/` in Vite dev; prod = `https://host/api/` or `/api/` if origin was misconfigured. */
+const rawApiBaseURL =
   import.meta.env.DEV && !viteApi ? '/api/' : `${apiSiteOrigin.replace(/\/+$/, '')}/api/`;
+
+/**
+ * Relative `baseURL` (`/api/`) + path `signatures` is resolved against the **current page path** (WHATWG URL),
+ * e.g. on `/dashboard` → `https://host/signatures` (404). In production in the browser, always use an absolute API base.
+ */
+function finalizeApiBaseURL(base) {
+  const b = String(base || '');
+  if (typeof window !== 'undefined' && import.meta.env.PROD && b.startsWith('/')) {
+    const origin = window.location.origin.replace(/\/$/, '');
+    const path = b.endsWith('/') ? b : `${b}/`;
+    return `${origin}${path}`;
+  }
+  return b.endsWith('/') ? b : `${b}/`;
+}
+
+const apiBaseURL = finalizeApiBaseURL(rawApiBaseURL);
+
+if (import.meta.env.PROD && typeof window !== 'undefined' && rawApiBaseURL.startsWith('/') && viteApi) {
+  console.warn(
+    '[api] VITE_API_URL should be a full origin (e.g. https://signaturestudio.biz), not a path like /api. Using same-origin absolute base for API calls.'
+  );
+}
 
 /** Absolute API origin (no `/api` suffix) for unauthenticated `fetch` calls. */
 export function getApiOrigin() {
