@@ -38,7 +38,7 @@ const rowAddr = `<tr>
 </tr>`;
 
 /**
- * Layout 2 — **560px** card: solid primary rail | headshot overlapping seam (lavender ring + white stroke) |
+ * Layout 2 — **600px** card: solid primary rail | headshot overlapping seam (lavender ring + white stroke) |
  * identity | wider contacts column (divider = border-left only, email-safe).
  */
 const t2rowEmail = `<tr>
@@ -130,12 +130,12 @@ export const TEMPLATES = {
 </table>
 </td></tr></table>${BADGE}`,
 
-  template_2: `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="width:560px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;"><tr><td style="padding:0;border-radius:14px;overflow:visible;background-color:{{sig_card_surface}};">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="width:560px;max-width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;background-color:{{sig_card_surface}};border-radius:14px;overflow:hidden;">
+  template_2: `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;"><tr><td style="padding:0;border-radius:14px;overflow:visible;background-color:{{sig_card_surface}};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:100%;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;background-color:{{sig_card_surface}};border-radius:14px;overflow:hidden;">
 <tr>
   <td width="92" valign="middle" bgcolor="{{color_1}}" style="width:92px;min-width:92px;max-width:92px;background-color:{{color_1}};vertical-align:middle;padding:16px 0;line-height:0;font-size:0;">&nbsp;</td>
-  <td width="468" valign="middle" style="width:468px;max-width:468px;vertical-align:middle;padding:14px 0;background-color:{{sig_card_surface}};">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="468" style="width:468px;max-width:100%;border-collapse:collapse;table-layout:fixed;">
+  <td width="508" valign="middle" style="width:508px;max-width:508px;vertical-align:middle;padding:14px 0;background-color:{{sig_card_surface}};">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="508" style="width:508px;max-width:100%;border-collapse:collapse;table-layout:fixed;">
     {{#if photo_url}}
     <tr>
       <td width="40" valign="middle" align="left" style="width:40px;padding:0;line-height:0;vertical-align:middle;background-color:{{sig_card_surface}};">
@@ -147,14 +147,14 @@ export const TEMPLATES = {
           </tr>
         </table>
       </td>
-      <td width="220" valign="middle" align="left" style="width:220px;max-width:220px;min-width:160px;padding:6px 16px 6px 12px;vertical-align:middle;background-color:{{sig_card_surface}};overflow:visible;box-sizing:border-box;">
+      <td width="240" valign="middle" align="left" style="width:240px;max-width:240px;min-width:160px;padding:6px 16px 6px 12px;vertical-align:middle;background-color:{{sig_card_surface}};overflow:visible;box-sizing:border-box;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="left" style="border-collapse:collapse;table-layout:fixed;width:100%;max-width:100%;">
           <tr><td align="left" style="padding:0 0 5px 0;font-size:20px;font-weight:700;color:{{color_1}};line-height:1.2;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;word-break:break-word;overflow-wrap:anywhere;white-space:normal;">{{name}}</td></tr>
           <tr><td align="left" style="padding:0 0 8px 0;font-size:13px;font-weight:400;color:{{t2_muted}};line-height:1.4;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;word-break:break-word;overflow-wrap:anywhere;white-space:normal;">{{title}}</td></tr>
           <tr><td align="left" valign="top" style="padding:0;line-height:0;max-width:100%;overflow:hidden;">{{#if logo_url}}<img src="{{{logo_url}}}" alt="" width="128" style="max-height:26px;max-width:128px;height:auto;width:auto;display:block;border:0;">{{else}}{{#if company_name}}<span style="font-size:16px;font-weight:700;color:{{color_1}};line-height:1.1;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;">{{company_name}}</span>{{/if}}{{/if}}</td></tr>
         </table>
       </td>
-      <td width="208" valign="middle" align="left" style="width:208px;max-width:208px;min-width:176px;padding:6px 10px 6px 18px;vertical-align:middle;background-color:{{sig_card_surface}};border-left:1px solid {{t2_divider_color}};box-sizing:border-box;">
+      <td width="228" valign="middle" align="left" style="width:228px;max-width:228px;min-width:176px;padding:6px 10px 6px 18px;vertical-align:middle;background-color:{{sig_card_surface}};border-left:1px solid {{t2_divider_color}};box-sizing:border-box;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="left" style="border-collapse:collapse;width:100%;">
         {{#if email}}${t2rowEmail}{{/if}}
         {{#if phone}}${t2rowPhone}{{/if}}
@@ -165,14 +165,14 @@ export const TEMPLATES = {
     </tr>
     {{else}}
     <tr>
-      <td width="238" valign="middle" align="left" style="width:238px;max-width:238px;min-width:200px;padding:6px 12px 6px 18px;vertical-align:middle;background-color:{{sig_card_surface}};overflow:visible;box-sizing:border-box;">
+      <td width="258" valign="middle" align="left" style="width:258px;max-width:258px;min-width:200px;padding:6px 12px 6px 18px;vertical-align:middle;background-color:{{sig_card_surface}};overflow:visible;box-sizing:border-box;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="left" style="border-collapse:collapse;table-layout:fixed;width:100%;max-width:100%;">
           <tr><td align="left" style="padding:0 0 5px 0;font-size:20px;font-weight:700;color:{{color_1}};line-height:1.15;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;word-break:break-word;overflow-wrap:anywhere;white-space:normal;">{{name}}</td></tr>
           <tr><td align="left" style="padding:0 0 8px 0;font-size:13px;font-weight:400;color:{{t2_muted}};line-height:1.4;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;word-break:break-word;overflow-wrap:anywhere;white-space:normal;">{{title}}</td></tr>
           <tr><td align="left" valign="top" style="padding:0;line-height:0;max-width:100%;overflow:hidden;">{{#if logo_url}}<img src="{{{logo_url}}}" alt="" width="128" style="max-height:26px;max-width:128px;height:auto;width:auto;display:block;border:0;">{{else}}{{#if company_name}}<span style="font-size:16px;font-weight:700;color:{{color_1}};line-height:1.1;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;">{{company_name}}</span>{{/if}}{{/if}}</td></tr>
         </table>
       </td>
-      <td width="230" valign="middle" align="left" style="width:230px;max-width:230px;min-width:200px;padding:6px 12px 6px 20px;vertical-align:middle;background-color:{{sig_card_surface}};border-left:1px solid {{t2_divider_color}};box-sizing:border-box;">
+      <td width="250" valign="middle" align="left" style="width:250px;max-width:250px;min-width:200px;padding:6px 12px 6px 20px;vertical-align:middle;background-color:{{sig_card_surface}};border-left:1px solid {{t2_divider_color}};box-sizing:border-box;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="left" style="border-collapse:collapse;width:100%;">
         {{#if email}}${t2rowEmail}{{/if}}
         {{#if phone}}${t2rowPhone}{{/if}}

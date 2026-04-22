@@ -398,10 +398,10 @@ export function normalizeSignatureTemplateSlug(design, template_id) {
   return 'template_1';
 }
 
-/** Editor preview / export rail width: Layout 2 = 560px; Layout 4 = 470px; Layout 1, 5 & 12 = 520px; Layout 18 = 521px; Layout 3, 13–17, 19–20 = 600px; Layout 11 = 620px. */
+/** Editor preview / export rail width: Layout 2 = 600px; Layout 4 = 470px; Layout 1, 5 & 12 = 520px; Layout 18 = 521px; Layout 3, 13–17, 19–20 = 600px; Layout 11 = 620px. */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
-  if (s === 'template_2') return 560;
+  if (s === 'template_2') return 600;
   if (s === 'template_4') return 470;
   if (s === 'template_1' || s === 'template_5' || s === 'template_12') return 520;
   if (s === 'template_11') return 620;

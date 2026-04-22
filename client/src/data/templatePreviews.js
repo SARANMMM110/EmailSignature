@@ -693,7 +693,7 @@ export function wrapSignatureHtmlForIframe(signatureHTML, options = {}) {
   [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][data-sig-part="banner"][data-sig-cta-slot="2"] {
     margin-top: 8px !important;
   }
-  /* Sibling bundle tables: 470 / 560 (Layout 2) / 520 / 600 / 800px rails. */
+  /* Sibling bundle tables: 470 / 520 / 560 / 600 / 800px rails. */
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:470px"],
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="banner"][style*="width:470px"] {
     width: 470px !important;
