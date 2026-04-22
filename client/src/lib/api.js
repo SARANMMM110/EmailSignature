@@ -124,17 +124,24 @@ function shouldForceSameOriginApiBase() {
   }
 }
 
+/**
+ * Same-origin production: turn `signatures` into `https://host/api/signatures` so axios never joins
+ * against the page path (which produced `GET /signatures` from `/dashboard`). Cross-subdomain API skips this.
+ */
 api.interceptors.request.use((config) => {
-  if (shouldForceSameOriginApiBase()) {
-    const origin = window.location.origin.replace(/\/$/, '');
-    config.baseURL = `${origin}/api/`;
-  }
+  if (!shouldForceSameOriginApiBase()) return config;
+  const u = config.url;
+  if (typeof u !== 'string' || /^https?:\/\//i.test(u)) return config;
+  const origin = window.location.origin.replace(/\/$/, '');
+  const path = u.replace(/^\/+/, '');
+  if (!path) return config;
+  config.baseURL = '';
+  config.url = `${origin}/api/${path}`;
   return config;
 });
 
 /**
- * Paths like `/signatures` are resolved from the site root (→ 404 on static `/signatures`).
- * Always use paths relative to `baseURL` (`…/api/`) — strip a single leading `/` here as a safety net.
+ * Non–same-origin / dev: strip a leading `/` so paths stay under `baseURL` (`…/api/`).
  */
 api.interceptors.request.use((config) => {
   const u = config.url;
