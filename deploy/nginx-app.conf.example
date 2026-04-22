@@ -1,0 +1,52 @@
+# Example: SPA (Vite build) + Express API on one host (e.g. Hetzner).
+# Adjust server_name, root, ssl_certificate_*, and upstream port (PM2 PORT / server .env).
+#
+# Critical: under `location /api/`, do NOT use a trailing slash on the upstream URL alone, e.g.
+#   proxy_pass http://127.0.0.1:3001/;
+# That rewrites `/api/signatures` → upstream path `/signatures`, so Express never hits
+# `app.use('/api/signatures', …)` and you get 404 (or static noise). The dashboard XHR will show
+# `https://your-host/api/signatures` in the error text while the server actually handled `/signatures`.
+#
+# Safe patterns (pick one):
+#   A) proxy_pass http://127.0.0.1:3001;          # passes full URI /api/... (recommended below)
+#   B) proxy_pass http://127.0.0.1:3001/api/;     # under location /api/ — still yields /api/... upstream
+
+upstream signaturestudio_api {
+    server 127.0.0.1:3001;
+    keepalive 8;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name signaturestudio.biz;
+
+    root /var/www/signaturestudio/dist;
+    index index.html;
+
+    # ssl_certificate     /etc/letsencrypt/live/signaturestudio.biz/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/signaturestudio.biz/privkey.pem;
+
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Pass full path /api/... to Express (see comment at top).
+        proxy_pass http://signaturestudio_api;
+    }
+
+    # Generated PNGs — Express serves server/public/signatures at GET /signatures/:file
+    location /signatures/ {
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://signaturestudio_api;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

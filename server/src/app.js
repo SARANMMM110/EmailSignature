@@ -58,6 +58,11 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+/** Same payload as `/health` — handy when nginx only reverse-proxies `/api/` to Node. */
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true });
+});
+
 /** Puppeteer exports — must match generateSignature.js write path */
 app.use('/signatures', express.static(path.join(PUBLIC_DIR, 'signatures'), { maxAge: '1d' }));
 
