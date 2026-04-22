@@ -9,6 +9,9 @@ export function useAuth() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
+  const agencyInfo = useAuthStore((s) => s.agencyInfo);
+  const isAgencyOwner = useAuthStore((s) => s.isAgencyOwner);
+  const isAgencyMember = useAuthStore((s) => s.isAgencyMember);
   const session = useAuthStore((s) => s.session);
   const loading = useAuthStore((s) => s.loading);
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
@@ -18,13 +21,19 @@ export function useAuth() {
   const updateProfile = useAuthStore((s) => s.updateProfile);
 
   const logout = useCallback(async () => {
-    await storeLogout();
-    navigate('/login', { replace: true });
+    try {
+      await storeLogout();
+    } finally {
+      navigate('/login', { replace: true });
+    }
   }, [navigate, storeLogout]);
 
   return {
     user,
     profile,
+    agencyInfo,
+    isAgencyOwner,
+    isAgencyMember,
     session,
     loading,
     loginWithGoogle,

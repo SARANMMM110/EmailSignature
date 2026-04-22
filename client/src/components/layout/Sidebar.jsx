@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { FiAward, FiBriefcase } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useI18n } from '../../hooks/useI18n.js';
 import { normalizeLang } from '../../i18n/appStrings.js';
+import { getPlan } from '../../data/plans.js';
+import { effectiveTier1PlanId } from '../../lib/effectiveTier1Plan.js';
+import { displayAgencyTitle } from '../../lib/agencyDisplay.js';
 
 const NAVY = '#0c1929';
 const ACCENT = '#2563eb';
@@ -81,7 +85,8 @@ const navClass = ({ isActive }) =>
 export function Sidebar() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile, isAgencyOwner, agencyInfo } = useAuth();
+  const sidebarPlanId = effectiveTier1PlanId(profile);
   const [langError, setLangError] = useState('');
 
   /** Saved uploads live on `profiles.avatar_url` — prefer it over stale OAuth metadata. */
@@ -149,6 +154,47 @@ export function Sidebar() {
         </div>
 
         <div className="shrink-0 border-t border-slate-100/80 bg-gradient-to-b from-white to-slate-50/50 px-4 py-4">
+        {user ? (
+          <div className="mb-3 space-y-2">
+            <div className="flex items-start gap-2.5 rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 px-3 py-2.5 text-white shadow-md shadow-purple-500/15">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                <FiAward className="h-4 w-4" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-white/85">Current plan</p>
+                <p className="truncate text-sm font-extrabold tracking-tight">
+                  {getPlan(sidebarPlanId).name}
+                </p>
+              </div>
+            </div>
+            {isAgencyOwner && agencyInfo ? (
+              <NavLink
+                to="/agency"
+                aria-label="Open agency dashboard"
+                className={({ isActive }) =>
+                  `flex items-start gap-2.5 rounded-xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 px-3 py-2.5 text-left text-white shadow-md shadow-teal-600/15 outline-none ring-offset-2 transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-teal-400 ${
+                    isActive ? 'ring-2 ring-white/40' : ''
+                  }`
+                }
+              >
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                  <FiBriefcase className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-white/85">Agency owner</p>
+                  <p className="truncate text-sm font-extrabold leading-snug tracking-tight">
+                    {displayName(user, profile)?.trim() ||
+                      displayAgencyTitle(agencyInfo, profile)}
+                  </p>
+                </div>
+                <span className="mt-1 shrink-0 self-start text-[10px] font-bold tabular-nums text-white/95">
+                  {Number(agencyInfo.seats_used) || 0}/{Number(agencyInfo.max_seats) || 0}
+                </span>
+              </NavLink>
+            ) : null}
+          </div>
+        ) : null}
+
         <button
           type="button"
           onClick={handleLanguageToggle}

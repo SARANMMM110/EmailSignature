@@ -1,7 +1,31 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore.js';
+import { clearStoredRegistrationRef } from './registrationRef.js';
 import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import { supabase, isSupabaseConfigured } from './supabase.js';
+
+/**
+ * Vite injects `import.meta.env`. It can be missing during circular module init
+ * (e.g. `adminApi.js` imports `getApiOrigin` while `api.js` is still linking) or in non-Vite runners.
+ */
+function viteMetaEnv() {
+  try {
+    const e = import.meta?.env;
+    if (e && typeof e === 'object') return e;
+  } catch {
+    /* ignore */
+  }
+  return {
+    MODE: 'development',
+    DEV: true,
+    PROD: false,
+    SSR: false,
+    VITE_API_URL: undefined,
+    VITE_API_CROSS_ORIGIN: undefined,
+  };
+}
+
+const env = viteMetaEnv();
 
 const GET_SESSION_TIMEOUT_MS = 8000;
 
@@ -34,8 +58,10 @@ async function resolveAccessToken() {
  * if the Express app serves `/api/*` on the same host. Do **not** append `/api` here — we add it once below.
  * (If you already used `…/api` in Vercel, we strip a single trailing `/api` so you do not get `/api/api/…`.)
  */
-const viteApi = import.meta.env.VITE_API_URL?.toString().trim();
-if (import.meta.env.PROD && !viteApi) {
+const viteApi = String(env.VITE_API_URL ?? '')
+  .trim()
+  .replace(/\0/g, '');
+if (env.PROD && !viteApi) {
   console.error(
     '[api] Missing VITE_API_URL at build time — bundle fell back to http://localhost:3001. On Hetzner/self-host, set VITE_API_URL before `npm run build`, or rely on same-origin rewrite (see first request interceptor). Hosted CI: add the env var and redeploy.'
   );
@@ -51,13 +77,13 @@ function normalizeApiSiteOrigin(raw) {
 }
 
 const apiSiteOrigin =
-  import.meta.env.DEV && !viteApi
+  env.DEV && !viteApi
     ? ''
     : normalizeApiSiteOrigin(viteApi || 'http://localhost:3001');
 
 /** Before coercion: same-origin `/api/` in Vite dev; prod = `https://host/api/` or `/api/` if origin was misconfigured. */
 const rawApiBaseURL =
-  import.meta.env.DEV && !viteApi ? '/api/' : `${apiSiteOrigin.replace(/\/+$/, '')}/api/`;
+  env.DEV && !viteApi ? '/api/' : `${apiSiteOrigin.replace(/\/+$/, '')}/api/`;
 
 /**
  * Relative `baseURL` (`/api/`) + path `signatures` is resolved against the **current page path** (WHATWG URL),
@@ -65,7 +91,7 @@ const rawApiBaseURL =
  */
 function finalizeApiBaseURL(base) {
   const b = String(base || '');
-  if (typeof window !== 'undefined' && import.meta.env.PROD && b.startsWith('/')) {
+  if (typeof window !== 'undefined' && env.PROD && b.startsWith('/')) {
     const origin = window.location.origin.replace(/\/$/, '');
     const path = b.endsWith('/') ? b : `${b}/`;
     return `${origin}${path}`;
@@ -75,7 +101,7 @@ function finalizeApiBaseURL(base) {
 
 const apiBaseURL = finalizeApiBaseURL(rawApiBaseURL);
 
-if (import.meta.env.PROD && typeof window !== 'undefined' && rawApiBaseURL.startsWith('/') && viteApi) {
+if (env.PROD && typeof window !== 'undefined' && rawApiBaseURL.startsWith('/') && viteApi) {
   console.warn(
     '[api] VITE_API_URL should be a full origin (e.g. https://signaturestudio.biz), not a path like /api. Using same-origin absolute base for API calls.'
   );
@@ -83,7 +109,7 @@ if (import.meta.env.PROD && typeof window !== 'undefined' && rawApiBaseURL.start
 
 /** Absolute API origin (no `/api` suffix) for unauthenticated `fetch` calls. */
 export function getApiOrigin() {
-  if (typeof window !== 'undefined' && import.meta.env.PROD) {
+  if (typeof window !== 'undefined' && env.PROD) {
     const o = apiSiteOrigin.replace(/\/+$/, '');
     if (!o || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(o)) {
       return window.location.origin;
@@ -117,8 +143,8 @@ function canonicalSiteHost(hostname) {
  * Split-origin deploys: set `VITE_API_CROSS_ORIGIN=true` at build time, or put the real API host in `VITE_API_URL`.
  */
 function shouldUseBakedCrossOriginApi() {
-  if (typeof window === 'undefined' || !import.meta.env.PROD) return false;
-  if (import.meta.env.VITE_API_CROSS_ORIGIN === 'true') return true;
+  if (typeof window === 'undefined' || !env.PROD) return false;
+  if (env.VITE_API_CROSS_ORIGIN === 'true') return true;
   const raw = normalizeApiSiteOrigin(viteApi || '');
   if (!raw || !/^https?:\/\//i.test(raw)) return false;
   try {
@@ -134,7 +160,7 @@ function shouldUseBakedCrossOriginApi() {
  * Production + same-tab API: absolute `https://this-host/api/<path>` so list/signatures never hits `/signatures`.
  */
 api.interceptors.request.use((config) => {
-  if (typeof window === 'undefined' || !import.meta.env.PROD) return config;
+  if (typeof window === 'undefined' || !env.PROD) return config;
   if (shouldUseBakedCrossOriginApi()) return config;
   const u = config.url;
   if (typeof u !== 'string' || /^https?:\/\//i.test(u)) return config;
@@ -261,6 +287,68 @@ export async function getPublicRegistrationLinkPreview(code) {
   return data;
 }
 
+/** Agency member invite — no Bearer required. */
+export async function getAgencyJoinPreview(linkToken) {
+  const origin = getApiOrigin();
+  const q = new URLSearchParams({ token: String(linkToken || '').trim() });
+  const res = await fetch(`${origin}/api/agency/join/preview?${q}`);
+  return res.json().catch(() => ({ is_valid: false }));
+}
+
+/** Agency tier token — no Bearer required. */
+export async function getAgencySetupPreview(tierToken) {
+  const origin = getApiOrigin();
+  const q = new URLSearchParams({ token: String(tierToken || '').trim() });
+  const res = await fetch(`${origin}/api/agency/setup/preview?${q}`);
+  return res.json().catch(() => ({ is_valid: false }));
+}
+
+export const agencyAPI = {
+  /** Agency owner */
+  getMyAgency: () => api.get('agency/me'),
+  updateAgency: (data) => api.patch('agency/me', data),
+
+  /** Registration links */
+  getLinks: () => api.get('agency/links'),
+  createLink: (data) => api.post('agency/links', data),
+  deactivateLink: (id) =>
+    api.delete(`agency/links/${encodeURIComponent(String(id).trim())}`),
+
+  /** Members */
+  getMembers: () => api.get('agency/members'),
+  removeMember: (memberId) =>
+    api.delete(`agency/members/${encodeURIComponent(String(memberId).trim())}`),
+
+  /** Join flows */
+  previewJoinLink: (token) =>
+    api.get('agency/join/preview', { params: { token: String(token || '').trim() } }),
+  joinWithLink: (token) => api.post('agency/join', { link_token: token }),
+  registerAsOwner: (token) => api.post('agency/register-with-token', { token }),
+};
+
+/**
+ * Call after the user is signed in. Applies the invite, then reloads profile so
+ * plan tier / agency fields (sidebar) match the server. Treats ALREADY_IN_AGENCY as success.
+ */
+export async function consumeAgencyInviteLink(linkToken) {
+  const t = String(linkToken || '').trim();
+  if (!t) throw new Error('Missing invite link.');
+  clearStoredRegistrationRef();
+  try {
+    const { data } = await agencyAPI.joinWithLink(t);
+    await useAuthStore.getState().fetchProfile();
+    return { data, alreadyMember: false };
+  } catch (err) {
+    const code = err.response?.data?.error;
+    const status = err.response?.status;
+    if (status === 409 && code === 'ALREADY_IN_AGENCY') {
+      await useAuthStore.getState().fetchProfile();
+      return { data: null, alreadyMember: true };
+    }
+    throw err;
+  }
+}
+
 /** Puppeteer PNG export — public route; returns { url, base64?, dataUrl? } */
 export const signatureExportAPI = {
   generateImage: (html) => api.post('generate-signature', { html }),
@@ -291,5 +379,7 @@ export const uploadAPI = {
     return api.post('upload/emailee-export', form);
   },
 };
+
+export { adminAgencyAPI } from './adminApi.js';
 
 export default api;

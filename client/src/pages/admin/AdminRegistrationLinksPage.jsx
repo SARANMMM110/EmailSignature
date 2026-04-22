@@ -268,54 +268,55 @@ export function AdminRegistrationLinksPage() {
                   const isSel = selectedId === link.id;
                   return (
                     <li key={link.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(link.id)}
-                        className={`flex w-full flex-col gap-4 rounded-2xl border p-5 text-left transition-all sm:flex-row sm:items-center sm:justify-between ${
+                      <div
+                        className={`flex w-full flex-col gap-4 rounded-2xl border p-5 transition-all sm:flex-row sm:items-center sm:justify-between ${
                           isSel
                             ? 'border-indigo-400/70 bg-gradient-to-br from-indigo-50/90 to-white shadow-md ring-2 ring-indigo-500/20'
                             : 'border-slate-200/90 bg-white shadow-sm hover:border-slate-300 hover:shadow'
                         }`}
                       >
-                        <div className="min-w-0 flex flex-wrap items-center gap-2">
-                          <span className="rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-sm font-semibold tracking-wide text-white">
-                            {link.code}
-                          </span>
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ${planBadgeClass(link.plan_id)}`}
-                          >
-                            {planLabel(link.plan_id)}
-                          </span>
-                          {unlimited ? (
-                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200/80">
-                              Unlimited uses
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(link.id)}
+                          className="flex min-w-0 flex-1 flex-col gap-4 text-left sm:flex-row sm:items-center sm:gap-6"
+                        >
+                          <div className="min-w-0 flex flex-wrap items-center gap-2">
+                            <span className="rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-sm font-semibold tracking-wide text-white">
+                              {link.code}
                             </span>
-                          ) : null}
-                          {!active ? (
-                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-red-800 ring-1 ring-red-200/80">
-                              Disabled
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ${planBadgeClass(link.plan_id)}`}
+                            >
+                              {planLabel(link.plan_id)}
                             </span>
-                          ) : null}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 sm:shrink-0">
-                          <span className="inline-flex items-center gap-1.5">
-                            <FiUsers className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-                            {link.uses_count}
-                            {unlimited ? '' : ` / ${link.max_uses}`}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5">
-                            <FiCalendar className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-                            {formatExpiry(link.expires_at)}
-                          </span>
-                        </div>
-                        <div className="flex gap-1.5 sm:ml-auto">
+                            {unlimited ? (
+                              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200/80">
+                                Unlimited uses
+                              </span>
+                            ) : null}
+                            {!active ? (
+                              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-red-800 ring-1 ring-red-200/80">
+                                Disabled
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 sm:shrink-0">
+                            <span className="inline-flex items-center gap-1.5">
+                              <FiUsers className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                              {link.uses_count}
+                              {unlimited ? '' : ` / ${link.max_uses}`}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                              <FiCalendar className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                              {formatExpiry(link.expires_at)}
+                            </span>
+                          </div>
+                        </button>
+                        <div className="flex shrink-0 gap-1.5 sm:ml-auto">
                           <button
                             type="button"
                             title="Copy invite URL"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyText(linkUrl(link.code));
-                            }}
+                            onClick={() => copyText(linkUrl(link.code))}
                             className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
                           >
                             <FiCopy className="h-4 w-4" aria-hidden />
@@ -323,10 +324,7 @@ export function AdminRegistrationLinksPage() {
                           <button
                             type="button"
                             title={active ? 'Disable' : 'Enable'}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleDisabled(link);
-                            }}
+                            onClick={() => toggleDisabled(link)}
                             className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                           >
                             {active ? <FiPause className="h-4 w-4" /> : <FiPlay className="h-4 w-4" />}
@@ -334,16 +332,13 @@ export function AdminRegistrationLinksPage() {
                           <button
                             type="button"
                             title="Delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeLink(link);
-                            }}
+                            onClick={() => removeLink(link)}
                             className="rounded-xl border border-slate-200 bg-white p-2.5 text-red-600 transition hover:border-red-200 hover:bg-red-50"
                           >
                             <FiTrash2 className="h-4 w-4" aria-hidden />
                           </button>
                         </div>
-                      </button>
+                      </div>
                     </li>
                   );
                 })}

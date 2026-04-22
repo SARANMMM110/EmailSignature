@@ -19,6 +19,10 @@ import { EditorPage } from './pages/EditorPage.jsx';
 import { SettingsPage } from './pages/SettingsPage.jsx';
 import { PricingPage } from './pages/PricingPage.jsx';
 import { NotFoundPage } from './pages/NotFoundPage.jsx';
+import { AgencySetupPage } from './pages/AgencySetupPage.jsx';
+import { AgencyJoinPage } from './pages/AgencyJoinPage.jsx';
+import { AgencyDashboardPage } from './pages/AgencyDashboardPage.jsx';
+import { AdminAgencyPage } from './pages/admin/AdminAgencyPage.jsx';
 import { UpgradeModal } from './components/ui/UpgradeModal.jsx';
 
 function EB({ children }) {
@@ -42,6 +46,8 @@ export default function App() {
       <Route path="/login" element={<EB><LoginPage /></EB>} />
       <Route path="/signup" element={<EB><SignupPage /></EB>} />
       <Route path="/pricing" element={<EB><PricingPage /></EB>} />
+      <Route path="/agency-setup" element={<EB><AgencySetupPage /></EB>} />
+      <Route path="/join" element={<EB><AgencyJoinPage /></EB>} />
 
       <Route path="/admin/login" element={<EB><AdminLoginPage /></EB>} />
       <Route element={<AdminProtectedRoute />}>
@@ -49,6 +55,7 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<EB><AdminDashboardPage /></EB>} />
           <Route path="registration-links" element={<EB><AdminRegistrationLinksPage /></EB>} />
+          <Route path="agency" element={<EB><AdminAgencyPage /></EB>} />
           <Route path="account" element={<EB><AdminAccountPage /></EB>} />
         </Route>
       </Route>
@@ -62,6 +69,9 @@ export default function App() {
         <Route path="/editor/:id/banners" element={<EB><EditorPage /></EB>} />
         <Route path="/editor/:id/second-cta" element={<EB><EditorSecondCtaRedirect /></EB>} />
         <Route path="/settings" element={<EB><SettingsPage /></EB>} />
+        <Route path="/agency/links" element={<Navigate to="/agency?tab=links" replace />} />
+        <Route path="/agency/members" element={<Navigate to="/agency?tab=members" replace />} />
+        <Route path="/agency" element={<EB><AgencyDashboardPage /></EB>} />
       </Route>
 
       <Route path="*" element={<EB><NotFoundPage /></EB>} />

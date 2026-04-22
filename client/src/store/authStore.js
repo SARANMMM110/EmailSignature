@@ -1,6 +1,30 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase.js';
+import { clearStoredRegistrationRef } from '../lib/registrationRef.js';
 import { normalizePlanId } from '../data/plans.js';
+
+const SIGN_OUT_NETWORK_MS = 12_000;
+
+async function clearSupabaseSession() {
+  if (!supabase) return;
+  const globalOut = supabase.auth.signOut();
+  const timeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('signOut_timeout')), SIGN_OUT_NETWORK_MS);
+  });
+  try {
+    const { error } = await Promise.race([globalOut, timeout]);
+    if (error) console.warn('[auth] signOut:', error.message || error);
+  } catch (e) {
+    const msg = e?.message || String(e);
+    console.warn('[auth] signOut failed or timed out:', msg);
+    try {
+      const { error: localErr } = await supabase.auth.signOut({ scope: 'local' });
+      if (localErr) console.warn('[auth] signOut(local):', localErr.message || localErr);
+    } catch (e2) {
+      console.warn('[auth] signOut(local) failed:', e2?.message || e2);
+    }
+  }
+}
 
 /** Columns the client may PATCH on `public.profiles` (migrations 001 + 006). */
 const PROFILE_PATCH_KEYS = new Set([
@@ -25,12 +49,46 @@ function sanitizeProfilePatch(partial) {
   return out;
 }
 
+const AGENCY_EMBED = `
+  *,
+  agency:agencies!profiles_agency_id_fkey (
+    id,
+    agency_type,
+    agency_name,
+    max_seats,
+    seats_used,
+    is_active
+  ),
+  agency_member_rows:agency_members!agency_members_member_id_fkey (
+    assigned_plan,
+    is_active
+  )
+`;
+
+function deriveAgencyFields(profile) {
+  if (!profile) {
+    return {
+      isAgencyOwner: false,
+      isAgencyMember: false,
+      agencyInfo: null,
+    };
+  }
+  const rawAgency = profile.agency;
+  const agencyInfo = Array.isArray(rawAgency) ? rawAgency[0] ?? null : rawAgency ?? null;
+  const isAgencyOwner = profile.is_agency_owner === true;
+  const isAgencyMember = Boolean(profile.agency_id) && !isAgencyOwner;
+  return { isAgencyOwner, isAgencyMember, agencyInfo };
+}
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   profile: null,
   session: null,
   loading: true,
   initialized: false,
+  isAgencyOwner: false,
+  isAgencyMember: false,
+  agencyInfo: null,
 
   setSession: (session) => {
     const token = session?.access_token;
@@ -42,27 +100,74 @@ export const useAuthStore = create((set, get) => ({
     set({
       session,
       user: session?.user ?? null,
-      ...(session ? {} : { profile: null }),
+      ...(session
+        ? {}
+        : {
+            profile: null,
+            isAgencyOwner: false,
+            isAgencyMember: false,
+            agencyInfo: null,
+          }),
     });
   },
 
   fetchProfile: async () => {
     const user = get().user;
     if (!supabase || !user) {
-      set({ profile: null });
+      set({
+        profile: null,
+        isAgencyOwner: false,
+        isAgencyMember: false,
+        agencyInfo: null,
+      });
       return;
     }
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(AGENCY_EMBED)
       .eq('id', user.id)
       .maybeSingle();
     if (error) {
+      const msg = error.message || '';
+      const retry =
+        /foreign key|relationship|schema cache|PGRST204|Could not find a relationship/i.test(msg) ||
+        error.code === 'PGRST204';
+      if (retry) {
+        ({ data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle());
+      }
+    }
+    if (error) {
       console.warn('[auth] fetchProfile:', error.message);
-      set({ profile: null });
+      set({
+        profile: null,
+        isAgencyOwner: false,
+        isAgencyMember: false,
+        agencyInfo: null,
+      });
       return;
     }
     let profile = data ?? null;
+    /** Keep `profiles.plan` aligned with agency invite tier when the member row is source of truth. */
+    if (profile) {
+      const rawRows = profile.agency_member_rows;
+      const rowList = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+      const activeRow = rowList.find((r) => r && r.is_active !== false);
+      const fromLink = activeRow?.assigned_plan ? normalizePlanId(activeRow.assigned_plan) : null;
+      const dbPlan = normalizePlanId(profile.plan);
+      const isMember = Boolean(profile.agency_id) && profile.is_agency_owner !== true;
+      if (isMember && fromLink && fromLink !== dbPlan) {
+        const nowIso = new Date().toISOString();
+        const { error: syncErr } = await supabase
+          .from('profiles')
+          .update({ plan: fromLink, plan_updated_at: nowIso, updated_at: nowIso })
+          .eq('id', user.id);
+        if (!syncErr) {
+          profile = { ...profile, plan: fromLink };
+        } else {
+          console.warn('[auth] sync profiles.plan from agency_members:', syncErr.message);
+        }
+      }
+    }
     /**
      * Dev-only: VITE_DEV_USER_PLAN_OVERRIDE replaces `profiles.plan` in the UI (and plan gates).
      * If set to `pro` / `advanced` while the DB has `ultimate` (e.g. after an invite link), Settings will look wrong.
@@ -82,7 +187,8 @@ export const useAuthStore = create((set, get) => ({
         }
       }
     }
-    set({ profile });
+    const agencyDerived = deriveAgencyFields(profile);
+    set({ profile, ...agencyDerived });
   },
 
   initialize: async () => {
@@ -90,7 +196,14 @@ export const useAuthStore = create((set, get) => ({
     set({ initialized: true, loading: true });
     try {
       if (!supabase) {
-        set({ user: null, session: null, profile: null });
+        set({
+          user: null,
+          session: null,
+          profile: null,
+          isAgencyOwner: false,
+          isAgencyMember: false,
+          agencyInfo: null,
+        });
         return;
       }
       const {
@@ -105,7 +218,12 @@ export const useAuthStore = create((set, get) => ({
         if (session?.user) {
           await get().fetchProfile();
         } else {
-          set({ profile: null });
+          set({
+            profile: null,
+            isAgencyOwner: false,
+            isAgencyMember: false,
+            agencyInfo: null,
+          });
         }
       });
     } finally {
@@ -113,14 +231,16 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  loginWithGoogle: async () => {
+  loginWithGoogle: async (redirectPath) => {
     if (!supabase) {
       return { error: new Error('Supabase is not configured.') };
     }
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const path =
+      typeof redirectPath === 'string' && redirectPath.startsWith('/') ? redirectPath : '/dashboard';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${origin}/dashboard` },
+      options: { redirectTo: `${origin}${path}` },
     });
     return { error };
   },
@@ -164,9 +284,18 @@ export const useAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
-    if (supabase) await supabase.auth.signOut();
-    get().setSession(null);
-    set({ profile: null });
+    try {
+      await clearSupabaseSession();
+    } finally {
+      clearStoredRegistrationRef();
+      get().setSession(null);
+      set({
+        profile: null,
+        isAgencyOwner: false,
+        isAgencyMember: false,
+        agencyInfo: null,
+      });
+    }
   },
 
   updateProfile: async (partial) => {

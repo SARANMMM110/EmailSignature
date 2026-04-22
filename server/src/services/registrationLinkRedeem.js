@@ -31,5 +31,5 @@ export async function redeemRegistrationLink(code, userId) {
   if (row.ok === true) {
     return { ok: true, plan_id: row.plan_id };
   }
-  return { ok: false, error: row.error || 'UNKNOWN' };
+  return { ok: false, error: row.error || 'UNKNOWN', message: row.message };
 }

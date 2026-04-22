@@ -2,6 +2,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   FiGrid,
   FiLink,
+  FiBriefcase,
   FiSettings,
   FiLogOut,
   FiArrowLeftCircle,
@@ -46,6 +47,10 @@ export function AdminSidebar() {
         <NavLink to="/admin/registration-links" className={navCls}>
           <FiLink className="h-[18px] w-[18px] shrink-0 opacity-90" aria-hidden />
           Registration links
+        </NavLink>
+        <NavLink to="/admin/agency" className={navCls}>
+          <FiBriefcase className="h-[18px] w-[18px] shrink-0 opacity-90" aria-hidden />
+          Agencies
         </NavLink>
         <p className="px-3 pb-2 pt-5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Settings</p>
         <NavLink to="/admin/account" className={navCls}>

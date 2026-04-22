@@ -3,12 +3,20 @@ import { getApiOrigin } from './api.js';
 
 const TOKEN_KEY = 'sb-admin-jwt';
 
-const origin = getApiOrigin();
+function resolveAdminBaseURL() {
+  const origin = getApiOrigin().replace(/\/+$/, '');
+  return origin ? `${origin}/api/admin` : '/api/admin';
+}
 
 export const adminApi = axios.create({
-  baseURL: `${origin}/api/admin`,
   headers: { 'Content-Type': 'application/json' },
   timeout: 60000,
+});
+
+/** Resolve base URL per request so we never call `getApiOrigin()` during module init (avoids api ↔ adminApi cycles). */
+adminApi.interceptors.request.use((config) => {
+  config.baseURL = resolveAdminBaseURL();
+  return config;
 });
 
 adminApi.interceptors.request.use((config) => {
@@ -54,3 +62,15 @@ export function getAdminToken() {
   if (typeof sessionStorage === 'undefined') return null;
   return sessionStorage.getItem(TOKEN_KEY);
 }
+
+/** Admin panel — agency tier tokens and agencies (JWT via `adminApi`). */
+export const adminAgencyAPI = {
+  getTokens: () => adminApi.get('agency-tokens'),
+  createToken: (data) => adminApi.post('agency-tokens', data),
+  deactivateToken: (id) => adminApi.delete(`agency-tokens/${id}`),
+  deleteTokenPermanent: (id) => adminApi.delete(`agency-tokens/${id}/permanent`),
+
+  getAllAgencies: () => adminApi.get('agencies'),
+  getAgency: (id) => adminApi.get(`agencies/${id}`),
+  deactivateAgency: (id) => adminApi.patch(`agencies/${id}`, { is_active: false }),
+};

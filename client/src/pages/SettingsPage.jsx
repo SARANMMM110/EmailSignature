@@ -1,7 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { HiOutlineBriefcase, HiOutlineEnvelope, HiOutlineMapPin, HiOutlinePhoto, HiOutlineSparkles } from 'react-icons/hi2';
+import {
+  HiOutlineBriefcase,
+  HiOutlineBuildingOffice2,
+  HiOutlineEnvelope,
+  HiOutlineMapPin,
+  HiOutlinePhoto,
+  HiOutlineSparkles,
+} from 'react-icons/hi2';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { PhotoCropModal } from '../components/ui/PhotoCropModal.jsx';
@@ -10,6 +17,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
 import { palettesAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
 import { getPlan } from '../data/plans.js';
+import { effectiveTier1PlanId } from '../lib/effectiveTier1Plan.js';
 import { usePlanGate } from '../hooks/usePlanGate.js';
 import { normalizeLang } from '../i18n/appStrings.js';
 import { useAuthStore } from '../store/authStore.js';
@@ -120,7 +128,7 @@ function DropZoneArea({ getRootProps, getInputProps, isDragActive, previewUrl, e
 export function SettingsPage() {
   const { t } = useI18n();
   const gate = usePlanGate();
-  const { user, profile, updateProfile, logout } = useAuth();
+  const { user, profile, updateProfile, logout, isAgencyMember, agencyInfo } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
@@ -277,7 +285,7 @@ export function SettingsPage() {
     multiple: false,
   });
 
-  const planMeta = getPlan(profile?.plan);
+  const planMeta = getPlan(effectiveTier1PlanId(profile));
   const planLabel = planMeta.name;
   const isPaidPlan = planMeta.id === 'advanced' || planMeta.id === 'ultimate';
 
@@ -507,6 +515,48 @@ export function SettingsPage() {
                 </div>
               </div>
             </SectionCard>
+
+            {isAgencyMember ? (
+              <SectionCard
+                id="agency"
+                icon={HiOutlineBuildingOffice2}
+                title="Agency"
+                description="Your workspace is linked to an organization through a team registration link."
+              >
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Organization</dt>
+                    <dd className="mt-1 text-sm font-semibold text-slate-900">
+                      {agencyInfo?.agency_name?.trim() || '—'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Agency tier</dt>
+                    <dd className="mt-1 text-sm font-semibold text-slate-900">
+                      {agencyInfo?.agency_type ? `${agencyInfo.max_seats} seats (type ${agencyInfo.agency_type})` : '—'}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Your plan from the agency</dt>
+                    <dd className="mt-1">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+                          isPaidPlan
+                            ? 'bg-[var(--sb-color-accent)] text-white shadow-md shadow-blue-500/25'
+                            : 'border border-slate-200 bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        {planLabel}
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-5 text-sm leading-relaxed text-slate-600">
+                  Feature limits follow the Tier 1 plan your agency owner assigned. To change or leave the organization,
+                  contact your agency administrator.
+                </p>
+              </SectionCard>
+            ) : null}
 
             {/* Contact */}
             <SectionCard

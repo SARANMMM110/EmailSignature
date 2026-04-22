@@ -15,7 +15,8 @@ export const PLAN_ORDER = [PLAN_IDS.PERSONAL, PLAN_IDS.ADVANCED, PLAN_IDS.ULTIMA
 
 /** Maps legacy DB values to current tier ids. */
 export function normalizePlanId(plan) {
-  const p = String(plan || 'personal').toLowerCase();
+  let p = String(plan ?? '').trim().toLowerCase();
+  if (!p) p = PLAN_IDS.PERSONAL;
   if (p === 'free') return PLAN_IDS.PERSONAL;
   if (p === 'pro') return PLAN_IDS.ADVANCED;
   if (p === 'business') return PLAN_IDS.ULTIMATE;
