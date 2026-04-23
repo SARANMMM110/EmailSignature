@@ -21,7 +21,13 @@ import {
   isBlankImageBannerPreset,
   normalizeSignatureTemplateSlug,
 } from '../../lib/templateIds.js';
-import { hashSrcDoc, PreviewIconButton, PreviewDeleteButton, PreviewIframeBlock } from './previewBits/index.js';
+import {
+  hashSrcDoc,
+  PreviewIconButton,
+  PreviewDeleteButton,
+  PreviewIframeBlock,
+  CTA_PREVIEW_CLICK_SCOPE,
+} from './previewBits/index.js';
 
 /** Signature preview needs a taller floor so the card is not clipped before measure runs. */
 const SIG_PREVIEW_IFRAME_MIN_H = 320;
@@ -59,7 +65,7 @@ export function EditorPreview({
     navigate(`${base}#editor-myinfo-signature`, { state: { myInfoSubTab: 'signature' } });
   const goPalettes = () => navigate(`${base}/palettes`);
   const goLayouts = () => navigate(`${base}/layouts`);
-  const goBanners = () => navigate(`${base}/banners`);
+  const goBanners = useCallback(() => navigate(`${base}/banners`), [navigate, base]);
 
   const goMyInfoBanner = useCallback(
     (slotIndex) => {
@@ -272,6 +278,8 @@ export function EditorPreview({
                     frameKey={combinedFrameKey}
                     minHeightFloor={SIG_PREVIEW_IFRAME_MIN_H}
                     lockRailPx={previewLockRailPx}
+                    ctaPreviewClickScope={CTA_PREVIEW_CLICK_SCOPE.COMBINED}
+                    onCtaPreviewNavigate={() => goMyInfoBanner(0)}
                   />
                 </div>
               )}
@@ -312,6 +320,8 @@ export function EditorPreview({
                         lockRailPx={previewLockRailPx}
                         measureFloor={fixedBlankH ?? 40}
                         measureCeiling={fixedBlankH ?? splitCtaIframeHeightCeiling}
+                        ctaPreviewClickScope={CTA_PREVIEW_CLICK_SCOPE.BANNER_ONLY}
+                        onCtaPreviewNavigate={() => goMyInfoBanner(i)}
                       />
                     </div>
                   </section>

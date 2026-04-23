@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { HiPlus } from 'react-icons/hi2';
 import { bannersAPI } from '../../../lib/api.js';
 import { useEditorStore, signatureHasRenderablePrimaryBanner } from '../../../store/editorStore.js';
@@ -388,9 +388,8 @@ function BannerStripRow({
   );
 }
 
-/** Banner style cards only — links & copy are edited under My informations → Banners. */
+/** Banner style cards only — links and text are edited under My information. */
 export function BannersLayoutTab({ onToast }) {
-  const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useI18n();
   const gate = usePlanGate();
@@ -444,7 +443,7 @@ export function BannersLayoutTab({ onToast }) {
       <div className="space-y-8">
         <div>
           <h1 className="text-lg font-bold tracking-tight text-[#0f172a]">{t('editor.banners')}</h1>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('editor.bannersHowToPick')}</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('editor.bannersTabIntroLocked')}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
           <div className="text-3xl" aria-hidden>
@@ -474,24 +473,7 @@ export function BannersLayoutTab({ onToast }) {
     <div className="space-y-8">
       <div>
         <h1 className="text-lg font-bold tracking-tight text-[#0f172a]">{t('editor.banners')}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">
-          {t('editor.bannersHowToPick')}{' '}
-          <Link
-            to={`/editor/${id}`}
-            state={{ myInfoSubTab: 'banner' }}
-            className="font-semibold text-[#2563eb] underline-offset-2 hover:underline"
-          >
-            {t('editor.myInformations')}
-          </Link>
-          {' → '}
-          <Link
-            to={`/editor/${id}/banners`}
-            className="font-semibold text-[#2563eb] underline-offset-2 hover:underline"
-          >
-            {t('editor.banners')}
-          </Link>
-          .
-        </p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('editor.bannersTabIntro')}</p>
       </div>
 
       {banners.length === 0 ? (

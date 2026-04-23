@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { usePreviewIframeMeasure } from '../usePreviewIframeMeasure.js';
 import { editorPreviewShellMaxPx } from '../../../data/templatePreviews.js';
 
@@ -13,6 +13,29 @@ export function hashSrcDoc(s) {
 }
 
 /**
+ * Scope for forwarding clicks in the preview iframe to My Information → banner editor (`#editor-myinfo-banner`).
+ * @typedef {'off'|'combined'|'banner-only'} CtaPreviewClickScope
+ */
+export const CTA_PREVIEW_CLICK_SCOPE = {
+  OFF: 'off',
+  /** Signature + banner in one doc — only clicks inside the banner region count. */
+  COMBINED: 'combined',
+  /** Banner-only srcDoc — any click in the iframe counts. */
+  BANNER_ONLY: 'banner-only',
+};
+
+function clickTargetIsInBannerRegion(target, scope) {
+  if (!target || typeof target.closest !== 'function') return false;
+  if (scope === CTA_PREVIEW_CLICK_SCOPE.BANNER_ONLY) return true;
+  return Boolean(
+    target.closest('[data-sig-part="banner"]') ||
+      target.closest('table[data-sig-part="banner"]') ||
+      target.closest('[data-sig-cta-slot="1"]') ||
+      target.closest('[data-sig-cta-slot="2"]')
+  );
+}
+
+/**
  * Measured signature / banner iframe — width shell matches locked rail when `lockRailPx` is set.
  */
 export function PreviewIframeBlock({
@@ -24,6 +47,9 @@ export function PreviewIframeBlock({
   measureFloor,
   /** Upper bound — stops tall `<img>` intrinsic sizes from stretching split CTA iframes. */
   measureCeiling,
+  /** Called when the user clicks the CTA preview — e.g. navigate to `#editor-myinfo-banner` on the editor route. */
+  ctaPreviewClickScope = CTA_PREVIEW_CLICK_SCOPE.OFF,
+  onCtaPreviewNavigate,
 }) {
   const key = frameKey ?? hashSrcDoc(srcDoc);
   const measureOpts = useMemo(
@@ -34,16 +60,61 @@ export function PreviewIframeBlock({
     [measureFloor, measureCeiling]
   );
   const { iframeRef, height, widthPx, measure } = usePreviewIframeMeasure(srcDoc, key, measureOpts);
+  const navigateRef = useRef(onCtaPreviewNavigate);
+  navigateRef.current = onCtaPreviewNavigate;
+
+  useEffect(() => {
+    if (ctaPreviewClickScope === CTA_PREVIEW_CLICK_SCOPE.OFF) return;
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const attach = () => {
+      let doc;
+      try {
+        doc = iframe.contentDocument;
+      } catch {
+        return () => {};
+      }
+      if (!doc) return () => {};
+
+      const handler = (e) => {
+        const nav = navigateRef.current;
+        if (typeof nav !== 'function') return;
+        if (!clickTargetIsInBannerRegion(e.target, ctaPreviewClickScope)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        nav();
+      };
+      doc.addEventListener('click', handler, true);
+      return () => doc.removeEventListener('click', handler, true);
+    };
+
+    let detach = attach();
+    const onLoad = () => {
+      if (typeof detach === 'function') detach();
+      detach = attach();
+    };
+    iframe.addEventListener('load', onLoad);
+    return () => {
+      iframe.removeEventListener('load', onLoad);
+      if (typeof detach === 'function') detach();
+    };
+  }, [iframeRef, key, srcDoc, ctaPreviewClickScope]);
+
   const locked = lockRailPx != null && lockRailPx > 0;
+  const clickToEditCta = ctaPreviewClickScope !== CTA_PREVIEW_CLICK_SCOPE.OFF && typeof onCtaPreviewNavigate === 'function';
   return (
     <div
-      className={
+      className={[
         locked
           ? 'mx-auto w-full'
           : widthPx == null
             ? 'w-full max-w-[min(100%,min(1100px,96vw))]'
-            : ''
-      }
+            : '',
+        clickToEditCta ? 'cursor-pointer' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={
         locked
           ? {

@@ -552,7 +552,7 @@ export function AdminAgencyPage() {
         </form>
       </Modal>
 
-      {/* Add app user (Gold / advanced tier) */}
+      {/* Add app user (Silver / advanced tier) */}
       <Modal
         open={addUserOpen}
         onClose={() => setAddUserOpen(false)}

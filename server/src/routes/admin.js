@@ -191,7 +191,7 @@ router.get('/app-users', async (_req, res) => {
   }
 });
 
-/** Create a Supabase Auth app user (main product) with Gold tier (`advanced`) on `profiles`. */
+/** Create a Supabase Auth app user (main product) with Silver tier (`advanced`) on `profiles`. */
 router.post('/app-users', async (req, res) => {
   try {
     if (!supabaseAdmin) {

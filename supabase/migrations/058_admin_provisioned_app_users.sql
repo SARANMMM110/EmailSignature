@@ -1,4 +1,4 @@
--- Tracks end-user accounts created from Admin → Agencies → "Add user" (Gold / `advanced` plan).
+-- Tracks end-user accounts created from Admin → Agencies → "Add user" (Silver / `advanced` plan).
 -- Used for listing, disable (auth ban), and remove (delete auth user) from the admin panel.
 
 CREATE TABLE IF NOT EXISTS public.admin_provisioned_app_users (

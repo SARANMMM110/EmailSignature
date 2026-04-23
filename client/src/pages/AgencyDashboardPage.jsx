@@ -219,7 +219,7 @@ export function AgencyDashboardPage() {
     }
     const isLive = link.is_active !== false;
     const msg = isLive
-      ? 'Deactivate this registration link? New sign-ups will not be able to use it.'
+      ? `Deactivate this registration link? New sign-ups cannot use it, and anyone who joined through this link will lose agency access and their plan will revert to ${PLANS.personal.name}.`
       : 'Remove this inactive link from your list? This cannot be undone.';
     if (!window.confirm(msg)) return;
     try {

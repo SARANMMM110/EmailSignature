@@ -23,20 +23,21 @@ const FEATURE_HEADLINE = {
 const ADVANCED_BULLETS = [
   'Up to 10 active signatures',
   '10 layout templates',
-  'Custom palette creation (5 saved)',
-  '5 CTA banner templates',
-  'PNG clipboard & hosted image export',
-  'Whole-signature click-through URL',
+  'Custom palettes (5 saved)',
+  '5 CTA banner styles',
+  'Custom banner upload',
+  'Add redirect link on your signature',
   '10MB media uploads',
-  'Hide "Made with" branding',
+  'Copy HTML, download PNG, all install guides',
+  `Hide “Made with ${BRAND_NAME}” badge`,
 ];
 
 const ULTIMATE_BULLETS = [
-  'Unlimited signatures & palettes',
-  '20+ layout templates (all future layouts)',
-  '10 CTA banner templates',
+  'Unlimited active signatures & saved palettes',
+  '20+ layout templates',
+  '10 CTA banner styles',
   '25MB media uploads',
-  `Everything in ${PLANS.advanced.name}, plus room to scale`,
+  `Everything in ${PLANS.advanced.name}, plus unlimited scale`,
 ];
 
 function planCardsToShow(requiredPlanId, currentPlanId) {

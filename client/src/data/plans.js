@@ -3,6 +3,8 @@
 // Based on BonusBuilder pricing spreadsheet
 // ─────────────────────────────────────────────────────────
 
+import { BRAND_NAME } from '../constants/brand.js';
+
 const env = (k) => import.meta.env[k];
 
 export const PLAN_IDS = {
@@ -28,13 +30,13 @@ export const PLANS = {
   personal: {
     id: 'personal',
     name: 'Bronze',
-    tagline: 'Perfect for freelancers & solo professionals',
+    tagline: 'Essential layouts and exports for solo professionals',
     price_monthly: 7,
     price_yearly: 59,
     price_yearly_per_month: 4.92,
     stripe_price_id_monthly: env('VITE_STRIPE_PERSONAL_MONTHLY'),
     stripe_price_id_yearly: env('VITE_STRIPE_PERSONAL_YEARLY'),
-    color: '#4B6EF5',
+    color: '#92400e',
     badge: null,
     cta: 'Get Bronze',
 
@@ -55,11 +57,11 @@ export const PLANS = {
       social_media_pack: 'full',
       premium_banner_presets: false,
       custom_banner_image_upload: false,
-      whole_sig_clickthrough_url: false,
+      whole_sig_clickthrough_url: true,
       multi_language_support: 'priority_local',
       copy_html_to_clipboard: true,
       png_rich_clipboard_render: true,
-      hosted_png_image_url_flow: false,
+      hosted_png_image_url_flow: true,
       all_install_guides: true,
       hide_made_with_badge: false,
     },
@@ -67,16 +69,16 @@ export const PLANS = {
 
   advanced: {
     id: 'advanced',
-    name: 'Gold',
-    tagline: 'For growing professionals & small teams',
+    name: 'Silver',
+    tagline: 'For growing teams who need banners and brand palettes',
     price_monthly: 15,
     price_yearly: 119,
     price_yearly_per_month: 9.92,
     stripe_price_id_monthly: env('VITE_STRIPE_ADVANCED_MONTHLY'),
     stripe_price_id_yearly: env('VITE_STRIPE_ADVANCED_YEARLY'),
-    color: '#16a34a',
+    color: '#64748b',
     badge: 'Most Popular',
-    cta: 'Get Gold',
+    cta: 'Get Silver',
 
     limits: {
       max_active_signatures: 10,
@@ -107,16 +109,16 @@ export const PLANS = {
 
   ultimate: {
     id: 'ultimate',
-    name: 'Silver',
-    tagline: 'Unlimited power for power users & agencies',
+    name: 'Gold',
+    tagline: 'Unlimited layouts and palettes for power users & agencies',
     price_monthly: 29,
     price_yearly: 239,
     price_yearly_per_month: 19.92,
     stripe_price_id_monthly: env('VITE_STRIPE_ULTIMATE_MONTHLY'),
     stripe_price_id_yearly: env('VITE_STRIPE_ULTIMATE_YEARLY'),
-    color: '#7c3aed',
+    color: '#ca8a04',
     badge: 'Best Value',
-    cta: 'Get Silver',
+    cta: 'Get Gold',
 
     limits: {
       max_active_signatures: Infinity,
@@ -181,27 +183,34 @@ export function planHighlights(planId) {
   const p = PLANS[planId];
   const L = (n) => (n === Infinity ? 'Unlimited' : String(n));
   const lines = [];
-  lines.push(`${L(p.limits.max_active_signatures)} active signatures`);
-  lines.push(`${L(p.limits.layout_templates)} professional email layouts`);
-  lines.push('Swap layout anytime after saving');
-  lines.push('Profile photo, logo & full social pack');
-  lines.push(`Up to ${p.limits.media_upload_limit_mb}MB file uploads`);
+  lines.push(`Max ${L(p.limits.max_active_signatures)} active signatures`);
+  lines.push('Duplicate / copy signature');
+  lines.push(`${L(p.limits.layout_templates)} layout templates`);
+  lines.push('Change layout after saving');
   if (p.features.custom_palette_creation) {
-    lines.push(`${L(p.limits.max_saved_custom_palettes)} saved brand palettes`);
+    lines.push(`Custom palettes — save up to ${L(p.limits.max_saved_custom_palettes)}`);
+  } else {
+    lines.push('Curated system palettes (no custom saves)');
   }
+  lines.push('Profile photo, logo upload & crop tool');
+  lines.push(`Media uploads up to ${p.limits.media_upload_limit_mb}MB`);
   if (p.limits.cta_banner_templates > 0) {
     lines.push(`${L(p.limits.cta_banner_templates)} CTA banner styles`);
+  } else {
+    lines.push('No CTA banner styles on this tier');
   }
-  if (p.features.png_rich_clipboard_render) {
-    lines.push('PNG clipboard & hosted image export');
+  if (p.features.custom_banner_image_upload) {
+    lines.push('Custom banner image upload');
   }
   if (p.features.whole_sig_clickthrough_url) {
-    lines.push('Clickable whole signature');
+    lines.push('Add redirect link on your signature');
   }
-  if (p.features.hide_made_with_badge) {
-    lines.push('Optional “Made with” badge');
-  }
-  lines.push('Copy HTML + install guides for every client');
+  lines.push('Copy HTML, download PNG, all installation guides');
+  lines.push(
+    p.features.hide_made_with_badge
+      ? `“Made with ${BRAND_NAME}” badge hidden`
+      : `“Made with ${BRAND_NAME}” badge shown`
+  );
   return lines;
 }
 
@@ -216,17 +225,20 @@ export function planHasAccess(userPlanId, requiredPlanId) {
 export const COMPARISON_TABLE = [
   {
     category: 'Core',
-    color: '#fbbf24',
+    color: '#fde68a',
     rows: [
       { feature: 'Max Active Signatures', personal: '3', advanced: '10', ultimate: 'Unlimited' },
       { feature: 'Duplicate / Copy Signature', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
-      {
-        feature: 'Professional Email Layouts',
-        personal: '5 included',
-        advanced: '10 included',
-        ultimate: 'Unlimited (all current & future)',
-      },
+    ],
+  },
+  {
+    category: 'Layouts & Design',
+    color: '#e9d5ff',
+    rows: [
+      { feature: 'Templates Available', personal: '5', advanced: '10', ultimate: '20+' },
       { feature: 'Change Layout After Saving', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
+      { feature: 'Custom Palette Creation', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
+      { feature: 'Saved Custom Palettes', personal: '0', advanced: '5', ultimate: 'Unlimited' },
     ],
   },
   {
@@ -235,46 +247,41 @@ export const COMPARISON_TABLE = [
     rows: [
       { feature: 'Profile Photo & Logo Upload', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
       { feature: 'Photo Crop Tool', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
-      { feature: 'Social Media Pack', personal: 'Full', advanced: 'Full', ultimate: 'Full' },
-      { feature: 'Media Upload Limit (Per File)', personal: '5MB', advanced: '10MB', ultimate: '25MB' },
-      {
-        feature: 'Brand Color Palettes',
-        personal: 'System palettes only',
-        advanced: 'Create & save up to 5',
-        ultimate: 'Unlimited custom palettes',
-      },
+      { feature: 'Media Upload Limit', personal: '5MB', advanced: '10MB', ultimate: '25MB' },
     ],
   },
   {
     category: 'Banners (CTA)',
     color: '#fed7aa',
     rows: [
-      { feature: 'CTA Banner Templates', personal: 'No', advanced: '5', ultimate: '10' },
-      { feature: 'Premium Banner Presets', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
-      { feature: 'Custom Banner Image Upload', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
+      { feature: 'CTA Banner Styles', personal: 'No', advanced: '5', ultimate: '10' },
+      { feature: 'Custom Banner Upload', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
     ],
   },
   {
-    category: 'Power tools',
+    category: 'Advanced Tools',
     color: '#a5f3fc',
-    rows: [
-      { feature: 'Whole-Sig Click-through URL', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
-      { feature: 'Multi-Language Support', personal: 'Priority Local', advanced: 'Priority Local', ultimate: 'Priority Local' },
-    ],
+    rows: [{ feature: 'Add Redirect Link', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' }],
   },
   {
     category: 'Export & Installation',
     color: '#f9a8d4',
     rows: [
-      { feature: 'Copy HTML to Clipboard', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
-      { feature: 'PNG Rich Clipboard / Render', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
-      { feature: 'Hosted PNG / Image URL Flow', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
-      { feature: 'All Install Guides', personal: 'All', advanced: 'All', ultimate: 'All' },
+      { feature: 'Copy HTML', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
+      { feature: 'Download PNG', personal: 'Yes', advanced: 'Yes', ultimate: 'Yes' },
+      { feature: 'Installation Guides', personal: 'All', advanced: 'All', ultimate: 'All' },
     ],
   },
   {
     category: 'Branding',
     color: '#86efac',
-    rows: [{ feature: 'Hide "Made with Signature Studio" Badge', personal: 'No', advanced: 'Yes', ultimate: 'Yes' }],
+    rows: [
+      {
+        feature: `“Made with ${BRAND_NAME}” badge`,
+        personal: 'Shown',
+        advanced: 'Hidden',
+        ultimate: 'Hidden',
+      },
+    ],
   },
 ];

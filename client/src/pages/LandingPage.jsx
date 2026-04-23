@@ -116,7 +116,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens when I change my brand colors?',
-    a: 'Pick a new palette in the editor — your live preview and saved signature update instantly. Duplicate signatures on Gold or Silver if you need different brands side by side.',
+    a: 'Pick a new palette in the editor — your live preview and saved signature update instantly. Duplicate signatures on Silver or Gold if you need different brands side by side.',
   },
   {
     q: 'Can I use my own Figma design?',
@@ -124,7 +124,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Which plan should I start on?',
-    a: 'Most people start on Bronze (up to 3 signatures and 5 layouts). Upgrade to Gold when you want CTA banners, custom palettes, PNG export, or to hide the “Made with” badge.',
+    a: 'Most people start on Bronze (up to 3 signatures and 5 layouts). Upgrade to Silver for CTA banners, custom palettes, and a hidden “Made with” badge — or Gold for unlimited layouts and palettes.',
   },
   {
     q: 'How do I add the signature to Gmail?',

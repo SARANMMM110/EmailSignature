@@ -76,7 +76,19 @@ function deriveAgencyFields(profile) {
   const rawAgency = profile.agency;
   const agencyInfo = Array.isArray(rawAgency) ? rawAgency[0] ?? null : rawAgency ?? null;
   const isAgencyOwner = profile.is_agency_owner === true;
-  const isAgencyMember = Boolean(profile.agency_id) && !isAgencyOwner;
+  const hasMemberEmbed = Object.prototype.hasOwnProperty.call(profile, 'agency_member_rows');
+  const rawRows = profile.agency_member_rows;
+  const rowList = hasMemberEmbed
+    ? Array.isArray(rawRows)
+      ? rawRows
+      : rawRows
+        ? [rawRows]
+        : []
+    : null;
+  const activeMemberRow = rowList?.find((r) => r && r.is_active !== false);
+  const isAgencyMember = hasMemberEmbed
+    ? Boolean(profile.agency_id) && !isAgencyOwner && Boolean(activeMemberRow)
+    : Boolean(profile.agency_id) && !isAgencyOwner;
   return { isAgencyOwner, isAgencyMember, agencyInfo };
 }
 

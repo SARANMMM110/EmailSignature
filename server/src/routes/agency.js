@@ -81,6 +81,54 @@ async function profileAgencyOwnerFirstName(userId) {
   return '';
 }
 
+/**
+ * When an invite link is deactivated or removed, revoke everyone who joined through that link:
+ * deactivate `agency_members` rows and clear `profiles.agency_id` / revert Tier 1 plan to personal.
+ */
+async function revokeAgencyMembersForRegistrationLink(agencyId, linkId, removedByUserId) {
+  if (!supabaseAdmin) return 0;
+  const nowIso = new Date().toISOString();
+  const personal = normalizePlanId('personal');
+
+  const { data: activeMembers, error: selErr } = await supabaseAdmin
+    .from('agency_members')
+    .select('member_id')
+    .eq('agency_id', agencyId)
+    .eq('link_id', linkId)
+    .eq('is_active', true);
+  throwIfSupabaseError(selErr);
+  if (!activeMembers?.length) return 0;
+
+  const { error: memErr } = await supabaseAdmin
+    .from('agency_members')
+    .update({
+      is_active: false,
+      removed_at: nowIso,
+      removed_by: removedByUserId,
+    })
+    .eq('agency_id', agencyId)
+    .eq('link_id', linkId)
+    .eq('is_active', true);
+  throwIfSupabaseError(memErr);
+
+  const memberIds = activeMembers.map((r) => r.member_id).filter(Boolean);
+  if (!memberIds.length) return 0;
+
+  const { error: pe } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      agency_id: null,
+      plan: personal,
+      agency_joined_at: null,
+      plan_updated_at: nowIso,
+      updated_at: nowIso,
+    })
+    .in('id', memberIds);
+  throwIfSupabaseError(pe);
+
+  return memberIds.length;
+}
+
 // ═══════════════════════════════════════════════════════════
 // Admin (mounted under /api/admin + requireAdminJwt)
 // ═══════════════════════════════════════════════════════════
@@ -989,6 +1037,8 @@ router.delete('/links/:id', requireAuth, isAgencyOwner, async (req, res, next) =
     if (!row) {
       return res.status(404).json({ error: 'NOT_FOUND', message: 'Link not found.' });
     }
+    /** First click deactivates the URL; second click deletes the row — both revoke members tied to this link. */
+    await revokeAgencyMembersForRegistrationLink(agency.id, id, req.user.id);
     if (row.is_active) {
       const { error: ue } = await supabaseAdmin
         .from('agency_registration_links')

@@ -41,18 +41,18 @@ export const PLANS = {
       social_media_pack: 'full',
       premium_banner_presets: false,
       custom_banner_image_upload: false,
-      whole_sig_clickthrough_url: false,
+      whole_sig_clickthrough_url: true,
       multi_language_support: 'priority_local',
       copy_html_to_clipboard: true,
       png_rich_clipboard_render: true,
-      hosted_png_image_url_flow: false,
+      hosted_png_image_url_flow: true,
       all_install_guides: true,
       hide_made_with_badge: false,
     },
   },
   advanced: {
     id: 'advanced',
-    name: 'Gold',
+    name: 'Silver',
     limits: {
       max_active_signatures: 10,
       max_saved_custom_palettes: 5,
@@ -80,7 +80,7 @@ export const PLANS = {
   },
   ultimate: {
     id: 'ultimate',
-    name: 'Silver',
+    name: 'Gold',
     limits: {
       max_active_signatures: Infinity,
       max_saved_custom_palettes: Infinity,

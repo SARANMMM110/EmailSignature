@@ -7,7 +7,7 @@ const TEXTAREA_CLASS =
 
 /**
  * First banner slot fields (link, image when applicable, type-specific copy).
- * Used from My informations → Banners and from the Banner styles tab.
+ * Used from My information (banner section) and from the Banner styles tab.
  */
 export function PrimaryBannerFields({
   bc,

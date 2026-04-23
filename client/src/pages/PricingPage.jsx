@@ -33,7 +33,7 @@ const FAQ = [
   },
   {
     q: 'Does Bronze include copy to clipboard and PNG export?',
-    a: 'Yes. Bronze includes server-rendered signature PNGs for Copy to clipboard and Copy HTML code. Gold and Silver add more layouts, premium CTA banners, higher limits, and hosted image URL options where configured.',
+    a: 'Yes. Bronze includes copy HTML, download PNG, and all installation guides. Silver and Gold add more layouts, CTA banner styles, custom palettes, higher upload limits, and hide the “Made with” badge on those tiers.',
   },
   {
     q: 'Is there a free trial?',
@@ -176,8 +176,8 @@ export function PricingPage() {
         {/* Comparison */}
         <section className="mt-20 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-900/[0.06]">
           <div className="border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5 sm:px-8">
-            <h2 className="text-lg font-bold tracking-tight text-white">Compare everything in one place</h2>
-            <p className="mt-1 text-sm text-slate-300">Same data as the app — pick the column that fits you.</p>
+            <h2 className="text-lg font-bold tracking-tight text-white">Signature Studio plans</h2>
+            <p className="mt-1 text-sm text-slate-300">Compare Bronze, Silver, and Gold — same limits as in the app.</p>
           </div>
           <div className="overflow-x-auto">
             <div className="min-w-[720px]">
