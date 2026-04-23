@@ -146,8 +146,8 @@ export function SignupPage() {
           ) : null}
           {inviteInfo && !inviteInfo.valid && refParam ? (
             <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              This invite link isn&apos;t valid anymore (or it expired). You can still sign up — you&apos;ll start on the
-              default plan unless you get a new link.
+              This invite link isn&apos;t valid anymore (or it expired). You can still sign up — use a valid
+              registration link later (for example after sign-in) and your plan will match that link.
             </div>
           ) : null}
           <button

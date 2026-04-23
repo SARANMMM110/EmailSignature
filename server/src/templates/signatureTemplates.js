@@ -208,10 +208,10 @@ export const TEMPLATES = {
   <td width="200" valign="top" align="center" style="width:200px;vertical-align:top;padding:0;text-align:center;background-color:#ffffff;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:0 auto;">
       <tr><td align="center" style="padding:2px 0 0;line-height:0;font-size:0;position:relative;z-index:0;">
-        <img src="{{{t3_deco_top_arc}}}" width="128" height="64" alt="" style="display:block;border:0;margin:0 auto;position:relative;z-index:0;">
+        <img src="{{{t3_deco_top_arc}}}" width="128" height="24" alt="" style="display:block;width:128px;height:24px;border:0;margin:0 auto;position:relative;z-index:0;">
       </td></tr>
       <tr><td align="center" style="padding:0;line-height:0;position:relative;z-index:1;">
-        <span style="display:inline-block;position:relative;z-index:2;line-height:0;margin-top:-34px;mso-margin-top-alt:-34px;vertical-align:top;">
+        <span style="display:inline-block;position:relative;z-index:2;line-height:0;margin-top:-14px;mso-margin-top-alt:-14px;vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;position:relative;z-index:2;">
           <tr><td style="background-color:#000000;padding:3px;border-radius:50%;line-height:0;mso-border-radius-alt:50%;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background-color:#ffffff;padding:2px;border-radius:50%;line-height:0;mso-border-radius-alt:50%;">
@@ -671,7 +671,7 @@ export const TEMPLATES = {
   /** Layout 12 — 520×162 cream + lime resume card (Rheina reference, email-safe tables). */
   template_12: `${TEMPLATE_12_MARKUP}${BADGE}`,
 
-  /** Layout 13 — dark card + yellow photo rail + “I’M” + social stack + uppercase contacts (reference card). */
+  /** Layout 13 — dark card + yellow photo rail + “I’M” + uppercase contacts (reference card). */
   template_13: `${TEMPLATE_13_MARKUP}${BADGE}`,
 
   /** Layout 14 — light canvas + orange squircle photo + black contacts + white footer + orange social pills. */
@@ -750,10 +750,9 @@ export const TEMPLATE_META = {
     id: 'template_1',
     name: 'Layout 1',
     tier: 'free',
-    /** Primary label for display; `style_tags` drives multi-filter gallery matching. */
-    style: 'design',
-    /** Listed under both Design and Minimalist sidebar filters. */
-    style_tags: ['design', 'minimalist'],
+    /** Layouts 1–8: Minimalist filter; with logo (not in “without logo” set). */
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -763,8 +762,8 @@ export const TEMPLATE_META = {
     id: 'template_2',
     name: 'Layout 2',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -774,8 +773,8 @@ export const TEMPLATE_META = {
     id: 'template_3',
     name: 'Layout 3',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -785,8 +784,8 @@ export const TEMPLATE_META = {
     id: 'template_4',
     name: 'Layout 4',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: false,
     color_count: 8,
@@ -797,8 +796,8 @@ export const TEMPLATE_META = {
     id: 'template_5',
     name: 'Layout 5',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -808,8 +807,8 @@ export const TEMPLATE_META = {
     id: 'template_6',
     name: 'Layout 6',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -819,8 +818,8 @@ export const TEMPLATE_META = {
     id: 'template_7',
     name: 'Layout 7',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -830,8 +829,8 @@ export const TEMPLATE_META = {
     id: 'template_8',
     name: 'Layout 8',
     tier: 'free',
-    style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style: 'minimalist',
+    style_tags: ['minimalist'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -842,8 +841,9 @@ export const TEMPLATE_META = {
     name: 'Layout 9',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
-    has_logo: true,
+    /** Layouts 9–20: Design filter; no-logo strip for 9,12,13,14,17,19,20. */
+    style_tags: ['design'],
+    has_logo: false,
     has_photo: true,
     color_count: 8,
     preview_img_url: null,
@@ -853,7 +853,7 @@ export const TEMPLATE_META = {
     name: 'Layout 10',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -864,7 +864,7 @@ export const TEMPLATE_META = {
     name: 'Layout 11',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -875,7 +875,7 @@ export const TEMPLATE_META = {
     name: 'Layout 12',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: false,
     has_photo: true,
     color_count: 8,
@@ -886,7 +886,7 @@ export const TEMPLATE_META = {
     name: 'Layout 13',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: false,
     has_photo: true,
     color_count: 8,
@@ -897,7 +897,7 @@ export const TEMPLATE_META = {
     name: 'Layout 14',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: false,
     has_photo: true,
     color_count: 8,
@@ -908,7 +908,7 @@ export const TEMPLATE_META = {
     name: 'Layout 15',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -919,7 +919,7 @@ export const TEMPLATE_META = {
     name: 'Layout 16',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: true,
     has_photo: true,
     color_count: 8,
@@ -930,7 +930,7 @@ export const TEMPLATE_META = {
     name: 'Layout 17',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: false,
     has_photo: true,
     color_count: 8,
@@ -941,8 +941,8 @@ export const TEMPLATE_META = {
     name: 'Layout 18',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
-    has_logo: false,
+    style_tags: ['design'],
+    has_logo: true,
     has_photo: true,
     color_count: 8,
     preview_img_url: null,
@@ -952,7 +952,7 @@ export const TEMPLATE_META = {
     name: 'Layout 19',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
+    style_tags: ['design'],
     has_logo: false,
     has_photo: true,
     color_count: 8,
@@ -963,8 +963,8 @@ export const TEMPLATE_META = {
     name: 'Layout 20',
     tier: 'free',
     style: 'design',
-    style_tags: ['design', 'minimalist'],
-    has_logo: true,
+    style_tags: ['design'],
+    has_logo: false,
     has_photo: true,
     color_count: 8,
     preview_img_url: null,
@@ -973,7 +973,7 @@ export const TEMPLATE_META = {
 
 export const signatureTemplates = Object.keys(TEMPLATE_META).map((slug, i) => {
   const m = TEMPLATE_META[slug];
-  const tags = Array.isArray(m.style_tags) && m.style_tags.length ? m.style_tags : [m.style || 'design'];
+  const tags = Array.isArray(m.style_tags) ? m.style_tags : [m.style || 'design'];
   return {
     id: slug,
     name: m.name,

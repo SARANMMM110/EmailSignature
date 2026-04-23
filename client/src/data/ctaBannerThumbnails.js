@@ -123,14 +123,17 @@ export function exploreWorldBannerThumbnailSrcDoc() {
 <tr>
 <td width="18%" valign="middle" style="width:18%;background-color:#111b42;border-right:2px solid #e8d94a;padding:6px 8px;">
 <p style="margin:0;font-family:Arial,sans-serif;font-size:7px;color:#fff;letter-spacing:0.06em;text-transform:lowercase;">explore</p>
-<table cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="font-family:Arial,sans-serif;font-size:16px;font-weight:900;color:#fff;line-height:1;">log</td>
-<td style="padding-left:2px;line-height:0;"><svg width="16" height="16" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg"><ellipse cx="13" cy="13" rx="11" ry="11" fill="#e8d94a" transform="rotate(-35 13 13)"/><ellipse cx="13" cy="13" rx="6" ry="10" fill="#111b42" transform="rotate(-35 13 13)"/></svg></td>
-</tr></table>
+<p style="margin:0;font-family:Arial,sans-serif;font-size:16px;font-weight:900;color:#fff;line-height:1;">log</p>
+<p style="margin:3px 0 0;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 16" width="72" height="12" style="display:block;opacity:0.85;"><circle cx="7" cy="8" r="2" fill="#e8d94a" opacity="0.4"/><circle cx="22" cy="8" r="2" fill="#e8d94a" opacity="0.55"/><circle cx="40" cy="8" r="2" fill="#e8d94a" opacity="0.35"/><circle cx="81" cy="8" r="4" fill="none" stroke="#e8d94a" stroke-width="1.2"/></svg></p>
 </td>
-<td valign="middle" style="padding:6px 10px;">
+<td valign="middle" style="padding:6px 10px;background-color:#1a2355;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;"><tr>
+<td valign="middle" width="22" style="width:22px;padding:0 6px 0 0;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 46" width="22" height="40" style="display:block;"><path d="M14 40 Q9 30 10 20 Q11 12 14 8" fill="none" stroke="#9aacd8" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.6"/><path d="M14 7 L21 11 L18 12 L21 16 L18 17 L15 14 L14 15 L13 14 L10 17 L7 16 L10 12 L8 11 Z" fill="#e8d94a"/></svg></td>
+<td valign="middle">
 <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#fff;">Explore Your</p>
 <p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:18px;font-weight:900;color:#e8d94a;line-height:1;">WORLD</p>
+</td>
+</tr></table>
 </td>
 <td valign="middle" align="center" style="padding:6px 8px;">
 <span style="display:inline-block;background:#e8d94a;border-radius:2px;padding:4px 10px;font-family:Arial,sans-serif;font-size:9px;font-weight:800;color:#1a2355;">Learn More</span>
@@ -240,7 +243,7 @@ export function businessCityBannerThumbnailSrcDoc() {
 <p style="margin:0;font-family:Arial,sans-serif;font-size:6px;font-weight:700;color:#1a1a2e;letter-spacing:0.12em;text-transform:uppercase;">BUSINESS</p>
 <p style="margin:1px 0 0;font-family:Arial,sans-serif;font-size:11px;font-weight:900;color:#d4a400;text-transform:uppercase;line-height:1;">BANNER</p>
 <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;font-weight:900;color:#1a1a2e;text-transform:uppercase;line-height:1;">DESIGN</p>
-<p style="margin:4px 0 5px;font-family:Arial,sans-serif;font-size:6px;color:#555;line-height:1.35;max-width:160px;">Lorem ipsum dolor sit amet…</p>
+<p style="margin:4px 0 5px;line-height:0;font-size:0;">&nbsp;</p>
 <span style="display:inline-block;background-color:#1a1a2e;color:#fff;font-family:Arial,sans-serif;font-size:6px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px;">LEARN MORE</span>
 </td>
 <td valign="bottom" width="58%" style="width:58%;padding:0;line-height:0;vertical-align:bottom;background:linear-gradient(160deg,#5a6e80 0%,#6b7f8e 55%,#4a5a68 100%);">

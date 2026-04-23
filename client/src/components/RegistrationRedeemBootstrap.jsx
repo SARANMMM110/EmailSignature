@@ -7,8 +7,8 @@ import { clearStoredRegistrationRef, REGISTRATION_REF_STORAGE_KEY } from '../lib
 import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
 
 /**
- * After sign-in / sign-up: redeem a stored `?ref=` code once, then align `profiles.plan`
- * with any existing registration redemption (fixes drift when redeem was skipped or failed earlier).
+ * After sign-in / sign-up: redeem a stored `?ref=` code (first time or when switching to another link),
+ * then align `profiles.plan` with the redeemed link (fixes drift when redeem was skipped or failed earlier).
  */
 export function RegistrationRedeemBootstrap() {
   const userId = useAuthStore((s) => s.session?.user?.id);
@@ -22,14 +22,16 @@ export function RegistrationRedeemBootstrap() {
       const code = raw?.trim();
 
       let redeemPayload = null;
+      /** Clear invite UI only after profile refresh so the sidebar does not drop from Gold → Bronze for one frame. */
+      let clearRefWhenDone = false;
       if (code) {
         try {
           const { data } = await api.post('me/redeem-registration-link', { code });
           redeemPayload = data;
           if (!cancelled && data?.ok) {
-            clearStoredRegistrationRef();
+            clearRefWhenDone = true;
           } else if (!cancelled && data?.error === 'SKIP_AGENCY_USER') {
-            clearStoredRegistrationRef();
+            clearRefWhenDone = true;
           }
         } catch (e) {
           const err = e.response?.data?.error;
@@ -37,7 +39,7 @@ export function RegistrationRedeemBootstrap() {
             await api.post('me/sync-registration-plan').catch(() => {});
           }
           if (!cancelled && ['ALREADY_REDEEMED', 'INVALID_CODE', 'LINK_EXHAUSTED', 'SKIP_AGENCY_USER'].includes(err)) {
-            clearStoredRegistrationRef();
+            clearRefWhenDone = true;
           }
         }
       }
@@ -55,6 +57,10 @@ export function RegistrationRedeemBootstrap() {
           await new Promise((r) => setTimeout(r, 450));
           if (!cancelled) await useAuthStore.getState().fetchProfile();
         }
+      }
+
+      if (!cancelled && clearRefWhenDone) {
+        clearStoredRegistrationRef();
       }
     })();
     return () => {

@@ -25,7 +25,6 @@ export function EditorPage() {
 
   const loadSignature = useEditorStore((s) => s.loadSignature);
   const syncAccountProfileIntoSignature = useEditorStore((s) => s.syncAccountProfileIntoSignature);
-  const resetEditor = useEditorStore((s) => s.resetEditor);
   const saveSignature = useEditorStore((s) => s.saveSignature);
   const openInstallModal = useEditorStore((s) => s.openInstallModal);
   const showInstallModal = useEditorStore((s) => s.showInstallModal);
@@ -46,9 +45,14 @@ export function EditorPage() {
       navigate('/dashboard', { replace: true });
       return;
     }
+    const { signatureId, signature } = useEditorStore.getState();
+    if (signatureId === id && signature) {
+      return;
+    }
     loadSignature(id).catch(() => navigate('/dashboard', { replace: true }));
-    return () => resetEditor();
-  }, [id, loadSignature, navigate, resetEditor]);
+    /* No resetEditor cleanup: My information, Banners, etc. are separate routes that each mount
+       EditorPage — clearing the store on unmount raced GETs and could wipe CTA state after “Edit”. */
+  }, [id, loadSignature, navigate]);
 
   /** If profile arrives after the row was merged with demo copy, swap placeholders for account data. */
   useEffect(() => {

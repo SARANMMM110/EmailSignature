@@ -52,17 +52,7 @@ const MY_INFO_KEYS_BY_SLUG = {
   template_10: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'company', 'tagline']),
   template_11: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'tagline']),
   template_12: new Set(['full_name', 'job_title', 'phone', 'email', 'address']),
-  template_13: new Set([
-    'full_name',
-    'job_title',
-    'phone',
-    'email',
-    'website',
-    'address',
-    'linkedin',
-    'github',
-    'instagram',
-  ]),
+  template_13: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
   template_14: new Set([
     'full_name',
     'job_title',

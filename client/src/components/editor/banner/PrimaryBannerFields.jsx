@@ -1,6 +1,7 @@
 import { HiArrowUpTray } from 'react-icons/hi2';
 import { EDITOR_BLANK_BANNER_ASPECT_RATIO } from '../../../data/templatePreviews.js';
 import { Input } from '../../ui/Input.jsx';
+import { CtaStripAssetUploadRows } from './CtaStripAssetUploadRows.jsx';
 
 const TEXTAREA_CLASS =
   'w-full resize-y rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-shadow duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus-visible:border-blue-500 focus-visible:shadow-[0_0_0_3px_rgba(37,99,235,0.22)]';
@@ -39,12 +40,12 @@ export function PrimaryBannerFields({
   /** Omit divider when only link + compact fields (no optional image block). */
   const showFieldsDivider =
     isWebinarBanner ||
+    isMailchimpBanner ||
+    isBusinessCityBanner ||
     (!isWebinarBanner &&
-      !isMailchimpBanner &&
       !isExploreWorldBanner &&
       !isBoostImproveBanner &&
       !isOnlineLoanBanner &&
-      !isBusinessCityBanner &&
       !isLeaveReviewBanner &&
       !isSeoWhitepaperBanner &&
       !isGreenGradientCtaBanner);
@@ -59,23 +60,25 @@ export function PrimaryBannerFields({
         onChange={(e) => mergeBannerCfg({ link_url: e.target.value })}
       />
       {!isWebinarBanner &&
-      !isMailchimpBanner &&
       !isExploreWorldBanner &&
       !isBoostImproveBanner &&
       !isOnlineLoanBanner &&
-      !isBusinessCityBanner &&
       !isLeaveReviewBanner &&
       !isSeoWhitepaperBanner &&
       !isGreenGradientCtaBanner ? (
         <div className="space-y-2">
           <span className={bannerLabelClass}>
-            {isBlankBanner ? 'Banner image' : 'Optional banner image'}
+            {isBlankBanner ? 'Banner image' : isBusinessCityBanner ? 'Optional logo' : 'Optional banner image'}
           </span>
           {!isBlankBanner ? (
             <p className="text-[11px] leading-relaxed text-slate-500">
               {isMindscopeBanner
-                ? 'Optional right-column photo for this strip (or leave empty for a simple card graphic). Same resize rules apply.'
-                : 'Adds a photo to supported templates (book-a-call, download, need-a-call). Images are fitted inside 720×93 without changing the strip layout.'}
+                ? 'Optional right-column photo (fits inside the panel; not forced to a 720×93 strip). Re-upload if an older image still looks like a thin bar.'
+                : isMailchimpBanner
+                  ? 'Optional image fills the orange band at a fixed strip height (52px); wide or tall images are scaled and may crop at the edges. Re-upload after changing upload settings if needed.'
+                  : isBusinessCityBanner 
+                    ? 'Top-right logo (replaces the yellow hex + COMPANY block). Fits the corner with compact sizing.'
+                    : 'Adds a photo to supported templates (book-a-call, download, need-a-call). Images are fitted inside 720×93 without changing the strip layout.'}
             </p>
           ) : null}
           <div
@@ -107,13 +110,39 @@ export function PrimaryBannerFields({
                     className="h-full w-full min-h-0 min-w-0 rounded-lg object-cover object-center"
                   />
                 </div>
+              ) : isMailchimpBanner ? (
+                <div className="w-full max-w-full overflow-hidden rounded-lg bg-[#e8813a]" style={{ height: 52 }}>
+                  <img
+                    src={bc.banner_image_url}
+                    alt=""
+                    className="block h-[52px] w-full object-cover object-center"
+                  />
+                </div>
+              ) : isBusinessCityBanner ? (
+                <div className="flex min-h-[72px] w-full max-w-[200px] items-center justify-end rounded-lg bg-[#1a1a2e] px-3 py-2">
+                  <img
+                    src={bc.banner_image_url}
+                    alt=""
+                    className="max-h-14 max-w-full object-contain"
+                  />
+                </div>
+              ) : isMindscopeBanner ? (
+                <div className="flex min-h-[132px] w-full max-w-md items-center justify-center rounded-lg bg-slate-50 py-3">
+                  <img
+                    src={bc.banner_image_url}
+                    alt=""
+                    className="max-h-52 max-w-full rounded-lg object-contain"
+                  />
+                </div>
               ) : (
                 <img src={bc.banner_image_url} alt="" className="max-h-28 max-w-full rounded-lg object-contain" />
               )
             ) : (
               <>
                 <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
-                <span className="mt-2 text-xs font-medium text-slate-600">Drop image or click</span>
+                <span className="mt-2 text-xs font-medium text-slate-600">
+                  {isBusinessCityBanner ? 'Drop logo or click' : 'Drop image or click'}
+                </span>
                 <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
               </>
             )}
@@ -124,7 +153,7 @@ export function PrimaryBannerFields({
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
               onClick={() => mergeBannerCfg({ banner_image_url: '' })}
             >
-              Remove banner image
+              {isBusinessCityBanner ? 'Remove logo' : 'Remove banner image'}
             </button>
           ) : null}
         </div>
@@ -132,10 +161,6 @@ export function PrimaryBannerFields({
       {showFieldsDivider ? <hr className="border-slate-200/90" /> : null}
       {isWebinarBanner ? (
         <div className="space-y-4">
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Use line breaks in headline or subtext for a second line. If brand line is empty, your{' '}
-            <span className="font-semibold">Company</span> name from My information is used.
-          </p>
           <Input
             label="Brand line"
             labelClassName={bannerLabelClass}
@@ -251,6 +276,7 @@ export function PrimaryBannerFields({
         </div>
       ) : isExploreWorldBanner ? (
         <div className="space-y-4">
+          <CtaStripAssetUploadRows presetKind="explore" mergeBannerCfg={mergeBannerCfg} bc={bc} />
           <Input
             label="Small brand line (left rail)"
             labelClassName={bannerLabelClass}
@@ -259,7 +285,7 @@ export function PrimaryBannerFields({
             onChange={(e) => mergeBannerCfg({ field_1: e.target.value })}
           />
           <Input
-            label="Logo word (before icon)"
+            label="Large word (left rail)"
             labelClassName={bannerLabelClass}
             value={bc.field_2 ?? ''}
             placeholder="log"
@@ -296,6 +322,7 @@ export function PrimaryBannerFields({
         </div>
       ) : isBoostImproveBanner ? (
         <div className="space-y-4">
+          <CtaStripAssetUploadRows presetKind="boost" mergeBannerCfg={mergeBannerCfg} bc={bc} />
           <Input
             label="Small logo label (upper)"
             labelClassName={bannerLabelClass}
@@ -334,9 +361,6 @@ export function PrimaryBannerFields({
         </div>
       ) : isBusinessCityBanner ? (
         <div className="space-y-4">
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Use line breaks in the tagline for a second line. Decorative dots in the strip are fixed.
-          </p>
           <Input
             label="Small upper label"
             labelClassName={bannerLabelClass}
@@ -358,21 +382,8 @@ export function PrimaryBannerFields({
             placeholder="DESIGN"
             onChange={(e) => mergeBannerCfg({ field_3: e.target.value })}
           />
-          <div className="w-full">
-            <label htmlFor={idPrefix ? `${idPrefix}-b10-tag` : 'banner-b10-tagline'} className={bannerLabelClass}>
-              Tagline
-            </label>
-            <textarea
-              id={idPrefix ? `${idPrefix}-b10-tag` : 'banner-b10-tagline'}
-              rows={3}
-              className={TEXTAREA_CLASS}
-              value={bc.field_4 ?? ''}
-              placeholder={'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.'}
-              onChange={(e) => mergeBannerCfg({ field_4: e.target.value })}
-            />
-          </div>
           <Input
-            label="Logo badge text"
+            label="Fallback badge text (when no logo)"
             labelClassName={bannerLabelClass}
             value={bc.field_5 ?? ''}
             placeholder="COMPANY"

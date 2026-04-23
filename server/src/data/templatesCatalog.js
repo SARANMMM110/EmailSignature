@@ -38,10 +38,7 @@ export function buildExpandedTemplatesCatalog(size) {
     const id = slugs[i];
     const meta = TEMPLATE_META[id];
     if (!meta) continue;
-    const styleTags =
-      Array.isArray(meta.style_tags) && meta.style_tags.length
-        ? meta.style_tags
-        : [meta.style || 'design'];
+    const styleTags = Array.isArray(meta.style_tags) ? [...meta.style_tags] : [meta.style || 'design'];
     list.push({
       id,
       name: meta.name,

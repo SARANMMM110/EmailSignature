@@ -1,6 +1,7 @@
 import { HiArrowUpTray } from 'react-icons/hi2';
 import { EDITOR_BLANK_BANNER_ASPECT_RATIO } from '../../../data/templatePreviews.js';
 import { Input } from '../../ui/Input.jsx';
+import { CtaStripAssetUploadRows } from './CtaStripAssetUploadRows.jsx';
 import {
   isDownloadBannerPreset,
   isNeedCallBannerPreset,
@@ -101,11 +102,9 @@ export function SecondaryBannerFields({
   const h = `${idPrefix}-headline`;
   const s = `${idPrefix}-subtext`;
   const showFieldsDivider =
-    !isSecondaryMailchimpResolved &&
     !isSecondaryExploreWorldResolved &&
     !isSecondaryBoostImproveResolved &&
     !isSecondaryOnlineLoanResolved &&
-    !isSecondaryBusinessCityResolved &&
     !isSecondaryLeaveReviewResolved &&
     !isSecondarySeoWhitepaperResolved &&
     !isSecondaryGreenGradientCtaResolved &&
@@ -115,6 +114,8 @@ export function SecondaryBannerFields({
       isSecondaryBookCall ||
       isSecondaryDownload ||
       isSecondaryNeedCall ||
+      isSecondaryMailchimpResolved ||
+      isSecondaryBusinessCityResolved ||
       isSecondarySimple);
 
   return (
@@ -128,6 +129,80 @@ export function SecondaryBannerFields({
           mergeBannerCfg({ secondary_link_url: e.target.value, secondary_href: '' })
         }
       />
+      {isSecondaryDownload ||
+      isSecondaryNeedCall ||
+      isSecondaryMailchimpResolved ||
+      isSecondaryBusinessCityResolved ? (
+        <div className="space-y-2">
+          <span className={bannerLabelClass}>
+            {isSecondaryBusinessCityResolved ? 'Optional logo' : 'Optional banner image'}
+          </span>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            {isSecondaryMailchimpResolved
+              ? 'Image fills the orange left band at a fixed 52px height (same strip size as the default art).'
+              : isSecondaryBusinessCityResolved
+                ? 'Top-right logo (replaces the yellow hex + COMPANY block). Fits the corner with compact sizing.'
+                : 'Small thumbnail to the left of the text on this strip (same resize rules as the primary slot).'}
+          </p>
+          <div
+            {...secondaryBannerImgDrop.getRootProps()}
+            className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
+              secondaryBannerImgDrop.isDragActive
+                ? 'border-[#3b5bdb] bg-blue-50/80'
+                : 'border-slate-300/80 bg-white hover:border-[#3b5bdb]/50'
+            }`}
+          >
+            <input {...secondaryBannerImgDrop.getInputProps()} />
+            {uploadKind === 'bannerImg2' ? (
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
+            ) : String(bc.secondary_banner_image_url || '').trim() ? (
+              isSecondaryMailchimpResolved ? (
+                <div
+                  className="w-full max-w-full overflow-hidden rounded-lg bg-[#e8813a]"
+                  style={{ height: 52 }}
+                >
+                  <img
+                    src={bc.secondary_banner_image_url}
+                    alt=""
+                    className="block h-[52px] w-full object-cover object-center"
+                  />
+                </div>
+              ) : isSecondaryBusinessCityResolved ? (
+                <div className="flex min-h-[72px] w-full max-w-[200px] items-center justify-end rounded-lg bg-[#1a1a2e] px-3 py-2">
+                  <img
+                    src={bc.secondary_banner_image_url}
+                    alt=""
+                    className="max-h-14 max-w-full object-contain"
+                  />
+                </div>
+              ) : (
+                <img
+                  src={bc.secondary_banner_image_url}
+                  alt=""
+                  className="max-h-28 max-w-full rounded-lg object-contain"
+                />
+              )
+            ) : (
+              <>
+                <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
+                <span className="mt-2 text-xs font-medium text-slate-600">
+                  {isSecondaryBusinessCityResolved ? 'Drop logo or click' : 'Drop image or click'}
+                </span>
+                <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
+              </>
+            )}
+          </div>
+          {String(bc.secondary_banner_image_url || '').trim() ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
+              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+            >
+              {isSecondaryBusinessCityResolved ? 'Remove logo' : 'Remove banner image'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {isSecondaryOnlineLoanResolved ? (
         <div className="space-y-2">
           <span className={bannerLabelClass}>Center hero image</span>
@@ -206,7 +281,8 @@ export function SecondaryBannerFields({
       ) : isSecondaryBusinessCityResolved ? (
         <div className="space-y-4">
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Use line breaks in the tagline for a second line. Decorative dots in the strip are fixed.
+            Decorative dots are fixed. Use optional logo above for the top-right; if empty, hex + badge text below
+            are used.
           </p>
           <Input
             label="Small upper label"
@@ -229,21 +305,8 @@ export function SecondaryBannerFields({
             placeholder="DESIGN"
             onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
           />
-          <div className="w-full">
-            <label htmlFor={`${idPrefix}-b10-tag`} className={bannerLabelClass}>
-              Tagline
-            </label>
-            <textarea
-              id={`${idPrefix}-b10-tag`}
-              rows={3}
-              className={TEXTAREA_CLASS}
-              value={bc.secondary_field_4 ?? ''}
-              placeholder={'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.'}
-              onChange={(e) => mergeBannerCfg({ secondary_field_4: e.target.value })}
-            />
-          </div>
           <Input
-            label="Logo badge text"
+            label="Fallback badge text (when no logo)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_5 ?? ''}
             placeholder="COMPANY"
@@ -328,7 +391,7 @@ export function SecondaryBannerFields({
         <div className="space-y-2">
           <span className={bannerLabelClass}>Optional right-column photo</span>
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Same resize rules as your main strip (max 720×93px).
+            Fits inside the right panel (scene upload, not a 720×93 strip). Re-upload if the preview still looks like a thin bar.
           </p>
           <div
             {...secondaryBannerImgDrop.getRootProps()}
@@ -342,11 +405,13 @@ export function SecondaryBannerFields({
             {uploadKind === 'bannerImg2' ? (
               <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
             ) : String(bc.secondary_banner_image_url || '').trim() ? (
-              <img
-                src={bc.secondary_banner_image_url}
-                alt=""
-                className="max-h-28 max-w-full rounded-lg object-contain"
-              />
+              <div className="flex min-h-[132px] w-full max-w-md items-center justify-center rounded-lg bg-slate-50 py-3">
+                <img
+                  src={bc.secondary_banner_image_url}
+                  alt=""
+                  className="max-h-52 max-w-full rounded-lg object-contain"
+                />
+              </div>
             ) : (
               <>
                 <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
@@ -419,10 +484,6 @@ export function SecondaryBannerFields({
       {showFieldsDivider ? <hr className="border-slate-200/90" /> : null}
       {isSecondaryWebinar ? (
         <div className="space-y-4">
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Use line breaks in headline or subtext for a second line. If brand line is empty, your{' '}
-            <span className="font-semibold">Company</span> name from My information is used.
-          </p>
           <Input
             label="Brand line"
             labelClassName={bannerLabelClass}
@@ -483,6 +544,7 @@ export function SecondaryBannerFields({
         </div>
       ) : isSecondaryExploreWorldResolved ? (
         <div className="space-y-4">
+          <CtaStripAssetUploadRows presetKind="explore" secondary mergeBannerCfg={mergeBannerCfg} bc={bc} />
           <Input
             label="Small brand line (left rail)"
             labelClassName={bannerLabelClass}
@@ -491,7 +553,7 @@ export function SecondaryBannerFields({
             onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
           />
           <Input
-            label="Logo word (before icon)"
+            label="Large word (left rail)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_2 ?? ''}
             placeholder="log"
@@ -528,6 +590,7 @@ export function SecondaryBannerFields({
         </div>
       ) : isSecondaryBoostImproveResolved ? (
         <div className="space-y-4">
+          <CtaStripAssetUploadRows presetKind="boost" secondary mergeBannerCfg={mergeBannerCfg} bc={bc} />
           <Input
             label="Small logo label (upper)"
             labelClassName={bannerLabelClass}

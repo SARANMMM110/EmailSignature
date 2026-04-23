@@ -114,7 +114,12 @@ router.post('/logo', upload.single('image'), enforcePlanUploadBytes, async (req,
   }
 });
 
-/** CTA strip / image-only banner — sized to typical signature rail width (email-safe). */
+/**
+ * CTA / banner images.
+ * Default: full strip 720×~93 JPEG (`cover`) for blank strip & wide banner backgrounds.
+ * `?mode=mark`: logo / icon — fit inside 400×400 (`inside`, no strip crop).
+ * `?mode=scene`: wide hero / illustration — fit inside 560×200 (`inside`).
+ */
 router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, async (req, res, next) => {
   try {
     if (!supabaseAdmin) {
@@ -123,6 +128,37 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
     if (!req.file) {
       return res.status(400).json({ message: 'Missing image field (multipart file)' });
     }
+    const mode = String(req.query.mode || 'strip').toLowerCase();
+
+    if (mode === 'mark') {
+      const MARK_MAX = 400;
+      const buf = await sharp(req.file.buffer)
+        .rotate()
+        .resize(MARK_MAX, MARK_MAX, { fit: 'inside', withoutEnlargement: true })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+      const name = `${randomUUID()}.png`;
+      const path = `banners/${req.user.id}/${name}`;
+      const url = await uploadBuffer(path, buf, 'image/png');
+      res.json({ url });
+      return;
+    }
+
+    if (mode === 'scene') {
+      const SCENE_W = 560;
+      const SCENE_H = 200;
+      const buf = await sharp(req.file.buffer)
+        .rotate()
+        .resize(SCENE_W, SCENE_H, { fit: 'inside', withoutEnlargement: true })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+      const name = `${randomUUID()}.png`;
+      const path = `banners/${req.user.id}/${name}`;
+      const url = await uploadBuffer(path, buf, 'image/png');
+      res.json({ url });
+      return;
+    }
+
     /** Blank / CTA image canvas — matches engine blank strip ratio (`72/560` of width 720). */
     const BANNER_MAX_W = 720;
     const BANNER_MAX_H = Math.round((BANNER_MAX_W * 72) / 560);

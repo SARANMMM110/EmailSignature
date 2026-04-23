@@ -7,8 +7,9 @@ const router = Router();
 
 /**
  * Align profiles.plan with the tier on the registration link this user already redeemed.
- * Fixes drift (e.g. skipped redeem while agency owner, or stale UI) without consuming a new link.
+ * Fixes drift (e.g. skipped redeem while agency owner, or stale UI) without consuming a new use.
  * Skips agency members — their tier comes from the org, not signup refs.
+ * (Switching to a new `?ref=` is handled by `redeem_registration_link`, which moves the redemption row.)
  */
 router.post('/sync-registration-plan', async (req, res) => {
   try {

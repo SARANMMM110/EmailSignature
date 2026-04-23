@@ -118,9 +118,6 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
           website: 'domain.com',
           address: 'AV. REFORMA 250, MÉXICO',
           photoUrl: 'https://i.pravatar.cc/200?img=68',
-          linkedin: 'https://www.linkedin.com/',
-          github: 'https://www.behance.net/',
-          instagram: 'https://www.instagram.com/',
         }
       : {};
   const layout14Demo =
@@ -258,9 +255,6 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     if (!String(form.website || '').trim()) form.website = layout13Demo.website;
     if (!String(form.address || '').trim()) form.address = layout13Demo.address;
     if (!String(form.photoUrl || '').trim()) form.photoUrl = layout13Demo.photoUrl;
-    if (!String(form.linkedin || '').trim()) form.linkedin = layout13Demo.linkedin;
-    if (!String(form.github || '').trim()) form.github = layout13Demo.github;
-    if (!String(form.instagram || '').trim()) form.instagram = layout13Demo.instagram;
   }
   if (slug === 'template_14') {
     if (!String(form.fullName || '').trim()) form.fullName = layout14Demo.fullName;

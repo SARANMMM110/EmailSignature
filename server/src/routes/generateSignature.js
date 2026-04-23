@@ -22,16 +22,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_ROOT = path.join(__dirname, '..', '..', 'public');
 const SIGNATURES_DIR = path.join(PUBLIC_ROOT, 'signatures');
 
-function imageUrlUnreachableForEmailRecipients(publicBase) {
-  try {
-    const u = new URL(publicBase);
-    const h = u.hostname.toLowerCase();
-    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '0.0.0.0';
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Resolve which Chrome/Chromium binary to pass to `puppeteer.launch`.
  * If `PUPPETEER_EXECUTABLE_PATH` points at a missing file, it is **removed from `process.env`** so Puppeteer
@@ -197,17 +187,11 @@ router.post('/generate-signature', optionalAuth, async (req, res, next) => {
         url = `${publicBase}/signatures/${fileName}`;
       }
 
-      const recipientImageWarning =
-        storage === 'local' && imageUrlUnreachableForEmailRecipients(publicBase)
-          ? 'This PNG URL is not reachable from the internet (localhost). Recipients will see a broken image in HTML signatures with a link. Configure Supabase (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY) to store exports on Storage, or set PUBLIC_BASE_URL to a public HTTPS origin.'
-          : null;
-
       return res.json({
         url,
         mime: 'image/png',
         base64,
         dataUrl: `data:image/png;base64,${base64}`,
-        recipientImageWarning,
         storage,
       });
     } finally {

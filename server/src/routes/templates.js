@@ -76,9 +76,7 @@ function normalizeCatalogRowForEngine(row) {
   const meta = TEMPLATE_META[eng];
   const fileRow = fileTemplates.find((t) => t.id === eng);
   const styleTags =
-    meta && Array.isArray(meta.style_tags) && meta.style_tags.length
-      ? meta.style_tags
-      : [meta?.style || row.style || 'design'];
+    meta && Array.isArray(meta.style_tags) ? [...meta.style_tags] : [meta?.style || row.style || 'design'];
   return {
     ...row,
     id: eng,
@@ -152,10 +150,9 @@ function mapFileTemplates(filters) {
     preview_img_url: getTemplatePreviewUrl(t.id) || t.thumbnail || t.preview_img_url || null,
     tier: t.tier || 'free',
     style: t.style || (t.category === 'Minimal' ? 'minimalist' : 'design'),
-    style_tags:
-      Array.isArray(t.style_tags) && t.style_tags.length
-        ? t.style_tags
-        : [t.style || (t.category === 'Minimal' ? 'minimalist' : 'design')],
+    style_tags: Array.isArray(t.style_tags)
+      ? t.style_tags
+      : [t.style || (t.category === 'Minimal' ? 'minimalist' : 'design')],
     has_logo: t.has_logo !== false,
     has_photo: t.has_photo !== false,
     color_count: t.color_count || 6,
@@ -252,13 +249,12 @@ router.get('/:id', param('id').notEmpty(), async (req, res, next) => {
           preview_img_url: getTemplatePreviewUrl(file.id) || file.thumbnail || file.preview_img_url || null,
           tier: file.tier || 'free',
           style: file.style || (file.category === 'Minimal' ? 'minimalist' : 'design'),
-          style_tags:
-            Array.isArray(file.style_tags) && file.style_tags.length
-              ? file.style_tags
-              : [
-                  file.style ||
-                    (file.category === 'Minimal' ? 'minimalist' : 'design'),
-                ],
+          style_tags: Array.isArray(file.style_tags)
+            ? file.style_tags
+            : [
+                file.style ||
+                  (file.category === 'Minimal' ? 'minimalist' : 'design'),
+              ],
           has_logo: file.has_logo !== false,
           has_photo: file.has_photo !== false,
           color_count: file.color_count || 6,
@@ -279,10 +275,9 @@ router.get('/:id', param('id').notEmpty(), async (req, res, next) => {
             preview_img_url: getTemplatePreviewUrl('template_1'),
             tier: file0.tier || 'free',
             style: file0.style || 'design',
-            style_tags:
-              Array.isArray(file0.style_tags) && file0.style_tags.length
-                ? file0.style_tags
-                : [file0.style || 'design'],
+            style_tags: Array.isArray(file0.style_tags)
+              ? file0.style_tags
+              : [file0.style || 'design'],
             has_logo: file0.has_logo !== false,
             has_photo: file0.has_photo !== false,
             color_count: file0.color_count || 4,

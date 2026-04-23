@@ -3,8 +3,6 @@
  */
 
 import { MAILCHIMP_SCENE_SVG, MAILCHIMP_CHIMP_SVG } from './mailchimpBannerAssets.js';
-import { EXPLORE_WORLD_LEAF_SVG, EXPLORE_WORLD_TRAVELER_SVG } from './exploreWorldBannerAssets.js';
-import { BOOST_LOGO_LEAF_SVG, BOOST_WELLNESS_SCENE_SVG } from './boostImproveBannerAssets.js';
 import { ONLINE_LOAN_PEOPLE_SVG, REVOLIO_MARK_SVG } from './revolioOnlineLoanBannerAssets.js';
 import {
   CITY_BUSINESS_CURVE_SVG,
@@ -40,7 +38,7 @@ export const BANNER_TEMPLATES = {
 <img src="{{{banner_b1_blobs_uri}}}" width="{{banner_rail_w_px}}" height="{{banner_b1_blobs_h}}" alt="" role="presentation" style="display:block;border:0;line-height:0;font-size:0;width:{{banner_rail_w_px}}px;height:{{banner_b1_blobs_h}}px;position:absolute;right:0;top:0;z-index:0;">
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;position:relative;z-index:1;">
 <tr>
-<td valign="middle" width="99%" style="width:99%;max-width:100%;padding:11px 6px 11px 16px;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
+<td valign="middle" width="99%" style="width:99%;max-width:100%;padding:11px 6px 11px 16px;vertical-align:middle;text-align:center;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
 <p style="margin:0 0 3px;padding:0;color:{{banner_brand_color}};font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;line-height:1.2;">{{banner_brand_label}}</p>
 <p style="margin:0 0 5px;padding:0;color:{{banner_headline_color}};font-size:17px;font-weight:800;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_headline_html}}}</p>
 <p style="margin:0;padding:0;color:{{banner_subline_color}};font-size:10px;font-weight:400;line-height:1.45;mso-line-height-rule:exactly;">{{{banner_subline_html}}}</p>
@@ -154,9 +152,9 @@ export const BANNER_TEMPLATES = {
 </tr>
 </table>
 </td>
-<td valign="bottom" width="88" style="width:88px;max-width:88px;padding:0;vertical-align:bottom;background-color:#1a3a80;background-image:linear-gradient(160deg,#1a3a80 0%,#2a5298 100%);overflow:hidden;">
+<td valign="middle" align="center" width="100" style="width:100px;max-width:100px;padding:4px 6px;vertical-align:middle;background-color:#1a3a80;background-image:linear-gradient(160deg,#1a3a80 0%,#2a5298 100%);overflow:hidden;">
 {{#if banner_b5_has_person}}
-<img src="{{{banner_b5_person}}}" alt="" width="88" style="display:block;border:0;width:88px;max-width:100%;height:auto;max-height:76px;object-fit:cover;vertical-align:bottom;">
+<img src="{{{banner_b5_person}}}" alt="" width="92" style="display:block;border:0;width:92px;max-width:100%;height:auto;max-height:94px;object-fit:contain;object-position:center;vertical-align:middle;">
 {{else}}
 <table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" style="border-collapse:collapse;min-height:74px;height:74px;"><tr>
 <td valign="bottom" align="center" style="padding:0 0 0 2px;vertical-align:bottom;line-height:0;">
@@ -190,11 +188,11 @@ export const BANNER_TEMPLATES = {
     `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td style="padding:0;line-height:0;font-size:0;">
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:52px;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:52px;height:52px;">
 <tr>
-<td width="57%" valign="top" align="left" style="width:57%;min-width:160px;vertical-align:top;padding:0;margin:0;line-height:0;font-size:0;background-color:#e8813a;">` +
+<td width="57%" valign="top" align="left" style="width:57%;min-width:160px;vertical-align:top;padding:0;margin:0;height:52px;max-height:52px;line-height:0;font-size:0;background-color:#e8813a;overflow:hidden;">{{#if banner_b6_scene_image}}<img src="{{{banner_b6_scene_image}}}" alt="" width="415" height="52" style="display:block;width:100%;height:52px;max-height:52px;border:0;object-fit:cover;object-position:center;">{{else}}` +
     MAILCHIMP_SCENE_SVG +
-    `</td>
+    `{{/if}}</td>
 <td width="43%" valign="middle" style="width:43%;vertical-align:middle;background-color:#1c1c1c;padding:0;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
 <td valign="middle" style="padding:6px 4px 6px 10px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;color:#ffffff;line-height:1.3;mso-line-height-rule:exactly;">{{{banner_b6_panel}}}</td>
@@ -213,9 +211,8 @@ export const BANNER_TEMPLATES = {
 </table>`,
 
   /**
-   * “Explore your world” travel CTA — navy + gold border, logo rail, headline + accent, pill CTA + URL line,
-   * static traveler SVG (`banner_7`). Fields: `field_1` small brand, `field_2` logo word, `field_3` headline,
-   * `field_4` accent word, `field_5` URL line; `text` = button.
+   * “Explore your world” travel CTA — navy + gold border, logo rail, headline + accent, pill CTA + URL line.
+   * Built-in decor: `banner_b7_rail_decor`, `banner_b7_center_accent`. Optional uploads: `banner_b7_rail_logo_html`, `banner_b7_traveler_inner`.
    */
   banner_7:
     `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
@@ -224,25 +221,27 @@ export const BANNER_TEMPLATES = {
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;border:2px solid #e8d94a;background-color:#1a2355;mso-line-height-rule:exactly;">
 <tr>
 <td valign="middle" width="17%" style="width:17%;max-width:120px;vertical-align:middle;background-color:#111b42;border-right:2px solid #e8d94a;padding:5px 7px;">
+{{{banner_b7_rail_logo_html}}}
 <p style="margin:0 0 2px 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:8px;font-weight:400;color:#ffffff;letter-spacing:0.06em;text-transform:lowercase;line-height:1.15;mso-line-height-rule:exactly;text-align:left;">{{{banner_b7_brand_small}}}</p>
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;"><tr>
-<td valign="middle" style="padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:18px;font-weight:900;color:#ffffff;line-height:1;letter-spacing:-0.02em;mso-line-height-rule:exactly;">{{{banner_b7_logo_word}}}</td>
-<td valign="middle" style="padding:0 0 0 2px;line-height:0;font-size:0;">` +
-    EXPLORE_WORLD_LEAF_SVG +
-    `</td>
-</tr></table>
+<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:18px;font-weight:900;color:#ffffff;line-height:1;letter-spacing:-0.02em;mso-line-height-rule:exactly;text-align:left;">{{{banner_b7_logo_word}}}</p>
+<p style="margin:4px 0 0 0;padding:0;line-height:0;font-size:0;mso-line-height-rule:exactly;">{{{banner_b7_rail_decor}}}</p>
 </td>
-<td valign="middle" style="vertical-align:middle;padding:5px 10px;">
+<td valign="middle" style="vertical-align:middle;padding:5px 10px 5px 8px;background-color:#1a2355;">
+<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;width:100%;">
+<tr>
+<td valign="middle" width="30" style="width:30px;max-width:30px;padding:0 8px 0 0;line-height:0;font-size:0;vertical-align:middle;">{{{banner_b7_center_accent}}}</td>
+<td valign="middle" style="vertical-align:middle;padding:0;">
 <p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;color:#ffffff;letter-spacing:0.02em;line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b7_headline}}}</p>
 <p style="margin:1px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:17px;font-weight:900;color:#e8d94a;line-height:1;letter-spacing:0.02em;text-transform:uppercase;mso-line-height-rule:exactly;">{{{banner_b7_world}}}</p>
+</td>
+</tr>
+</table>
 </td>
 <td valign="middle" align="center" style="vertical-align:middle;padding:5px 8px 5px 6px;white-space:nowrap;">
 <span style="display:inline-block;background-color:#e8d94a;border-radius:3px;padding:5px 11px;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;color:#1a2355;letter-spacing:0.02em;line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b7_cta}}}</span>
 <p style="margin:3px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:8px;font-weight:500;color:#c8d8ff;letter-spacing:0.03em;line-height:1.2;text-align:center;mso-line-height-rule:exactly;">{{{banner_b7_url}}}</p>
 </td>
-<td valign="bottom" width="58" style="width:58px;max-width:15%;vertical-align:bottom;padding:0;line-height:0;text-align:right;">` +
-    EXPLORE_WORLD_TRAVELER_SVG +
-    `</td>
+<td valign="bottom" width="58" style="width:58px;max-width:15%;vertical-align:bottom;padding:0;line-height:0;text-align:right;">{{{banner_b7_traveler_inner}}}</td>
 </tr>
 </table>
 </a>
@@ -250,26 +249,27 @@ export const BANNER_TEMPLATES = {
 </table>`,
 
   /**
-   * Wellness / juice “Boost and Improve” strip (`banner_8`): dark logo rail + illustrated scene + green CTA
-   * with decorative dots. `field_1` small logo label, `field_2` logo word, `field_3` headline, `field_4` subline;
-   * `text` = pill CTA (uppercased in markup).
+   * Wellness / juice “Boost and Improve” strip (`banner_8`): dark logo rail + illustrated scene + green CTA.
+   * Optional uploads: `banner_b8_leaf_inner`, `banner_b8_scene_inner`.
    */
   banner_8:
     `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td style="padding:0;line-height:0;font-size:0;">
-<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:52px;">
+<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;line-height:normal;font-size:14px;mso-line-height-rule:exactly;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:100px;">
 <tr>
-<td valign="middle" width="13%" style="width:13%;max-width:96px;vertical-align:middle;background-color:#1e2d1e;padding:6px 6px;text-align:center;">
-` +
-    BOOST_LOGO_LEAF_SVG +
-    `
-<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:7px;font-weight:600;color:#aac88a;letter-spacing:0.1em;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b8_logo_small}}}</p>
-<p style="margin:2px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:11px;font-weight:800;color:#ffffff;letter-spacing:0.05em;text-transform:uppercase;line-height:1;mso-line-height-rule:exactly;">{{{banner_b8_logo_main}}}</p>
+<td valign="middle" width="18%" style="width:18%;min-width:108px;max-width:140px;vertical-align:middle;background-color:#1e2d1e;padding:0;text-align:center;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<tr><td align="center" valign="middle" height="120" style="padding:12px 8px 8px;min-height:120px;height:auto;line-height:normal;font-size:14px;mso-line-height-rule:exactly;vertical-align:middle;">
+{{{banner_b8_leaf_inner}}}
+</td></tr>
+<tr><td align="center" valign="top" style="padding:0 8px 10px;line-height:1.2;font-size:7px;mso-line-height-rule:exactly;">
+<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:7px;font-weight:600;color:#aac88a;letter-spacing:0.1em;text-transform:uppercase;line-height:1.25;mso-line-height-rule:exactly;">{{{banner_b8_logo_small}}}</p>
+<p style="margin:4px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;color:#ffffff;letter-spacing:0.05em;text-transform:uppercase;line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b8_logo_main}}}</p>
+</td></tr>
+</table>
 </td>
-<td valign="bottom" width="52%" style="width:52%;min-width:160px;vertical-align:bottom;padding:0;line-height:0;font-size:0;background:linear-gradient(105deg,#e8f0d8 0%,#d4e8b0 40%,#b8d888 100%);">` +
-    BOOST_WELLNESS_SCENE_SVG +
-    `</td>
+<td valign="middle" width="47%" style="width:47%;min-width:140px;min-height:100px;vertical-align:middle;padding:4px 0;line-height:0;font-size:0;background:linear-gradient(105deg,#e8f0d8 0%,#d4e8b0 40%,#b8d888 100%);">{{{banner_b8_scene_inner}}}</td>
 <td valign="middle" width="35%" style="width:35%;vertical-align:middle;background-color:#7ab82a;padding:8px 12px 10px 14px;position:relative;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr><td style="padding:0 0 6px 0;">
 <p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:13px;font-weight:800;color:#1a2e0a;line-height:1.1;letter-spacing:0.01em;mso-line-height-rule:exactly;">{{{banner_b8_headline}}}</p>
@@ -341,8 +341,7 @@ export const BANNER_TEMPLATES = {
 
   /**
    * Business / city skyline strip (`banner_10`): dark `#1a1a2e` rail, white curved left panel, teal accent,
-   * skyline SVG, top-right logo badge. `field_1` small label, `field_2` gold word, `field_3` dark headline word,
-   * `field_4` tagline (line breaks → `<br>`), `field_5` badge wordmark; `text` = CTA.
+   * skyline SVG, top-right logo (`banner_b10_logo_img` from upload) or hex + `field_5` wordmark. `field_1`–`field_3` headlines; `text` = CTA.
    */
   banner_10:
     `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
@@ -356,7 +355,6 @@ export const BANNER_TEMPLATES = {
 <p style="margin:0 0 1px 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_bus}}px;font-weight:700;color:#1a1a2e;letter-spacing:1.5px;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b10_business}}}</p>
 <p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_title}}px;font-weight:900;color:#f0b400;text-transform:uppercase;letter-spacing:0.5px;line-height:1;mso-line-height-rule:exactly;">{{{banner_b10_banner}}}</p>
 <p style="margin:0 0 5px 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_title}}px;font-weight:900;color:#1a1a2e;text-transform:uppercase;letter-spacing:0.5px;line-height:1;mso-line-height-rule:exactly;">{{{banner_b10_design}}}</p>
-<p style="margin:0 0 7px 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_tag}}px;font-weight:400;color:#555555;line-height:1.5;max-width:200px;mso-line-height-rule:exactly;">{{{banner_b10_tagline_html}}}</p>
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 7px 0;"><tr>
 <td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:#00aacc;">&nbsp;</td>
 <td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
@@ -379,12 +377,18 @@ export const BANNER_TEMPLATES = {
 <td valign="bottom" width="53%" style="width:53%;vertical-align:bottom;background-color:#1a1a2e;background-image:linear-gradient(160deg,#5a6e80 0%,#8a9eac 40%,#6b7f8e 70%,#4a5a68 100%);padding:0;line-height:0;font-size:0;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
 <td align="right" valign="top" style="padding:8px 14px 4px 0;line-height:0;font-size:0;">
+{{#if banner_b10_logo_img}}
+<table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="border-collapse:collapse;"><tr><td align="right" valign="top" style="padding:0;line-height:0;">
+<img src="{{{banner_b10_logo_img}}}" alt="" width="80" height="40" style="display:block;width:80px;max-width:88px;height:auto;max-height:42px;border:0;object-fit:contain;object-position:right top;">
+</td></tr></table>
+{{else}}
 <table cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse;background-color:#1a1a2e;border-radius:3px;padding:5px 8px;mso-padding-alt:5px 8px;"><tr><td align="center" style="padding:0;line-height:0;">` +
     CITY_BUSINESS_LOGO_HEX_SVG +
     `</td></tr>
 <tr><td align="center" style="padding:2px 0 0 0;">
 <p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_logo}}px;font-weight:700;color:#ffffff;letter-spacing:1px;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b10_company}}}</p>
 </td></tr></table>
+{{/if}}
 </td></tr>
 <tr><td align="right" valign="bottom" style="padding:0;line-height:0;font-size:0;">` +
     CITY_BUSINESS_SKYLINE_SVG +

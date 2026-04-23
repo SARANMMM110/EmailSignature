@@ -50,9 +50,14 @@ function normBannerId(x) {
   return String(x || '').trim().toLowerCase();
 }
 
+const WEBINAR_CTA_SHOWCASE_COLORS = ['#e8630a', '#e8630a', '#94a3b8', '#0f172a'];
+
 function WebinarBannerDesignPreview({ design, thumbW, thumbH, scale }) {
   const srcDoc = useMemo(() => {
-    const [c1, c2, c3, c4] = resolvePaletteColorsFromDesign(design);
+    const [c1, c2, c3, c4] =
+      design?.apply_brand_palette_to_cta_banners === true
+        ? resolvePaletteColorsFromDesign(design)
+        : WEBINAR_CTA_SHOWCASE_COLORS;
     return webinarBannerThumbnailSrcDoc(c1, c2, c3, c4);
   }, [design]);
   return (
@@ -396,6 +401,8 @@ export function BannersLayoutTab({ onToast }) {
   const showUpgradeModal = useUpgradeModalStore((s) => s.showUpgradeModal);
   const maxBanners = gate.limit('cta_banner_templates');
   const [banners, setBanners] = useState([]);
+  /** Avoid flashing the empty-state warning before `bannersAPI.getAll()` resolves. */
+  const [bannersReady, setBannersReady] = useState(false);
 
   const signature = useEditorStore((s) => s.signature);
   const setBanner = useEditorStore((s) => s.setBanner);
@@ -427,15 +434,22 @@ export function BannersLayoutTab({ onToast }) {
   );
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const { data } = await bannersAPI.getAll();
+        if (cancelled) return;
         const raw = data?.banners || [];
         setBanners(filterAndSortEditorBanners(raw));
       } catch {
-        setBanners([]);
+        if (!cancelled) setBanners([]);
+      } finally {
+        if (!cancelled) setBannersReady(true);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (maxBanners === 0) {
@@ -443,7 +457,6 @@ export function BannersLayoutTab({ onToast }) {
       <div className="space-y-8">
         <div>
           <h1 className="text-lg font-bold tracking-tight text-[#0f172a]">{t('editor.banners')}</h1>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('editor.bannersTabIntroLocked')}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
           <div className="text-3xl" aria-hidden>
@@ -473,14 +486,13 @@ export function BannersLayoutTab({ onToast }) {
     <div className="space-y-8">
       <div>
         <h1 className="text-lg font-bold tracking-tight text-[#0f172a]">{t('editor.banners')}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('editor.bannersTabIntro')}</p>
       </div>
 
-      {banners.length === 0 ? (
+      {bannersReady && banners.length === 0 ? (
         <p className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-900">
           No CTA banners returned from the API. With Supabase, run{' '}
           <code className="rounded bg-white/80 px-1">node src/scripts/seedTemplates.js</code> or ensure banner rows
-          exist (ids           <code className="rounded bg-white/80 px-1">b0000001</code> …{' '}
+          exist (ids <code className="rounded bg-white/80 px-1">b0000001</code> …{' '}
           <code className="rounded bg-white/80 px-1">b0000010</code>).
         </p>
       ) : null}

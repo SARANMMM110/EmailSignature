@@ -1,5 +1,5 @@
 /**
- * Layout 13 — reference card: large “I’M”, social stack, yellow photo rail, bold white name,
+ * Layout 13 — reference card: large “I’M”, yellow photo rail, bold white name,
  * solid yellow arrowhead (tip up-left) beside first name line, yellow job title, white contact rows.
  * Tokens from `buildTemplate13PaletteContext` + standard `contextFromEditorPayload` fields.
  *
@@ -14,10 +14,6 @@ export const TEMPLATE_13_MARKUP = `<table role="presentation" cellpadding="0" ce
 <tr>
 <td width="56" valign="top" style="width:56px;max-width:56px;vertical-align:top;padding:20px 0 20px 20px;">
 <div style="font-size:16px;font-weight:700;letter-spacing:0.12em;color:{{t13_text}};line-height:1;mso-line-height-rule:exactly;">I&#8217;M</div>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:48px;"><tr><td style="padding:0 0 14px 0;line-height:0;font-size:0;">{{#if has_linkedin}}<a href="{{{linkedin_url}}}" style="text-decoration:none;"><img src="{{{t13_soc_li}}}" width="20" height="20" alt="LinkedIn" style="display:block;width:20px;height:20px;border:0;"></a>{{else}}<span style="display:block;width:20px;height:20px;">&nbsp;</span>{{/if}}</td></tr>
-<tr><td style="padding:0 0 14px 0;line-height:0;font-size:0;">{{#if has_github}}<a href="{{{github_url}}}" style="text-decoration:none;"><img src="{{{t13_soc_beh}}}" width="20" height="20" alt="Portfolio" style="display:block;width:20px;height:20px;border:0;"></a>{{else}}<span style="display:block;width:20px;height:20px;">&nbsp;</span>{{/if}}</td></tr>
-<tr><td style="padding:0;line-height:0;font-size:0;">{{#if has_instagram}}<a href="{{{instagram_url}}}" style="text-decoration:none;"><img src="{{{t13_soc_ig}}}" width="20" height="20" alt="Instagram" style="display:block;width:20px;height:20px;border:0;"></a>{{else}}<span style="display:block;width:20px;height:20px;">&nbsp;</span>{{/if}}</td></tr>
-</table>
 </td>
 <td width="118" valign="bottom" align="center" style="width:118px;max-width:118px;vertical-align:bottom;padding:0 4px 0 0;text-align:center;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:0 auto;"><tr><td align="center" valign="bottom" bgcolor="{{t13_accent}}" style="padding:0;width:104px;vertical-align:bottom;background-color:{{t13_accent}};border-radius:16px 16px 0 0;-webkit-border-radius:16px 16px 0 0;">

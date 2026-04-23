@@ -369,11 +369,17 @@ export const uploadAPI = {
     form.append('image', file);
     return api.post('upload/logo', form);
   },
-  /** Resized on server to 720×93 JPEG (`cover`, center) so the strip is always filled edge-to-edge. */
-  uploadBannerImage: (file) => {
+  /**
+   * Banner uploads. Default: 720×~93 JPEG (`cover`) for full-strip / blank banners.
+   * `{ mode: 'mark' }`: 400×400 max PNG (`inside`) for CTA logos/icons (no strip crop).
+   * `{ mode: 'scene' }`: 560×200 max PNG (`inside`) for CTA hero / illustration slots.
+   */
+  uploadBannerImage: (file, opts = {}) => {
     const form = new FormData();
     form.append('image', file);
-    return api.post('upload/banner-image', form);
+    const q =
+      opts.mode === 'mark' ? '?mode=mark' : opts.mode === 'scene' ? '?mode=scene' : '';
+    return api.post(`upload/banner-image${q}`, form);
   },
   /** Upload rendered signature (+ optional banner) PNGs; returns public URLs and Emailee-style HTML. */
   emaileeExport: (signatureBlob, bannerBlob = null) => {

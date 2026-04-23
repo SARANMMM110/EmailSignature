@@ -263,6 +263,16 @@ export function isNeedCallBannerPreset(presetId, bannerId) {
   return s.includes('need');
 }
 
+/** Matches server `resolveBannerKey` → `banner_2` (book-a-call strip). Prefer `bannerId` over slug. */
+export function isBookCallBannerPreset(presetId, bannerId) {
+  const bid = String(bannerId || '').trim().toLowerCase();
+  if (bid === String(BANNER_SLUG_TO_UUID['book-call']).toLowerCase()) return true;
+  const p = String(presetId || '').toLowerCase();
+  if (p.includes('need')) return false;
+  if (p === 'book-call' || /^book[-_]?call$/i.test(p)) return true;
+  return false;
+}
+
 /** Matches server `resolveBannerKey` → `banner_5`. */
 export function isMindscopeBannerPreset(presetId, bannerId) {
   const bid = String(bannerId || '').trim().toLowerCase();

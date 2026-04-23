@@ -3,7 +3,7 @@
  * Gradient ids prefixed `b8-` for safe stacking with other strips.
  */
 
-export const BOOST_LOGO_LEAF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28" style="display:block;width:28px;height:28px;margin:0 auto 2px;border:0;">
+export const BOOST_LOGO_LEAF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="44" height="44" style="display:block;width:44px;height:44px;margin:0 auto 6px;border:0;">
 <path d="M16 2 C16 2 28 8 28 20 C28 28 22 30 16 30 C10 30 4 28 4 20 C4 8 16 2 16 2Z" fill="#7ab82a"/>
 <path d="M16 6 C16 6 24 11 24 20 C24 26 20 28 16 28" fill="#5a9010" opacity="0.5"/>
 <line x1="16" y1="30" x2="16" y2="14" stroke="#aad060" stroke-width="1.5" stroke-linecap="round"/>
@@ -11,7 +11,7 @@ export const BOOST_LOGO_LEAF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" view
 <line x1="16" y1="19" x2="21" y2="15" stroke="#aad060" stroke-width="1.2" stroke-linecap="round"/>
 </svg>`;
 
-export const BOOST_WELLNESS_SCENE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 130" preserveAspectRatio="xMidYMax meet" width="100%" height="54" style="display:block;width:100%;height:54px;max-height:58px;border:0;vertical-align:bottom;">
+export const BOOST_WELLNESS_SCENE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 130" preserveAspectRatio="xMidYMid meet" width="100%" height="72" style="display:block;width:100%;height:72px;max-height:88px;border:0;vertical-align:middle;">
 <defs>
 <linearGradient id="b8-bgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#e8f2d5"/><stop offset="100%" stop-color="#c0dc90"/></linearGradient>
 <linearGradient id="b8-glassGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/><stop offset="100%" stop-color="#e0f0ff" stop-opacity="0.5"/></linearGradient>

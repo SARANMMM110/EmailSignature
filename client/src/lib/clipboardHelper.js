@@ -45,25 +45,38 @@ function oneImageTable(imgInner) {
 }
 
 /**
+ * Gmail-friendly: one `<table>…</table>` per block joined with `<br>` so each image (and its own `<a href>`)
+ * pastes as a separate clickable region — signature + one or more CTA strips.
+ *
+ * @param {Array<{ imageUrl: string, linkUrl?: string }>} blocks
+ */
+export function buildStackedSignatureBannerPasteHtml(blocks) {
+  const list = Array.isArray(blocks) ? blocks : [];
+  const parts = [];
+  for (const b of list) {
+    const imageUrl = String(b?.imageUrl || '').trim();
+    if (!imageUrl) continue;
+    const linkUrl = normalizeSignatureHref(b?.linkUrl || '');
+    const sigSrc = recipientVisibleImageSrc(imageUrl);
+    const img = `<img src="${escapeAttrUrl(sigSrc)}" width="600" border="0" alt="" style="display:block;border:none;">`;
+    const inner =
+      linkUrl !== ''
+        ? `<a href="${escapeAttrUrl(linkUrl)}" style="text-decoration:none;border:none;" target="_blank" rel="noopener noreferrer">${img}</a>`
+        : img;
+    parts.push(oneImageTable(inner));
+  }
+  return parts.join('<br>');
+}
+
+/**
  * Gmail-friendly: signature image table, `<br>`, CTA image table — no shared parent.
  */
 export function buildDualImagePasteHtml(signatureImageUrl, bannerImageUrl, options = {}) {
   const { signatureLinkUrl = '', bannerLinkUrl = '' } = options;
-  const sigSrc = recipientVisibleImageSrc(String(signatureImageUrl || '').trim());
-  const banSrc = recipientVisibleImageSrc(String(bannerImageUrl || '').trim());
-  const sigImg = `<img src="${escapeAttrUrl(sigSrc)}" width="600" border="0" alt="" style="display:block;border:none;">`;
-  const banImg = `<img src="${escapeAttrUrl(banSrc)}" width="600" border="0" alt="" style="display:block;border:none;">`;
-  const sigHref = normalizeSignatureHref(signatureLinkUrl);
-  const banHref = normalizeSignatureHref(bannerLinkUrl);
-  const sigInner =
-    sigHref !== ''
-      ? `<a href="${escapeAttrUrl(sigHref)}" style="text-decoration:none;border:none;" target="_blank" rel="noopener noreferrer">${sigImg}</a>`
-      : sigImg;
-  const banInner =
-    banHref !== ''
-      ? `<a href="${escapeAttrUrl(banHref)}" style="text-decoration:none;border:none;" target="_blank" rel="noopener noreferrer">${banImg}</a>`
-      : banImg;
-  return `${oneImageTable(sigInner)}<br>${oneImageTable(banInner)}`;
+  return buildStackedSignatureBannerPasteHtml([
+    { imageUrl: signatureImageUrl, linkUrl: signatureLinkUrl },
+    { imageUrl: bannerImageUrl, linkUrl: bannerLinkUrl },
+  ]);
 }
 
 /**
@@ -154,7 +167,7 @@ async function fetchSignatureImageBlob(imageUrl) {
 
 /**
  * @param {string} imageUrl — signature PNG (or composite when no banner export)
- * @param {{ signatureLinkUrl?: string, bannerImageUrl?: string, bannerLinkUrl?: string, fragmentHtml?: string }} [options]
+ * @param {{ signatureLinkUrl?: string, bannerImageUrl?: string, bannerLinkUrl?: string, fragmentHtml?: string, bannerSlotPairs?: { imageUrl: string, linkUrl?: string }[] }} [options]
  * @returns {Promise<{ success: true, linked: boolean, mode: 'html' | 'image' }>}
  */
 export async function copySignatureImageToClipboard(imageUrl, options = {}) {
@@ -167,9 +180,22 @@ export async function copySignatureImageToClipboard(imageUrl, options = {}) {
   const fragment = String(options.fragmentHtml || '').trim();
   const sigLink = normalizeSignatureHref(options.signatureLinkUrl);
   const banLink = normalizeSignatureHref(options.bannerLinkUrl);
+  const slotPairs = Array.isArray(options.bannerSlotPairs)
+    ? options.bannerSlotPairs.filter((p) => String(p?.imageUrl || '').trim())
+    : [];
 
-  const dualHtml =
-    bannerImg && src ? buildDualImagePasteHtml(src, bannerImg, { signatureLinkUrl: sigLink, bannerLinkUrl: banLink }) : '';
+  let dualHtml = '';
+  if (slotPairs.length > 0 && src) {
+    dualHtml = buildStackedSignatureBannerPasteHtml([
+      { imageUrl: src, linkUrl: sigLink },
+      ...slotPairs.map((p) => ({
+        imageUrl: String(p.imageUrl || '').trim(),
+        linkUrl: normalizeSignatureHref(p.linkUrl || ''),
+      })),
+    ]);
+  } else if (bannerImg && src) {
+    dualHtml = buildDualImagePasteHtml(src, bannerImg, { signatureLinkUrl: sigLink, bannerLinkUrl: banLink });
+  }
 
   // Prefer rasterized <img> paste when we have export URLs — full `fragment` is live HTML in Gmail
   // (editable text, spellcheck, and some clients duplicate complex blocks on paste).
@@ -184,7 +210,8 @@ export async function copySignatureImageToClipboard(imageUrl, options = {}) {
 
   if (String(htmlForMime || '').trim()) {
     await writeClipboardHtmlOnly(htmlForMime.trim());
-    return { success: true, linked: Boolean(sigLink || banLink), mode: 'html' };
+    const anySlotLink = slotPairs.some((p) => normalizeSignatureHref(p?.linkUrl || ''));
+    return { success: true, linked: Boolean(sigLink || banLink || anySlotLink), mode: 'html' };
   }
 
   if (!src) {
@@ -209,21 +236,34 @@ export async function copySignatureImageToClipboard(imageUrl, options = {}) {
  * @param {string} [fragmentHtml] — full generated HTML when not using image snippet
  * @param {string} [bannerImageUrl]
  * @param {string} [bannerLinkUrl]
+ * @param {Array<{ imageUrl: string, linkUrl?: string }>} [extraBannerSlots] — additional CTA PNGs + links (second strip, …)
  */
 export async function copySignaturePasteHtml(
   imageUrl,
   signatureLinkUrl = '',
   fragmentHtml = '',
   bannerImageUrl = '',
-  bannerLinkUrl = ''
+  bannerLinkUrl = '',
+  extraBannerSlots = null
 ) {
   const fragment = String(fragmentHtml || '').trim();
   const ban = String(bannerImageUrl || '').trim();
   const src = String(imageUrl || '').trim();
+  const extras = Array.isArray(extraBannerSlots) ? extraBannerSlots : [];
+
+  const bannerBlocks = [];
+  if (ban) bannerBlocks.push({ imageUrl: ban, linkUrl: bannerLinkUrl });
+  for (const ex of extras) {
+    const u = String(ex?.imageUrl || '').trim();
+    if (u) bannerBlocks.push({ imageUrl: u, linkUrl: ex?.linkUrl || '' });
+  }
 
   let html = '';
-  if (src && ban) {
-    html = buildDualImagePasteHtml(src, ban, { signatureLinkUrl, bannerLinkUrl });
+  if (src && bannerBlocks.length > 0) {
+    html = buildStackedSignatureBannerPasteHtml([
+      { imageUrl: src, linkUrl: signatureLinkUrl },
+      ...bannerBlocks,
+    ]);
   } else if (fragment) {
     html = fragment;
   } else if (src) {

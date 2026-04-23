@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signaturesAPI, signatureExportAPI } from '../../lib/api.js';
+import { signaturesAPI } from '../../lib/api.js';
 import {
-  buildDualImagePasteHtml,
+  buildStackedSignatureBannerPasteHtml,
   copySignatureImageToClipboard,
   copySignaturePasteHtml,
 } from '../../lib/clipboardHelper.js';
 import { splitSignatureAndBannerHtml } from '../../lib/splitSignatureBannerHtml.js';
-import { wrapHtmlFragmentForPuppeteerExport } from '../../lib/wrapSignatureExportFragment.js';
+import { generateSplitSignatureBannerPngUrls } from '../../lib/signatureExportSlots.js';
 import { Modal } from '../ui/Modal.jsx';
 import { ManualHtmlCopyModal } from '../ui/ManualHtmlCopyModal.jsx';
 import { Input } from '../ui/Input.jsx';
@@ -384,6 +384,9 @@ export function SignatureCard({
   const bannerLink = String(
     signature.banner_config?.link_url || signature.banner_config?.href || ''
   ).trim();
+  const secondaryBannerLink = String(
+    signature.banner_config?.secondary_link_url || signature.banner_config?.secondary_href || ''
+  ).trim();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -402,49 +405,38 @@ export function SignatureCard({
       showToast(t('card.toastNoHtml'), 'error');
       return;
     }
-    const { signatureHtml, bannerHtml } = splitSignatureAndBannerHtml(copyHtml);
+    const railPx = bundleRailPxForSignature(signature);
+    const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(copyHtml, railPx);
 
-    if (bannerHtml?.trim() && signatureHtml?.trim()) {
-      const railPx = bundleRailPxForSignature(signature);
-      const [sigRes, banRes] = await Promise.all([
-        signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(signatureHtml, railPx)),
-        signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(bannerHtml, railPx)),
-      ]);
-      const sigUrl = String(sigRes.data?.url || '').trim();
-      const banUrl = String(banRes.data?.url || '').trim();
-      const imgWarn = [sigRes.data?.recipientImageWarning, banRes.data?.recipientImageWarning]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-      if (!sigUrl || !banUrl) {
-        showToast(t('card.toastNoDualImages'), 'error');
-        return;
-      }
-      await copySignatureImageToClipboard(sigUrl, {
-        signatureLinkUrl: signatureLink,
-        bannerLinkUrl: bannerLink,
-        bannerImageUrl: banUrl,
-      });
-      showToast(t('card.toastCopiedDualBlocks'), 'success');
-      if (imgWarn) setTimeout(() => showToast(imgWarn, 'error'), 500);
-    } else {
-      const { data: imgData } = await signatureExportAPI.generateImage(copyHtml);
-      const url = String(imgData?.url || '').trim();
-      if (!url) {
+    if (mode === 'error') {
+      showToast(t('card.toastNoDualImages'), 'error');
+      return;
+    }
+
+    if (mode === 'composite') {
+      if (!sigUrl) {
         showToast(t('card.toastNoSigImageUrl'), 'error');
         return;
       }
-      const imgWarn = String(imgData?.recipientImageWarning || '').trim();
-      await copySignatureImageToClipboard(url, { signatureLinkUrl: signatureLink });
-      showToast(
-        signatureLink ? t('card.toastCopiedRich') : t('card.toastCopiedImage'),
-        'success'
-      );
-      if (imgWarn && signatureLink) {
-        setTimeout(() => showToast(imgWarn, 'error'), 500);
-      }
+      await copySignatureImageToClipboard(sigUrl, { signatureLinkUrl: signatureLink });
+      showToast(signatureLink ? t('card.toastCopiedRich') : t('card.toastCopiedImage'), 'success');
+      return;
     }
-  }, [bannerLink, ensurePngExport, showToast, signature, signatureLink, t]);
+
+    if (sigUrl && bannerUrls.length > 0) {
+      const bannerSlotPairs = bannerUrls.map((imageUrl, idx) => ({
+        imageUrl,
+        linkUrl: idx === 0 ? bannerLink : secondaryBannerLink,
+      }));
+      await copySignatureImageToClipboard(sigUrl, {
+        signatureLinkUrl: signatureLink,
+        bannerSlotPairs,
+      });
+      showToast(t('card.toastCopiedDualBlocks'), 'success');
+    } else {
+      showToast(t('card.toastNoDualImages'), 'error');
+    }
+  }, [bannerLink, ensurePngExport, secondaryBannerLink, showToast, signature, signatureLink, t]);
 
   const handleCopyImage = (e) => {
     e?.stopPropagation();
@@ -490,33 +482,27 @@ export function SignatureCard({
           showToast(t('card.toastNoHtml'), 'error');
           return;
         }
-        const { signatureHtml, bannerHtml } = splitSignatureAndBannerHtml(copyHtml);
+        const railPx = bundleRailPxForSignature(signature);
+        const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(copyHtml, railPx);
 
-        if (bannerHtml?.trim() && signatureHtml?.trim()) {
-          const railPx = bundleRailPxForSignature(signature);
-          const [sigRes, banRes] = await Promise.all([
-            signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(signatureHtml, railPx)),
-            signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(bannerHtml, railPx)),
-          ]);
-          const sigUrl = String(sigRes.data?.url || '').trim();
-          const banUrl = String(banRes.data?.url || '').trim();
-          if (!sigUrl || !banUrl) {
-            showToast(t('card.toastNoDualImages'), 'error');
-            return;
-          }
-          await downloadUrlAsFile(sigUrl, `${base}-signature.png`);
-          await new Promise((r) => setTimeout(r, 400));
-          await downloadUrlAsFile(banUrl, `${base}-banner.png`);
-          showToast(t('card.toastDownloadedDual'), 'success');
-        } else {
-          const { data: imgData } = await signatureExportAPI.generateImage(copyHtml);
-          const url = String(imgData?.url || '').trim();
-          if (!url) {
+        if (mode === 'composite') {
+          if (!sigUrl) {
             showToast(t('card.toastNoSigImageUrl'), 'error');
             return;
           }
-          await downloadUrlAsFile(url, `${base}.png`);
+          await downloadUrlAsFile(sigUrl, `${base}.png`);
           showToast(t('card.toastDownloadedSig'), 'success');
+        } else if (sigUrl && bannerUrls.length > 0) {
+          await downloadUrlAsFile(sigUrl, `${base}-signature.png`);
+          for (let i = 0; i < bannerUrls.length; i++) {
+            await new Promise((r) => setTimeout(r, 400));
+            const name =
+              bannerUrls.length > 1 ? `${base}-banner-${i + 1}.png` : `${base}-banner.png`;
+            await downloadUrlAsFile(bannerUrls[i], name);
+          }
+          showToast(t('card.toastDownloadedDual'), 'success');
+        } else {
+          showToast(t('card.toastNoDualImages'), 'error');
         }
       } catch (err) {
         showToast(err.response?.data?.message || err.message || t('card.toastDownloadFailed'), 'error');
@@ -541,36 +527,41 @@ export function SignatureCard({
         showToast(t('card.toastNoHtml'), 'error');
         return;
       }
-      const { signatureHtml, bannerHtml } = splitSignatureAndBannerHtml(fullHtml);
       let manualFallback = fullHtml.trim();
+      const railPx = bundleRailPxForSignature(signature);
+      const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(fullHtml, railPx);
 
-      if (bannerHtml?.trim() && signatureHtml?.trim()) {
+      if (mode === 'dual' || mode === 'multi-slot') {
         if (!ensurePngExport()) return;
-        const railPx = bundleRailPxForSignature(signature);
-        const [sigRes, banRes] = await Promise.all([
-          signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(signatureHtml, railPx)),
-          signatureExportAPI.generateImage(wrapHtmlFragmentForPuppeteerExport(bannerHtml, railPx)),
-        ]);
-        const sigUrl = String(sigRes.data?.url || '').trim();
-        const banUrl = String(banRes.data?.url || '').trim();
-        const imgWarn = [sigRes.data?.recipientImageWarning, banRes.data?.recipientImageWarning]
-          .filter(Boolean)
-          .join(' ')
-          .trim();
-        if (sigUrl && banUrl) {
-          manualFallback = buildDualImagePasteHtml(sigUrl, banUrl, {
-            signatureLinkUrl: signatureLink,
-            bannerLinkUrl: bannerLink,
-          });
+        if (sigUrl && bannerUrls.length > 0) {
+          const pasteBlocks = [
+            { imageUrl: sigUrl, linkUrl: signatureLink },
+            ...bannerUrls.map((u, idx) => ({
+              imageUrl: u,
+              linkUrl: idx === 0 ? bannerLink : secondaryBannerLink,
+            })),
+          ];
+          manualFallback = buildStackedSignatureBannerPasteHtml(pasteBlocks);
+          const [firstBan, ...restBan] = bannerUrls;
           try {
-            await copySignaturePasteHtml(sigUrl, signatureLink, '', banUrl, bannerLink);
+            await copySignaturePasteHtml(
+              sigUrl,
+              signatureLink,
+              '',
+              firstBan,
+              bannerLink,
+              restBan.length
+                ? restBan.map((u, idx) => ({
+                    imageUrl: u,
+                    linkUrl: idx === 0 ? secondaryBannerLink : '',
+                  }))
+                : undefined
+            );
             showToast(t('card.toastCopiedGmailHtml'), 'success');
-            if (imgWarn) setTimeout(() => showToast(imgWarn, 'error'), 500);
           } catch (clipErr) {
             setManualCopyHtml(manualFallback);
             setManualCopyOpen(true);
             showToast(t('card.toastCopyFromDialog'), 'success');
-            if (imgWarn) setTimeout(() => showToast(imgWarn, 'error'), 500);
           }
           return;
         }

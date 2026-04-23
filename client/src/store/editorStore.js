@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { debounce } from '../lib/debounce.js';
-import api, { signaturesAPI, bannersAPI, signatureExportAPI } from '../lib/api.js';
-import { splitSignatureAndBannerHtml } from '../lib/splitSignatureBannerHtml.js';
-import { wrapHtmlFragmentForPuppeteerExport } from '../lib/wrapSignatureExportFragment.js';
+import api, { signaturesAPI, bannersAPI } from '../lib/api.js';
+import { generateSplitSignatureBannerPngUrls } from '../lib/signatureExportSlots.js';
 import {
   bundleRailPxForSignature,
   uuidToTemplateSlug,
@@ -23,6 +22,7 @@ import {
   isLeaveReviewBannerPreset,
   isSeoWhitepaperBannerPreset,
   isGreenGradientCtaBannerPreset,
+  isBookCallBannerPreset,
   WEBINAR_BANNER_UUID,
   BLANK_IMAGE_BANNER_UUID,
   MINDSCOPE_BANNER_UUID,
@@ -197,7 +197,7 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
     !isLeaveReview &&
     !isSeoWhitepaper &&
     !isGreenGradientCta &&
-    /book|call/i.test(String(secPreset));
+    isBookCallBannerPreset(secPreset, secBannerId);
   const isBlank = isBlankImageBannerPreset(secPreset, secBannerId);
   const link = prev.secondary_link_url || prev.secondary_href || 'https://';
 
@@ -258,6 +258,9 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       field_3: prev.secondary_field_3 ?? '',
       field_4: prev.secondary_field_4 ?? '',
       field_5: prev.secondary_field_5 ?? '',
+      cta_strip_logo_url: prev.secondary_cta_strip_logo_url ?? '',
+      cta_strip_icon_url: prev.secondary_cta_strip_icon_url ?? '',
+      cta_strip_hero_url: prev.secondary_cta_strip_hero_url ?? '',
     };
   }
   if (isBoostImprove) {
@@ -270,6 +273,9 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       field_2: prev.secondary_field_2 ?? '',
       field_3: prev.secondary_field_3 ?? '',
       field_4: prev.secondary_field_4 ?? '',
+      cta_strip_logo_url: prev.secondary_cta_strip_logo_url ?? '',
+      cta_strip_icon_url: prev.secondary_cta_strip_icon_url ?? '',
+      cta_strip_hero_url: prev.secondary_cta_strip_hero_url ?? '',
     };
   }
   if (isOnlineLoan) {
@@ -444,6 +450,7 @@ function withStarterContentIfEmpty(sig) {
           ...(demo.design.palette || {}),
           ...(sig.design?.palette || {}),
         },
+        apply_brand_palette_to_cta_banners: sig.design?.apply_brand_palette_to_cta_banners === true,
       },
     };
   }
@@ -551,6 +558,12 @@ export function signatureToEditorPayload(sig) {
           secondary_preset_id: bannerCfg.secondary_preset_id,
           secondary_banner_id: bannerCfg.secondary_banner_id,
           secondary_banner_image_url: bannerCfg.secondary_banner_image_url,
+          cta_strip_logo_url: bannerCfg.cta_strip_logo_url,
+          cta_strip_icon_url: bannerCfg.cta_strip_icon_url,
+          cta_strip_hero_url: bannerCfg.cta_strip_hero_url,
+          secondary_cta_strip_logo_url: bannerCfg.secondary_cta_strip_logo_url,
+          secondary_cta_strip_icon_url: bannerCfg.secondary_cta_strip_icon_url,
+          secondary_cta_strip_hero_url: bannerCfg.secondary_cta_strip_hero_url,
         }
       : null;
 
@@ -558,6 +571,9 @@ export function signatureToEditorPayload(sig) {
     templateId: d.templateId || uuidToTemplateSlug(sig.template_id),
     design: {
       font: d.font || 'Arial, Helvetica, sans-serif',
+      ...(d.apply_brand_palette_to_cta_banners === true
+        ? { apply_brand_palette_to_cta_banners: true }
+        : {}),
     },
     form: {
       signatureName: sig.label,
@@ -599,76 +615,75 @@ let putBodySnapshotAtRequest = null;
 /** Monotonic id so slower `/html/generate` responses cannot overwrite a newer preview. */
 let htmlPreviewSeq = 0;
 
+/** Monotonic id so slower GET /signatures/:id cannot overwrite a newer load or a reset. */
+let loadSignatureSeq = 0;
+
 async function runPuppeteerExport(html) {
   if (!html?.trim()) {
     useEditorStore.setState({
       exportImageUrl: '',
       exportBannerImageUrl: '',
+      exportBannerSlotImageUrls: [],
       exportImageError: null,
-      exportImageWarning: null,
       exportGenerating: false,
     });
     return;
   }
   const snapshot = html;
-  useEditorStore.setState({ exportGenerating: true, exportImageError: null, exportImageWarning: null });
+  useEditorStore.setState({ exportGenerating: true, exportImageError: null });
   try {
     const railPx = bundleRailPxForSignature(useEditorStore.getState().signature);
-    const { signatureHtml, bannerHtml } = splitSignatureAndBannerHtml(snapshot);
-    const hasSplit = Boolean(bannerHtml?.trim() && signatureHtml?.trim());
+    const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(snapshot, railPx);
+    if (useEditorStore.getState().generatedHTML !== snapshot) return;
 
-    if (hasSplit) {
-      const sigDoc = wrapHtmlFragmentForPuppeteerExport(signatureHtml, railPx);
-      const banDoc = wrapHtmlFragmentForPuppeteerExport(bannerHtml, railPx);
-      const [sigRes, banRes] = await Promise.all([
-        signatureExportAPI.generateImage(sigDoc),
-        signatureExportAPI.generateImage(banDoc),
-      ]);
-      if (useEditorStore.getState().generatedHTML !== snapshot) return;
-      const sigUrl = String(sigRes.data?.url || '').trim();
-      const banUrl = String(banRes.data?.url || '').trim();
-      const w1 = sigRes.data?.recipientImageWarning ? String(sigRes.data.recipientImageWarning) : '';
-      const w2 = banRes.data?.recipientImageWarning ? String(banRes.data.recipientImageWarning) : '';
-      const exportImageWarning = [w1, w2].filter(Boolean).join(' ').trim() || null;
-      if (sigUrl && banUrl) {
+    if (mode === 'error') {
+      useEditorStore.setState({
+        exportImageUrl: '',
+        exportBannerImageUrl: '',
+        exportBannerSlotImageUrls: [],
+        exportImageError: 'Server did not return both signature and banner image URLs.',
+        exportGenerating: false,
+      });
+      return;
+    }
+
+    if (mode === 'composite') {
+      if (sigUrl) {
         useEditorStore.setState({
           exportImageUrl: sigUrl,
-          exportBannerImageUrl: banUrl,
+          exportBannerImageUrl: '',
+          exportBannerSlotImageUrls: [],
           exportImageError: null,
           exportGenerating: false,
-          exportImageWarning,
         });
       } else {
         useEditorStore.setState({
           exportImageUrl: '',
           exportBannerImageUrl: '',
-          exportImageError: 'Server did not return both signature and banner image URLs.',
-          exportGenerating: false,
-          exportImageWarning,
-        });
-      }
-    } else {
-      const { data } = await signatureExportAPI.generateImage(snapshot);
-      if (useEditorStore.getState().generatedHTML !== snapshot) return;
-      const url = String(data?.url || '').trim();
-      const exportImageWarning = data?.recipientImageWarning ? String(data.recipientImageWarning) : null;
-      if (url) {
-        useEditorStore.setState({
-          exportImageUrl: url,
-          exportBannerImageUrl: '',
-          exportImageError: null,
-          exportGenerating: false,
-          exportImageWarning,
-        });
-      } else {
-        useEditorStore.setState({
-          exportImageUrl: '',
-          exportBannerImageUrl: '',
+          exportBannerSlotImageUrls: [],
           exportImageError: 'Server did not return an image URL.',
           exportGenerating: false,
-          exportImageWarning: null,
         });
       }
+      return;
+    }
+
+    if (sigUrl && bannerUrls.length > 0) {
+      useEditorStore.setState({
+        exportImageUrl: sigUrl,
+        exportBannerImageUrl: bannerUrls[0] || '',
+        exportBannerSlotImageUrls: [...bannerUrls],
+        exportImageError: null,
+        exportGenerating: false,
+      });
+    } else {
+      useEditorStore.setState({
+        exportImageUrl: '',
+        exportBannerImageUrl: '',
+        exportBannerSlotImageUrls: [],
+        exportImageError: 'Server did not return both signature and banner image URLs.',
+        exportGenerating: false,
+      });
     }
   } catch (e) {
     if (useEditorStore.getState().generatedHTML !== snapshot) return;
@@ -677,9 +692,9 @@ async function runPuppeteerExport(html) {
     useEditorStore.setState({
       exportImageUrl: '',
       exportBannerImageUrl: '',
+      exportBannerSlotImageUrls: [],
       exportImageError: String(msg),
       exportGenerating: false,
-      exportImageWarning: null,
     });
   }
 }
@@ -778,9 +793,9 @@ export const useEditorStore = create((set, get) => ({
   exportImageUrl: '',
   /** CTA/banner PNG when signature + banner are exported separately for Gmail */
   exportBannerImageUrl: '',
+  /** One URL per CTA strip (same order as slots) — two entries when a second banner is stacked */
+  exportBannerSlotImageUrls: [],
   exportImageError: null,
-  /** From API when PNG URL is localhost — linked HTML mail shows broken images for recipients */
-  exportImageWarning: null,
   exportGenerating: false,
   showInstallModal: false,
   saveStatus: 'idle',
@@ -836,6 +851,7 @@ export const useEditorStore = create((set, get) => ({
   loadSignature: async (id) => {
     putBodySnapshotAtRequest = null;
     if (!id || id === 'new') {
+      loadSignatureSeq += 1;
       set({
         signatureId: null,
         signature: null,
@@ -845,16 +861,20 @@ export const useEditorStore = create((set, get) => ({
         previewError: null,
         exportImageUrl: '',
         exportBannerImageUrl: '',
+        exportBannerSlotImageUrls: [],
         exportImageError: null,
-        exportImageWarning: null,
         exportGenerating: false,
         isDirty: false,
       });
       return;
     }
+    const seq = (loadSignatureSeq += 1);
+    runDebouncedRegenerate.cancel();
+    runDebouncedPreview.cancel();
     set({ isLoading: true });
     try {
       const { data } = await signaturesAPI.getById(id);
+      if (seq !== loadSignatureSeq) return;
       const row = data?.signature;
       const apiSig = clientSignatureFromApi(row);
       const pristineFromApi =
@@ -869,6 +889,7 @@ export const useEditorStore = create((set, get) => ({
       );
       const seedFromProfilePrefill =
         pristineFromApi && profileHasPrefillableContent(profile, user);
+      if (seq !== loadSignatureSeq) return;
       set({
         signatureId: id,
         signature: sig,
@@ -877,8 +898,8 @@ export const useEditorStore = create((set, get) => ({
         previewError: null,
         exportImageUrl: '',
         exportBannerImageUrl: '',
+        exportBannerSlotImageUrls: [],
         exportImageError: null,
-        exportImageWarning: null,
         exportGenerating: false,
         isLoading: false,
         isDirty: seedFromProfilePrefill,
@@ -890,7 +911,9 @@ export const useEditorStore = create((set, get) => ({
       });
     } catch (e) {
       console.error(e);
-      set({ isLoading: false, signature: null, signatureId: null });
+      if (seq === loadSignatureSeq) {
+        set({ isLoading: false, signature: null, signatureId: null });
+      }
       throw e;
     }
   },
@@ -988,6 +1011,7 @@ export const useEditorStore = create((set, get) => ({
         design: {
           ...sig.design,
           colors: [...colors.slice(0, 4)],
+          apply_brand_palette_to_cta_banners: true,
           palette: {
             ...sig.design.palette,
             primary: a,
@@ -1075,7 +1099,7 @@ export const useEditorStore = create((set, get) => ({
                         ? 'Book a call'
                         : isWebinar
                           ? 'Call to action'
-                          : /book|call/i.test(pid)
+                          : isBookCallBannerPreset(pid, bidForFlags)
                             ? 'Book a call today'
                             : b?.name || 'Learn more';
     const webinarFields = isWebinar
@@ -1130,7 +1154,7 @@ export const useEditorStore = create((set, get) => ({
           field_1: 'BUSINESS',
           field_2: 'BANNER',
           field_3: 'DESIGN',
-          field_4: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.',
+          field_4: '',
           field_5: 'COMPANY',
         }
       : {};
@@ -1257,7 +1281,7 @@ export const useEditorStore = create((set, get) => ({
                         ? 'Book a call'
                         : isWebinar
                           ? 'Call to action'
-                          : /book|call/i.test(pid)
+                          : isBookCallBannerPreset(pid, bidForFlags)
                             ? 'Book a call today'
                             : b?.name || 'Learn more';
     const baseCfg = { ...prev };
@@ -1322,8 +1346,7 @@ export const useEditorStore = create((set, get) => ({
           secondary_field_1: 'BUSINESS',
           secondary_field_2: 'BANNER',
           secondary_field_3: 'DESIGN',
-          secondary_field_4:
-            'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.',
+          secondary_field_4: '',
           secondary_field_5: 'COMPANY',
           secondary_banner_image_url: '',
         }
@@ -1477,6 +1500,7 @@ export const useEditorStore = create((set, get) => ({
   closeInstallModal: () => set({ showInstallModal: false }),
 
   resetEditor: () => {
+    loadSignatureSeq += 1;
     runDebouncedRegenerate.cancel();
     runDebouncedPreview.cancel();
     putBodySnapshotAtRequest = null;
@@ -1491,8 +1515,8 @@ export const useEditorStore = create((set, get) => ({
       previewError: null,
       exportImageUrl: '',
       exportBannerImageUrl: '',
+      exportBannerSlotImageUrls: [],
       exportImageError: null,
-      exportImageWarning: null,
       exportGenerating: false,
       showInstallModal: false,
       saveStatus: 'idle',

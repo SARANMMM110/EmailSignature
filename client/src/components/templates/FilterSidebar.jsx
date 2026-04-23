@@ -1,8 +1,5 @@
 import { useState } from 'react';
 
-/** Template tier (Free/Pro) — shown in layout gallery (Emailee-style sidebar). */
-const SHOW_PLAN_TIER_FILTERS = true;
-
 function Chevron({ open }) {
   return (
     <svg
@@ -76,13 +73,10 @@ function FilterCheckbox({ id, label, checked, onChange }) {
 }
 
 export function FilterSidebar({ filters, onFilterChange, variant = 'default' }) {
-  const [openPlan, setOpenPlan] = useState(true);
   const [openStyle, setOpenStyle] = useState(true);
   const [openLogo, setOpenLogo] = useState(true);
   const galleryMode = variant === 'gallery';
 
-  const setPlan = (key, value) =>
-    onFilterChange({ ...filters, plan: { ...filters.plan, [key]: value } });
   const setStyle = (key, value) =>
     onFilterChange({ ...filters, style: { ...filters.style, [key]: value } });
   const setLogo = (key, value) =>
@@ -109,30 +103,6 @@ export function FilterSidebar({ filters, onFilterChange, variant = 'default' }) 
           </h2>
           {galleryMode ? <IconSlidersMuted /> : <IconSliders />}
         </div>
-
-        {SHOW_PLAN_TIER_FILTERS && (
-          <FilterSection
-            title="Plan"
-            open={openPlan}
-            onToggle={() => setOpenPlan((o) => !o)}
-            borderNeutral={galleryMode}
-          >
-            <FilterCheckbox
-              id="filter-plan-free"
-              label="Free"
-              checked={filters.plan.free}
-              onChange={(v) => setPlan('free', v)}
-            />
-            <FilterCheckbox
-              id="filter-plan-pro"
-              label="Pro"
-              checked={filters.plan.pro}
-              onChange={(v) => setPlan('pro', v)}
-            />
-          </FilterSection>
-        )}
-
-        <div className="my-4" />
 
         <FilterSection
           title="Style"
@@ -181,31 +151,20 @@ export function FilterSidebar({ filters, onFilterChange, variant = 'default' }) 
 }
 
 export const defaultTemplateFilters = {
-  plan: { free: false, pro: false },
   style: { design: false, minimalist: false },
   logo: { with: false, without: false },
 };
 
 function templateStyleTags(t) {
-  if (Array.isArray(t.style_tags) && t.style_tags.length) return t.style_tags;
+  if (Array.isArray(t.style_tags)) return t.style_tags;
   const s = t.style || 'design';
   return [s];
 }
 
 export function filterTemplatesBySidebar(templates, filters) {
   return templates.filter((t) => {
-    const tier = t.tier || 'free';
     const tags = templateStyleTags(t);
     const hasLogo = t.has_logo === false ? false : true;
-
-    if (SHOW_PLAN_TIER_FILTERS) {
-      const planActive = filters.plan.free || filters.plan.pro;
-      if (planActive) {
-        const match =
-          (filters.plan.free && tier === 'free') || (filters.plan.pro && tier === 'pro');
-        if (!match) return false;
-      }
-    }
 
     const styleActive = filters.style.design || filters.style.minimalist;
     if (styleActive) {

@@ -2,12 +2,25 @@
  * Static SVG art for engine `banner_7` (“Explore your world” travel CTA strip).
  */
 
-export const EXPLORE_WORLD_LEAF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 26 26" style="display:block;width:22px;height:22px;border:0;vertical-align:middle;">
-<ellipse cx="13" cy="13" rx="11" ry="11" fill="#e8d94a" transform="rotate(-35 13 13)"/>
-<ellipse cx="13" cy="13" rx="6" ry="10" fill="#111b42" transform="rotate(-35 13 13)"/>
-<line x1="6" y1="20" x2="20" y2="6" stroke="#e8d94a" stroke-width="1.5" stroke-linecap="round"/>
+/** Subtle route + compass motif under the left-rail wordmark. */
+export const EXPLORE_WORLD_B7_RAIL_DECOR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 16" width="92" height="16" style="display:block;max-width:100%;height:auto;border:0;opacity:0.9;" role="presentation" aria-hidden="true">
+<circle cx="7" cy="8" r="2" fill="#e8d94a" opacity="0.4"/>
+<circle cx="20" cy="8" r="2" fill="#e8d94a" opacity="0.55"/>
+<circle cx="33" cy="8" r="2" fill="#e8d94a" opacity="0.4"/>
+<circle cx="46" cy="8" r="2" fill="#e8d94a" opacity="0.3"/>
+<path d="M54 11 L62 5 L70 11" fill="none" stroke="#e8d94a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+<circle cx="81" cy="8" r="4" fill="none" stroke="#e8d94a" stroke-width="1.2" opacity="0.75"/>
+<line x1="81" y1="3" x2="81" y2="6" stroke="#e8d94a" stroke-width="1.1" stroke-linecap="round"/>
 </svg>`;
 
+/** Plane + dashed trail beside the headline block. */
+export const EXPLORE_WORLD_B7_CENTER_ACCENT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 46" width="28" height="46" style="display:block;border:0;" role="presentation" aria-hidden="true">
+<path d="M14 40 Q9 30 10 20 Q11 12 14 8" fill="none" stroke="#9aacd8" stroke-width="1.25" stroke-dasharray="2.5 3.5" stroke-linecap="round" opacity="0.65"/>
+<path d="M14 7 L21 11.5 L18.5 12.5 L22 16.5 L19.5 17.5 L15.5 13.5 L14 14.5 L12.5 13.5 L8.5 17.5 L6 16.5 L9.5 12.5 L7 11.5 Z" fill="#e8d94a" stroke="#b8a030" stroke-width="0.45"/>
+<circle cx="14" cy="11" r="1.2" fill="#1a2355" opacity="0.35"/>
+</svg>`;
+
+/** Right-rail traveler illustration (or replaced by uploaded hero). */
 export const EXPLORE_WORLD_TRAVELER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 120" width="56" height="74" style="display:block;width:56px;height:74px;max-height:76px;border:0;vertical-align:bottom;">
 <rect x="52" y="82" width="24" height="20" rx="3" fill="#c8a020" stroke="#a07010" stroke-width="1"/>
 <rect x="58" y="79" width="12" height="5" rx="2" fill="#a07010"/>

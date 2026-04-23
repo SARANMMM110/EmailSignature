@@ -277,6 +277,11 @@ export function LoginPage() {
     setError('');
     setGoogleLoading(true);
     try {
+      const r = searchParams.get('ref')?.trim();
+      if (r) {
+        sessionStorage.setItem(REGISTRATION_REF_STORAGE_KEY, r);
+        void useRegistrationRefPreviewStore.getState().syncFromStorage();
+      }
       const { error: err } = await loginWithGoogle(returnPath);
       if (err) setError(err.message || 'Google sign-in failed');
     } finally {

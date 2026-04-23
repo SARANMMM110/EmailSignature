@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button.jsx';
 import { ManualHtmlCopyModal } from '../ui/ManualHtmlCopyModal.jsx';
 import {
-  buildDualImagePasteHtml,
   buildSignaturePasteHtml,
+  buildStackedSignatureBannerPasteHtml,
   copySignatureImageToClipboard,
   copySignaturePasteHtml,
 } from '../../lib/clipboardHelper.js';
@@ -117,15 +117,25 @@ export function InstallModal({ open, onClose, onToast }) {
 
   const exportImageUrl = useEditorStore((s) => s.exportImageUrl);
   const exportBannerImageUrl = useEditorStore((s) => s.exportBannerImageUrl);
+  const exportBannerSlotImageUrls = useEditorStore((s) => s.exportBannerSlotImageUrls);
   const exportGenerating = useEditorStore((s) => s.exportGenerating);
   const exportImageError = useEditorStore((s) => s.exportImageError);
-  const exportImageWarning = useEditorStore((s) => s.exportImageWarning);
   const refreshExportImage = useEditorStore((s) => s.refreshExportImage);
   const generatedHTML = useEditorStore((s) => s.generatedHTML);
   const signatureLink = useEditorStore((s) => String(s.signature?.signature_link || '').trim());
   const bannerLink = useEditorStore((s) =>
     String(s.signature?.banner_config?.link_url || s.signature?.banner_config?.href || '').trim()
   );
+  const secondaryBannerLink = useEditorStore((s) =>
+    String(s.signature?.banner_config?.secondary_link_url || s.signature?.banner_config?.secondary_href || '').trim()
+  );
+
+  const bannerSlotExportUrls = useMemo(() => {
+    const xs = Array.isArray(exportBannerSlotImageUrls) ? exportBannerSlotImageUrls : [];
+    if (xs.length > 0) return xs.map((u) => String(u || '').trim()).filter(Boolean);
+    const one = String(exportBannerImageUrl || '').trim();
+    return one ? [one] : [];
+  }, [exportBannerImageUrl, exportBannerSlotImageUrls]);
 
   const client = CLIENTS.find((c) => c.id === active) || CLIENTS[0];
   const guideText = formatInstallGuide(active, BRAND);
@@ -155,12 +165,23 @@ export function InstallModal({ open, onClose, onToast }) {
     setCopyingImage(true);
     try {
       const url = await resolveExportUrl();
-      const banUrl = String(useEditorStore.getState().exportBannerImageUrl || '').trim();
+      const slotUrls = (() => {
+        const st = useEditorStore.getState();
+        const xs = Array.isArray(st.exportBannerSlotImageUrls) ? st.exportBannerSlotImageUrls : [];
+        if (xs.length > 0) return xs.map((u) => String(u || '').trim()).filter(Boolean);
+        const one = String(st.exportBannerImageUrl || '').trim();
+        return one ? [one] : [];
+      })();
       const frag = String(generatedHTML || '').trim();
+      const bannerSlotPairs = slotUrls.map((imageUrl, idx) => ({
+        imageUrl,
+        linkUrl: idx === 0 ? bannerLink : secondaryBannerLink,
+      }));
       const clip = await copySignatureImageToClipboard(url, {
         signatureLinkUrl: signatureLink,
-        bannerLinkUrl: bannerLink,
-        ...(banUrl ? { bannerImageUrl: banUrl } : {}),
+        ...(slotUrls.length
+          ? { bannerSlotPairs }
+          : {}),
         ...(frag ? { fragmentHtml: frag } : {}),
       });
       onToast?.(
@@ -182,45 +203,56 @@ export function InstallModal({ open, onClose, onToast }) {
     setCopyingHtml(true);
     try {
       let sigUrl = String(exportImageUrl || '').trim();
-      let banUrl = String(exportBannerImageUrl || '').trim();
       if (!sigUrl) {
         await refreshExportImage();
         sigUrl = String(useEditorStore.getState().exportImageUrl || '').trim();
-        banUrl = String(useEditorStore.getState().exportBannerImageUrl || '').trim();
       }
       if (!sigUrl) {
         throw new Error(useEditorStore.getState().exportImageError || 'Signature image is not ready.');
       }
+      const slotUrls = bannerSlotExportUrls;
       const frag = String(generatedHTML || '').trim();
       try {
-        if (sigUrl && banUrl) {
-          await copySignaturePasteHtml(sigUrl, signatureLink, '', banUrl, bannerLink);
+        if (sigUrl && slotUrls.length > 0) {
+          const [firstBan, ...restBan] = slotUrls;
+          await copySignaturePasteHtml(
+            sigUrl,
+            signatureLink,
+            '',
+            firstBan,
+            bannerLink,
+            restBan.length
+              ? restBan.map((u, idx) => ({
+                  imageUrl: u,
+                  linkUrl: idx === 0 ? secondaryBannerLink : '',
+                }))
+              : undefined
+          );
         } else if (frag) {
           await copySignaturePasteHtml('', signatureLink, frag, '', '');
         } else {
           await copySignaturePasteHtml(sigUrl, signatureLink, '', '', '');
         }
       } catch (clipErr) {
-        const manual =
-          sigUrl && banUrl
-            ? buildDualImagePasteHtml(sigUrl, banUrl, {
-                signatureLinkUrl: signatureLink,
-                bannerLinkUrl: bannerLink,
-              })
-            : frag || buildSignaturePasteHtml(sigUrl, signatureLink);
+        const pasteBlocks =
+          sigUrl && slotUrls.length > 0
+            ? [
+                { imageUrl: sigUrl, linkUrl: signatureLink },
+                ...slotUrls.map((u, idx) => ({
+                  imageUrl: u,
+                  linkUrl: idx === 0 ? bannerLink : secondaryBannerLink,
+                })),
+              ]
+            : null;
+        const manual = pasteBlocks
+          ? buildStackedSignatureBannerPasteHtml(pasteBlocks)
+          : frag || buildSignaturePasteHtml(sigUrl, signatureLink);
         setManualCopyHtml(manual);
         setManualCopyOpen(true);
         onToast?.(clipErr?.message || 'Select the HTML in the dialog and copy manually.', 'success');
         return;
       }
-      onToast?.(
-        banUrl
-          ? 'HTML Copied'
-          : frag
-            ? 'HTML Copied'
-            : 'HTML Copied',
-        'success'
-      );
+      onToast?.('HTML Copied', 'success');
       setCopiedKind('html');
       setTimeout(() => setCopiedKind(null), 2200);
     } catch (e) {
@@ -299,16 +331,6 @@ export function InstallModal({ open, onClose, onToast }) {
               </button>
               <p className="absolute bottom-3 text-xs font-medium text-slate-600">Video tutorial (coming soon)</p>
             </div>
-
-            {exportImageWarning ? (
-              <p className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-                <span className="font-semibold">Image URL and sent mail: </span>
-                {exportImageWarning} Optional: set{' '}
-                <code className="rounded bg-amber-100/80 px-1.5 py-0.5 text-xs">VITE_PUBLIC_SIGNATURE_IMAGE_BASE</code>{' '}
-                in the client env to the same public origin so paste HTML rewrites the image URL during
-                local dev.
-              </p>
-            ) : null}
 
             {signatureLink ? (
               <p className="mt-6 rounded-lg border border-blue-100 bg-blue-50/90 px-4 py-3 text-sm text-slate-800">

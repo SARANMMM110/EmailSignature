@@ -91,10 +91,7 @@ export function TemplateGalleryPage() {
             name: displayNameForTemplateRow(t),
             tier: t.tier || 'free',
             style: t.style || 'design',
-            style_tags:
-              Array.isArray(t.style_tags) && t.style_tags.length
-                ? t.style_tags
-                : [t.style || 'design'],
+            style_tags: Array.isArray(t.style_tags) ? t.style_tags : [t.style || 'design'],
             has_logo: t.has_logo === false ? false : true,
             color_count: t.color_count ?? 6,
           }))

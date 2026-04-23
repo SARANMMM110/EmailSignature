@@ -8,6 +8,12 @@ import {
 } from '../lib/templateIds.js';
 import { resolveTemplateKey, TEMPLATE_META, getTemplateHtml } from '../templates/signatureTemplates.js';
 import { BANNER_TEMPLATES, resolveBannerKey } from '../templates/bannerTemplates.js';
+import {
+  EXPLORE_WORLD_B7_CENTER_ACCENT_SVG,
+  EXPLORE_WORLD_B7_RAIL_DECOR_SVG,
+  EXPLORE_WORLD_TRAVELER_SVG,
+} from '../templates/exploreWorldBannerAssets.js';
+import { BOOST_LOGO_LEAF_SVG, BOOST_WELLNESS_SCENE_SVG } from '../templates/boostImproveBannerAssets.js';
 import { T18_BORDER_TOP, T18_BORDER_RIGHT } from '../templates/template18Assets.js';
 import { T18_CARD_HEIGHT_PX } from '../templates/template18Html.js';
 import { T19_CARD_HEIGHT_PX, T19_CARD_WIDTH_PX } from '../templates/template19Html.js';
@@ -322,6 +328,28 @@ function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 470) {
     banner_b1_blobs_uri: svgDataUri(blobSvg),
     banner_b1_blobs_h: String(blobsH),
   };
+}
+
+/**
+ * When `apply_brand_palette_to_cta_banners` is not true on the Handlebars context, palette-tinted
+ * CTA strips use these stops so thumbnails and previews match each template’s “original” art
+ * instead of inheriting the signature layout colors. Choosing a palette in the editor sets the flag.
+ */
+function ctaBannerTintStops(context, variant) {
+  const useBrand = context.apply_brand_palette_to_cta_banners === true;
+  if (useBrand) {
+    return [context.color_1, context.color_2, context.color_3, context.color_4];
+  }
+  if (variant === 'webinar') {
+    return ['#e8630a', '#e8630a', '#94a3b8', '#0f172a'];
+  }
+  if (variant === 'bookCall') {
+    return ['#4d8a6a', '#2f5c45', '#b8e8d0', '#0f172a'];
+  }
+  if (variant === 'needCall') {
+    return ['#1e3a5f', '#2d6a9f', '#94a3b8', '#0f172a'];
+  }
+  return [context.color_1, context.color_2, context.color_3, context.color_4];
 }
 
 /**
@@ -1532,8 +1560,9 @@ function buildTemplate3DecorDataUris(primaryHex) {
   const decoTl = svgDataUri(
     `<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52"><circle cx="0" cy="0" r="52" fill="${teal}"/></svg>`
   );
+  /** Shallow crest (not a full 64px semicircle) so the headshot stays visible when table z-index stacking varies. */
   const decoTopArc = svgDataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64"><circle cx="64" cy="0" r="64" fill="${teal}"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="24" viewBox="0 0 128 24" preserveAspectRatio="none"><path d="M0 24 Q64 2 128 24 Z" fill="${teal}"/></svg>`
   );
   const decoBr = svgDataUri(
     `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 70 70"><circle cx="70" cy="70" r="70" fill="${teal}"/></svg>`
@@ -2255,6 +2284,8 @@ function contextFromEditorPayload(payload) {
     has_t4_company_line2: Boolean(String(t4co.line2 || '').trim()),
     t4_mailto_href,
     ...t3,
+
+    apply_brand_palette_to_cta_banners: d.apply_brand_palette_to_cta_banners === true,
   };
 }
 
@@ -2305,7 +2336,10 @@ function contextFromSignatureRecord(data) {
     templateId: resolveRowTemplateSlug(data),
     form,
     palette,
-    design: { font: design.font },
+    design: {
+      font: design.font,
+      apply_brand_palette_to_cta_banners: design.apply_brand_palette_to_cta_banners,
+    },
   });
 }
 
@@ -2429,6 +2463,9 @@ export function rowToGeneratePayload(row) {
     secondary_field_5: b.secondary_field_5,
     secondary_preset_id: b.secondary_preset_id,
     secondary_banner_image_url: b.secondary_banner_image_url,
+    secondary_cta_strip_logo_url: b.secondary_cta_strip_logo_url,
+    secondary_cta_strip_icon_url: b.secondary_cta_strip_icon_url,
+    secondary_cta_strip_hero_url: b.secondary_cta_strip_hero_url,
   });
 
   const blankPrimaryRow =
@@ -2455,6 +2492,9 @@ export function rowToGeneratePayload(row) {
       field_5: bannerCfg.field_5,
       banner_image_url: bannerCfg.banner_image_url,
       image_url: bannerCfg.image_url,
+      cta_strip_logo_url: bannerCfg.cta_strip_logo_url,
+      cta_strip_icon_url: bannerCfg.cta_strip_icon_url,
+      cta_strip_hero_url: bannerCfg.cta_strip_hero_url,
       ...bannerSecondaryFrom(bannerCfg),
     };
   } else if (
@@ -2477,6 +2517,9 @@ export function rowToGeneratePayload(row) {
       field_5: bundle.banner.field_5,
       banner_image_url: bundle.banner.banner_image_url,
       image_url: bundle.banner.image_url,
+      cta_strip_logo_url: bundle.banner.cta_strip_logo_url,
+      cta_strip_icon_url: bundle.banner.cta_strip_icon_url,
+      cta_strip_hero_url: bundle.banner.cta_strip_hero_url,
       ...bannerSecondaryFrom(bundle.banner),
     };
   }
@@ -2485,7 +2528,10 @@ export function rowToGeneratePayload(row) {
     templateId,
     form,
     palette,
-    design: { font: design.font },
+    design: {
+      font: design.font,
+      apply_brand_palette_to_cta_banners: design.apply_brand_palette_to_cta_banners,
+    },
     banner,
   };
 }
@@ -2526,6 +2572,18 @@ function resolveBannerHeroAssetUrl(raw, rootRelativeFallback) {
   const base = publicAssetBaseFromEnv();
   if (base) return `${base}${rootRelativeFallback}`;
   return BANNER_B9_FALLBACK_HERO;
+}
+
+/** Uploaded CTA strip assets (Explore / Boost) — same resolution rules as {@link resolveBannerHeroAssetUrl}. */
+function resolveCtaStripUploadUrl(raw) {
+  const t = String(raw || '').trim();
+  if (!t) return '';
+  if (/^https?:\/\//i.test(t)) return t;
+  if (t.startsWith('/')) {
+    const base = publicAssetBaseFromEnv();
+    return base ? `${base}${t}` : t;
+  }
+  return ensureHttps(t);
 }
 
 function normalizeWebinarBannerFields(banner) {
@@ -2662,16 +2720,8 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     hbIn.banner_subline_html = escapeTextWithBr(w.field_2);
     hbIn.banner_text = escapeHtml(w.field_3);
     hbIn.banner_min_height = parseBannerMinHeightPx(w.field_4);
-    Object.assign(
-      hbIn,
-      webinarBannerStyleVars(
-        context.color_1,
-        context.color_2,
-        context.color_3,
-        context.color_4,
-        railPx
-      )
-    );
+    const [w1, w2, w3, w4] = ctaBannerTintStops(context, 'webinar');
+    Object.assign(hbIn, webinarBannerStyleVars(w1, w2, w3, w4, railPx));
   }
   if (key === 'banner_2') {
     const headline =
@@ -2684,15 +2734,8 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const rawImg = String(banner.banner_image_url || banner.field_2 || banner.image_url || '').trim();
     hbIn.banner_b2_image =
       rawImg.length > 0 ? ensureHttps(rawImg) : BANNER_B2_DEFAULT_IMAGE;
-    Object.assign(
-      hbIn,
-      bookCallBannerStyleVars(
-        context.color_1,
-        context.color_2,
-        context.color_3,
-        context.color_4
-      )
-    );
+    const [b1, b2, b3, b4] = ctaBannerTintStops(context, 'bookCall');
+    Object.assign(hbIn, bookCallBannerStyleVars(b1, b2, b3, b4));
   }
   if (key === 'banner_3') {
     const left =
@@ -2705,15 +2748,8 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const label = String(banner.field_1 ?? '').trim() || 'Need a call?';
     hbIn.banner_4_label = escapeHtml(label);
     hbIn.banner_text = escapeHtml(String(banner.text ?? '').trim() || 'Pick a slot now');
-    Object.assign(
-      hbIn,
-      needCallBannerStyleVars(
-        context.color_1,
-        context.color_2,
-        context.color_3,
-        context.color_4
-      )
-    );
+    const [n1, n2, n3, n4] = ctaBannerTintStops(context, 'needCall');
+    Object.assign(hbIn, needCallBannerStyleVars(n1, n2, n3, n4));
   }
   if (key === 'banner_5') {
     const personRaw = String(banner.banner_image_url || banner.image_url || '').trim();
@@ -2732,7 +2768,7 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const cta = String(banner.text ?? '').trim() || 'Try For Free!';
     hbIn.banner_b5_cta = escapeHtml(cta);
     hbIn.banner_text = hbIn.banner_b5_cta;
-    hbIn.banner_b5_min_h = 78;
+    hbIn.banner_b5_min_h = personRaw.length > 0 ? 94 : 78;
   }
   if (key === 'banner_6') {
     const panelRaw =
@@ -2742,6 +2778,8 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const cta = String(banner.text ?? '').trim() || 'Get Started';
     hbIn.banner_b6_cta = escapeHtml(cta);
     hbIn.banner_text = hbIn.banner_b6_cta;
+    const scene = String(banner.banner_image_url || banner.image_url || '').trim();
+    hbIn.banner_b6_scene_image = scene ? ensureHttps(scene) : '';
   }
   if (key === 'banner_7') {
     hbIn.banner_b7_brand_small = escapeHtml(String(banner.field_1 ?? '').trim() || 'explore');
@@ -2752,6 +2790,18 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const cta7 = String(banner.text ?? '').trim() || 'Learn More';
     hbIn.banner_b7_cta = escapeHtml(cta7);
     hbIn.banner_text = hbIn.banner_b7_cta;
+    const railLogo = String(banner.cta_strip_logo_url || '').trim();
+    const heroImg = String(banner.cta_strip_hero_url || '').trim();
+    const railSrc = railLogo ? resolveCtaStripUploadUrl(railLogo) : '';
+    const heroSrc = heroImg ? resolveCtaStripUploadUrl(heroImg) : '';
+    hbIn.banner_b7_rail_logo_html = railSrc
+      ? `<img src="${railSrc}" alt="" style="display:block;width:100%;max-width:110px;height:auto;max-height:30px;margin:0 0 4px 0;object-fit:contain;object-position:left center;border:0;line-height:0;" />`
+      : '';
+    hbIn.banner_b7_rail_decor = EXPLORE_WORLD_B7_RAIL_DECOR_SVG;
+    hbIn.banner_b7_center_accent = EXPLORE_WORLD_B7_CENTER_ACCENT_SVG;
+    hbIn.banner_b7_traveler_inner = heroSrc
+      ? `<img src="${heroSrc}" alt="" width="58" style="display:block;width:58px;max-width:58px;height:auto;border:0;vertical-align:bottom;line-height:0;" />`
+      : EXPLORE_WORLD_TRAVELER_SVG;
   }
   if (key === 'banner_8') {
     hbIn.banner_b8_logo_small = escapeHtml(String(banner.field_1 ?? '').trim() || 'Mighty');
@@ -2761,6 +2811,16 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const cta8 = String(banner.text ?? '').trim() || 'Click Here';
     hbIn.banner_b8_cta = escapeHtml(cta8);
     hbIn.banner_text = hbIn.banner_b8_cta;
+    const leafBrandImg = String(banner.cta_strip_logo_url || '').trim();
+    const sceneImg = String(banner.cta_strip_hero_url || '').trim();
+    const leafSrc = leafBrandImg ? resolveCtaStripUploadUrl(leafBrandImg) : '';
+    const sceneSrc = sceneImg ? resolveCtaStripUploadUrl(sceneImg) : '';
+    hbIn.banner_b8_leaf_inner = leafSrc
+      ? `<img src="${leafSrc}" alt="" style="display:block;margin:0 auto;max-width:100%;width:auto;height:auto;max-height:120px;object-fit:contain;object-position:center;border:0;line-height:normal;vertical-align:middle;" />`
+      : BOOST_LOGO_LEAF_SVG;
+    hbIn.banner_b8_scene_inner = sceneSrc
+      ? `<img src="${sceneSrc}" alt="" style="display:block;width:100%;max-width:100%;height:auto;max-height:96px;object-fit:contain;object-position:center;border:0;vertical-align:middle;line-height:0;margin:0 auto;" />`
+      : BOOST_WELLNESS_SCENE_SVG;
   }
   if (key === 'banner_9') {
     hbIn.banner_b9_line1 = escapeHtml(
@@ -2792,11 +2852,9 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     hbIn.banner_b10_business = escapeHtml(String(banner.field_1 ?? '').trim() || 'BUSINESS');
     hbIn.banner_b10_banner = escapeHtml(String(banner.field_2 ?? '').trim() || 'BANNER');
     hbIn.banner_b10_design = escapeHtml(String(banner.field_3 ?? '').trim() || 'DESIGN');
-    const tag10 =
-      String(banner.field_4 ?? '').trim() ||
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit do\neiusmod tempor incididunt.';
-    hbIn.banner_b10_tagline_html = escapeTextWithBr(tag10);
     hbIn.banner_b10_company = escapeHtml(String(banner.field_5 ?? '').trim() || 'COMPANY');
+    const b10Logo = String(banner.banner_image_url || banner.image_url || '').trim();
+    hbIn.banner_b10_logo_img = b10Logo ? ensureHttps(b10Logo) : '';
     const cta10 = String(banner.text ?? '').trim() || 'LEARN MORE';
     hbIn.banner_b10_cta = escapeHtml(cta10);
     hbIn.banner_text = hbIn.banner_b10_cta;
@@ -2805,7 +2863,6 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const sc10 = Math.min(1.05, Math.max(0.72, railRef10 / 728));
     hbIn.banner_b10_fs_bus = Math.max(7, Math.round(8.5 * sc10 * 10) / 10);
     hbIn.banner_b10_fs_title = Math.max(12, Math.round(16 * sc10));
-    hbIn.banner_b10_fs_tag = Math.max(5, Math.round(6.2 * sc10 * 10) / 10);
     hbIn.banner_b10_fs_cta = Math.max(5, Math.round(6.5 * sc10 * 10) / 10);
     hbIn.banner_b10_fs_logo = Math.max(5, Math.round(5.5 * sc10 * 10) / 10);
   }
@@ -2912,6 +2969,9 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
     field_5: editorBanner.field_5,
     banner_image_url: editorBanner.banner_image_url,
     image_url: editorBanner.image_url,
+    cta_strip_logo_url: editorBanner.cta_strip_logo_url,
+    cta_strip_icon_url: editorBanner.cta_strip_icon_url,
+    cta_strip_hero_url: editorBanner.cta_strip_hero_url,
   };
   const primaryInner = tagBannerSlotInner(
     compileBannerInnerHtml(context, primaryBanner, stripW, { blankPlaceholder }),
@@ -2924,7 +2984,7 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
   const sigBlock = `<table role="presentation" data-sig-root="signature" data-sig-part="signature" ${shellOpenAttrs()}><tr><td width="${layoutW}" contenteditable="false" style="padding:0;margin:0;border:0;width:${layoutW}px;max-width:100%;vertical-align:top;">${html}</td></tr></table>`;
   const banShell = (inner, slotIndex = 1, padTop = false) => {
     const tdPad = padTop ? 'padding:10px 0 0 0;margin:0;border:0;' : 'padding:0;margin:0;border:0;';
-    return `<table role="presentation" data-sig-root="${slotIndex === 2 ? 'banner-secondary' : 'banner'}" data-sig-part="banner" data-sig-cta-slot="${slotIndex}" ${shellOpenAttrs()}><tr><td width="${layoutW}" contenteditable="false" align="center" style="${tdPad}width:${layoutW}px;max-width:100%;vertical-align:top;text-align:center;">${inner}</td></tr></table>`;
+    return `<table role="presentation" data-sig-root="${slotIndex === 2 ? 'banner-secondary' : 'banner'}" data-sig-part="banner" data-sig-cta-slot="${slotIndex}" ${shellOpenAttrs()}><tr><td width="${layoutW}" contenteditable="false" align="left" style="${tdPad}width:${layoutW}px;max-width:100%;vertical-align:top;text-align:left;">${inner}</td></tr></table>`;
   };
 
   if (editorSecondaryBannerRenderable(editorBanner, blankPlaceholder)) {
@@ -2944,6 +3004,9 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
       field_5: editorBanner.secondary_field_5,
       banner_image_url: editorBanner.secondary_banner_image_url,
       image_url: editorBanner.secondary_banner_image_url,
+      cta_strip_logo_url: editorBanner.secondary_cta_strip_logo_url,
+      cta_strip_icon_url: editorBanner.secondary_cta_strip_icon_url,
+      cta_strip_hero_url: editorBanner.secondary_cta_strip_hero_url,
     };
     const secHtml = compileBannerInnerHtml(context, secondaryBanner, stripW, { blankPlaceholder });
     if (secHtml) {
@@ -2984,12 +3047,14 @@ export async function generateSignatureHtml(payload, options = {}) {
   const compiled = Handlebars.compile(tpl, { strict: false });
   let html = compiled(context);
 
-  // Do not place <table> directly inside <a> — Gmail can normalize that into duplicate blocks on
-  // paste. Use an inline-block wrapper (span) — div/block <a> wrappers are more likely to break
-  // remote images inside the signature for recipients.
+  // Whole-signature click-through: wrap the compiled layout in one <a> (same pattern as CTA strips).
+  // Do not wrap the root <table> in <span style="display:inline-block"> — <span> only allows phrasing
+  // content; a layout <table> is flow content, so parsers hoist the table out and the <a> stays empty
+  // (clicks on the visible design never hit href). A block-level <a> around the root table is valid
+  // HTML5 and matches banner templates (<a style="display:block"> … inner table … </a>).
   if (context.has_signature_link && context.signature_link && !htmlFragmentHasLinkAnchors(html)) {
     const href = escapeHtml(context.signature_link);
-    html = `<a href="${href}" style="text-decoration:none;color:inherit;"><span contenteditable="false" style="display:inline-block;max-width:100%;margin:0;padding:0;border:0;line-height:normal;">${html}</span></a>`;
+    html = `<a href="${href}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;max-width:100%;color:inherit;line-height:normal;border:0;margin:0;padding:0;outline:none;">${html}</a>`;
   }
 
   const editorBanner = payload.banner;

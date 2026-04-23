@@ -22,6 +22,10 @@ export function normalizePlanId(plan) {
   if (p === 'free') return PLAN_IDS.PERSONAL;
   if (p === 'pro') return PLAN_IDS.ADVANCED;
   if (p === 'business') return PLAN_IDS.ULTIMATE;
+  /** Marketing / legacy labels on registration links or admin CSV */
+  if (p === 'bronze' || p === 'starter' || p === 'basic') return PLAN_IDS.PERSONAL;
+  if (p === 'silver' || p === 'standard') return PLAN_IDS.ADVANCED;
+  if (p === 'gold' || p === 'premium' || p === 'platinum') return PLAN_IDS.ULTIMATE;
   if (p === PLAN_IDS.PERSONAL || p === PLAN_IDS.ADVANCED || p === PLAN_IDS.ULTIMATE) return p;
   return PLAN_IDS.PERSONAL;
 }

@@ -26,6 +26,7 @@ import {
   isLeaveReviewBannerPreset,
   isSeoWhitepaperBannerPreset,
   isGreenGradientCtaBannerPreset,
+  isBookCallBannerPreset,
   bundleRailPxForSignature,
   normalizeSignatureTemplateSlug,
 } from '../../../lib/templateIds.js';
@@ -215,7 +216,9 @@ export function MyInformationTab({ onToast }) {
   const showLogoSection = signatureLayoutSupportsLogo(signature);
 
   const hasBannerCta =
-    Boolean(signature.banner_id) || Boolean(String(bc.link_url || bc.href || '').trim());
+    Boolean(signature.banner_id) ||
+    Boolean(bc.secondary_banner_id) ||
+    Boolean(String(bc.link_url || bc.href || '').trim());
   const isWebinarBanner = isWebinarBannerPreset(bc.preset_id, signature.banner_id);
   const isBlankBanner = isBlankImageBannerPreset(bc.preset_id, signature.banner_id);
   const isDownloadBanner = isDownloadBannerPreset(bc.preset_id, signature.banner_id);
@@ -243,7 +246,7 @@ export function MyInformationTab({ onToast }) {
     !isLeaveReviewBanner &&
     !isSeoWhitepaperBanner &&
     !isGreenGradientCtaBanner &&
-    /book|call/i.test(String(bc.preset_id || ''));
+    isBookCallBannerPreset(bc.preset_id, signature.banner_id);
   const isSimpleBanner =
     !isWebinarBanner &&
     !isBookCallBanner &&
@@ -310,7 +313,7 @@ export function MyInformationTab({ onToast }) {
     !isSecondaryLeaveReview &&
     !isSecondarySeoWhitepaper &&
     !isSecondaryGreenGradientCta &&
-    /book|call/i.test(String(bc.secondary_preset_id || ''));
+    isBookCallBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
 
   const bannerLabelClass = 'mb-1.5 block text-sm font-bold text-slate-800';
 
@@ -351,16 +354,31 @@ export function MyInformationTab({ onToast }) {
       if (!file) return;
       setUploadKind('bannerImg');
       try {
-        const { data } = await uploadAPI.uploadBannerImage(file);
+        const mailchimpSlot = isMailchimpBannerPreset(bc.preset_id, signature?.banner_id);
+        const mindscopeSlot = isMindscopeBannerPreset(bc.preset_id, signature?.banner_id);
+        const businessCitySlot = isBusinessCityBannerPreset(bc.preset_id, signature?.banner_id);
+        const { data } = await uploadAPI.uploadBannerImage(
+          file,
+          mailchimpSlot || mindscopeSlot
+            ? { mode: 'scene' }
+            : businessCitySlot
+              ? { mode: 'mark' }
+              : {}
+        );
         mergeBannerCfg({ banner_image_url: data.url });
-        onToast?.(t('editor.bannerImageUpdatedSlot', { n: 1 }), 'success');
+        onToast?.(
+          businessCitySlot
+            ? t('editor.bannerLogoUpdatedSlot', { n: 1 })
+            : t('editor.bannerImageUpdatedSlot', { n: 1 }),
+          'success'
+        );
       } catch {
         onToast?.('Banner image upload failed', 'error');
       } finally {
         setUploadKind(null);
       }
     },
-    [mergeBannerCfg, onToast, t]
+    [bc.preset_id, mergeBannerCfg, onToast, signature, t]
   );
 
   const bannerImgDrop = useDropzone({
@@ -382,16 +400,44 @@ export function MyInformationTab({ onToast }) {
       if (!file) return;
       setUploadKind('bannerImg2');
       try {
-        const { data } = await uploadAPI.uploadBannerImage(file);
+        const mailchimpSlot2 =
+          Boolean(bc.secondary_banner_id) &&
+          isMailchimpBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
+        const mindscopeSlot2 =
+          Boolean(bc.secondary_banner_id) &&
+          isMindscopeBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
+        const businessCitySlot2 =
+          Boolean(bc.secondary_banner_id) &&
+          isBusinessCityBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
+        const { data } = await uploadAPI.uploadBannerImage(
+          file,
+          mailchimpSlot2 || mindscopeSlot2
+            ? { mode: 'scene' }
+            : businessCitySlot2
+              ? { mode: 'mark' }
+              : {}
+        );
         mergeSecondaryBannerCfg({ secondary_banner_image_url: data.url });
-        onToast?.(t('editor.bannerImageUpdatedSlot', { n: 2 }), 'success');
+        onToast?.(
+          businessCitySlot2
+            ? t('editor.bannerLogoUpdatedSlot', { n: 2 })
+            : t('editor.bannerImageUpdatedSlot', { n: 2 }),
+          'success'
+        );
       } catch {
         onToast?.('Upload failed', 'error');
       } finally {
         setUploadKind(null);
       }
     },
-    [mergeSecondaryBannerCfg, onToast, t]
+    [
+      bc.secondary_banner_id,
+      bc.secondary_preset_id,
+      mergeSecondaryBannerCfg,
+      onToast,
+      signature,
+      t,
+    ]
   );
 
   const secondaryBannerImgDrop = useDropzone({
@@ -422,6 +468,40 @@ export function MyInformationTab({ onToast }) {
         replace: true,
       });
     };
+
+    if (hashId === 'editor-myinfo-banner-2' && !bc.secondary_banner_id) {
+      return (
+        <div className="space-y-5" id="editor-myinfo-banner-2">
+          <button
+            type="button"
+            onClick={goFullMyInfo}
+            className="text-left text-sm font-semibold text-[#2563eb] underline-offset-2 hover:underline"
+          >
+            ← Full My information
+          </button>
+          <div className="scroll-mt-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-800">{t('editor.bannerSlot', { n: 2 })}</p>
+            <p className="mt-2 text-sm text-slate-600">
+              {t('editor.noSecondBannerYetBeforeLink')}{' '}
+              <button
+                type="button"
+                onClick={() => navigate(`/editor/${id}/banners`)}
+                className="font-semibold text-[#3b5bdb] hover:underline"
+              >
+                {t('editor.banners')}
+              </button>
+              {t('editor.noSecondBannerYetAfterLink')}
+            </p>
+          </div>
+          <PhotoCropModal
+            open={cropModalOpen}
+            imageSrc={cropObjectUrl}
+            onClose={closeCropModal}
+            onConfirm={onCroppedPhotoConfirm}
+          />
+        </div>
+      );
+    }
 
     if (hashId === 'editor-myinfo-banner-2' && bc.secondary_banner_id) {
       return (
@@ -479,19 +559,6 @@ export function MyInformationTab({ onToast }) {
         >
           ← Full My information
         </button>
-        {hashId === 'editor-myinfo-banner-2' && !bc.secondary_banner_id ? (
-          <p className="text-sm text-slate-600">
-            {t('editor.noSecondBannerYetBeforeLink')}{' '}
-            <button
-              type="button"
-              onClick={() => navigate(`/editor/${id}/banners`)}
-              className="font-semibold text-[#3b5bdb] hover:underline"
-            >
-              {t('editor.banners')}
-            </button>
-            {t('editor.noSecondBannerYetAfterLink')}
-          </p>
-        ) : null}
         <div
           id="editor-myinfo-banner"
           className="scroll-mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-5 shadow-sm"
@@ -615,15 +682,6 @@ export function MyInformationTab({ onToast }) {
                   </p>
                 ) : null}
               </div>
-              {String(signature.signature_link || '').trim() ? (
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Pasted mail uses HTML with a linked image. The PNG must be hosted at a URL the
-                  recipient&apos;s mail provider can load (not only localhost), or they see a broken
-                  picture while the link still works. Set{' '}
-                  <span className="font-mono text-slate-600">PUBLIC_BASE_URL</span> on your API server to
-                  your public HTTPS origin.
-                </p>
-              ) : null}
               <div
                 className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3"
                 style={{ opacity: badgePlanLocked ? 0.85 : 1 }}
