@@ -70,17 +70,6 @@ export function PrimaryBannerFields({
           <span className={bannerLabelClass}>
             {isBlankBanner ? 'Banner image' : isBusinessCityBanner ? 'Optional logo' : 'Optional banner image'}
           </span>
-          {!isBlankBanner ? (
-            <p className="text-[11px] leading-relaxed text-slate-500">
-              {isMindscopeBanner
-                ? 'Optional right-column photo (fits inside the panel; not forced to a 720×93 strip). Re-upload if an older image still looks like a thin bar.'
-                : isMailchimpBanner
-                  ? 'Optional image fills the orange band at a fixed strip height (52px); wide or tall images are scaled and may crop at the edges. Re-upload after changing upload settings if needed.'
-                  : isBusinessCityBanner 
-                    ? 'Top-right logo (replaces the yellow hex + COMPANY block). Fits the corner with compact sizing.'
-                    : 'Adds a photo to supported templates (book-a-call, download, need-a-call). Images are fitted inside 720×93 without changing the strip layout.'}
-            </p>
-          ) : null}
           <div
             {...bannerImgDrop.getRootProps()}
             className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
