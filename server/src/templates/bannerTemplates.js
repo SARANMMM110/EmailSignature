@@ -38,7 +38,7 @@ export const BANNER_TEMPLATES = {
 <img src="{{{banner_b1_blobs_uri}}}" width="{{banner_rail_w_px}}" height="{{banner_b1_blobs_h}}" alt="" role="presentation" style="display:block;border:0;line-height:0;font-size:0;width:{{banner_rail_w_px}}px;height:{{banner_b1_blobs_h}}px;position:absolute;right:0;top:0;z-index:0;">
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;position:relative;z-index:1;">
 <tr>
-<td valign="middle" width="99%" style="width:99%;max-width:100%;padding:11px 6px 11px 16px;vertical-align:middle;text-align:center;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
+<td valign="middle" align="left" width="99%" style="width:99%;max-width:100%;padding:11px 6px 11px 16px;vertical-align:middle;text-align:left;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
 <p style="margin:0 0 3px;padding:0;color:{{banner_brand_color}};font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;line-height:1.2;">{{banner_brand_label}}</p>
 <p style="margin:0 0 5px;padding:0;color:{{banner_headline_color}};font-size:17px;font-weight:800;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_headline_html}}}</p>
 <p style="margin:0;padding:0;color:{{banner_subline_color}};font-size:10px;font-weight:400;line-height:1.45;mso-line-height-rule:exactly;">{{{banner_subline_html}}}</p>

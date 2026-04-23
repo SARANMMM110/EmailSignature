@@ -89,11 +89,11 @@ export const TEMPLATES = {
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="520" style="width:100%;max-width:520px;border-collapse:collapse;table-layout:fixed;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 {{#if photo_url}}
 <tr>
-  <td width="212" valign="middle" bgcolor="#ffffff" style="background-color:#ffffff;padding:18px 14px 18px 18px;vertical-align:middle;width:212px;max-width:212px;text-align:center;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="center" style="border-collapse:collapse;margin:0 auto;table-layout:fixed;width:100%;">
-      <tr><td align="center" style="padding:0 0 6px 0;font-size:16px;font-weight:700;color:{{primary_color}};line-height:1.25;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{name}}</td></tr>
-      <tr><td align="center" style="padding:0 0 12px 0;font-size:11px;font-weight:400;color:{{company_muted}};line-height:1.45;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{title}}</td></tr>
-      <tr><td align="center" style="padding:0;line-height:0;">{{#if logo_url}}<img src="{{{logo_url}}}" alt="" width="160" style="max-height:28px;max-width:160px;height:auto;width:auto;display:block;border:0;margin:0 auto;">{{else}}{{#if company_name}}<span style="font-size:17px;font-weight:700;color:{{primary_color}};line-height:1.2;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;">{{company_name}}</span>{{/if}}{{/if}}</td></tr>
+  <td width="212" valign="middle" bgcolor="#ffffff" style="background-color:#ffffff;padding:18px 14px 18px 18px;vertical-align:middle;width:212px;max-width:212px;text-align:left;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="left" style="border-collapse:collapse;margin:0;table-layout:fixed;width:100%;">
+      <tr><td align="left" style="padding:0 0 6px 0;font-size:16px;font-weight:700;color:{{primary_color}};line-height:1.25;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{name}}</td></tr>
+      <tr><td align="left" style="padding:0 0 12px 0;font-size:11px;font-weight:400;color:{{company_muted}};line-height:1.45;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{title}}</td></tr>
+      <tr><td align="left" style="padding:0;line-height:0;">{{#if logo_url}}<img src="{{{logo_url}}}" alt="" width="160" style="max-height:28px;max-width:160px;height:auto;width:auto;display:block;border:0;margin:0;">{{else}}{{#if company_name}}<span style="font-size:17px;font-weight:700;color:{{primary_color}};line-height:1.2;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;">{{company_name}}</span>{{/if}}{{/if}}</td></tr>
     </table>
   </td>
   <td width="96" valign="middle" bgcolor="#ffffff" style="background-color:#ffffff;background:linear-gradient(to right,#ffffff 0%,#ffffff 50%,{{primary_color}} 50%,{{primary_color}} 100%);padding:11px 0;width:96px;min-width:96px;max-width:96px;vertical-align:middle;text-align:center;line-height:0;">
@@ -110,11 +110,11 @@ export const TEMPLATES = {
 </tr>
 {{else}}
 <tr>
-  <td width="260" valign="middle" bgcolor="#ffffff" style="background-color:#ffffff;padding:18px 16px;width:260px;max-width:260px;vertical-align:middle;text-align:center;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="center" style="border-collapse:collapse;margin:0 auto;table-layout:fixed;width:100%;">
-    <tr><td align="center" style="padding:0 0 6px 0;font-size:16px;font-weight:700;color:{{primary_color}};line-height:1.25;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{name}}</td></tr>
-      <tr><td align="center" style="padding:0 0 12px 0;font-size:11px;font-weight:400;color:{{company_muted}};line-height:1.45;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{title}}</td></tr>
-      <tr><td align="center" style="padding:0;line-height:0;">{{#if logo_url}}<img src="{{{logo_url}}}" alt="" width="160" style="max-height:28px;max-width:160px;height:auto;width:auto;display:block;border:0;margin:0 auto;">{{else}}{{#if company_name}}<span style="font-size:17px;font-weight:700;color:{{primary_color}};line-height:1.2;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;">{{company_name}}</span>{{/if}}{{/if}}</td></tr>
+  <td width="260" valign="middle" bgcolor="#ffffff" style="background-color:#ffffff;padding:18px 16px;width:260px;max-width:260px;vertical-align:middle;text-align:left;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="left" style="border-collapse:collapse;margin:0;table-layout:fixed;width:100%;">
+    <tr><td align="left" style="padding:0 0 6px 0;font-size:16px;font-weight:700;color:{{primary_color}};line-height:1.25;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{name}}</td></tr>
+      <tr><td align="left" style="padding:0 0 12px 0;font-size:11px;font-weight:400;color:{{company_muted}};line-height:1.45;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{title}}</td></tr>
+      <tr><td align="left" style="padding:0;line-height:0;">{{#if logo_url}}<img src="{{{logo_url}}}" alt="" width="160" style="max-height:28px;max-width:160px;height:auto;width:auto;display:block;border:0;margin:0;">{{else}}{{#if company_name}}<span style="font-size:17px;font-weight:700;color:{{primary_color}};line-height:1.2;font-family:'Montserrat','Poppins','Roboto',Helvetica,Arial,sans-serif;">{{company_name}}</span>{{/if}}{{/if}}</td></tr>
     </table>
   </td>
   <td width="260" valign="middle" align="left" style="background-color:{{primary_color}};padding:16px 14px 16px 14px;width:260px;min-width:200px;vertical-align:middle;text-align:left;">
