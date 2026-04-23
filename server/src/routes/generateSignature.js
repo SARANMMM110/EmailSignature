@@ -33,17 +33,18 @@ function imageUrlUnreachableForEmailRecipients(publicBase) {
 }
 
 /**
- * Prefer `PUPPETEER_EXECUTABLE_PATH` when the file exists; otherwise use Puppeteer's bundled Chromium.
- * Avoids "Browser was not found at the configured executablePath" when production env points at a missing binary.
+ * Resolve which Chrome/Chromium binary to pass to `puppeteer.launch`.
+ * If `PUPPETEER_EXECUTABLE_PATH` points at a missing file, it is **removed from `process.env`** so Puppeteer
+ * does not still read it internally (which would cause "no executable was found" even when we omit `executablePath`).
  */
 function resolvePuppeteerExecutablePath() {
   const fromEnv = String(process.env.PUPPETEER_EXECUTABLE_PATH || '').trim();
   if (fromEnv) {
     if (existsSync(fromEnv)) return fromEnv;
+    delete process.env.PUPPETEER_EXECUTABLE_PATH;
     console.warn(
-      `[generate-signature] PUPPETEER_EXECUTABLE_PATH="${fromEnv}" not found — using Puppeteer bundled browser. Remove or fix this env var on the server.`
+      `[generate-signature] PUPPETEER_EXECUTABLE_PATH="${fromEnv}" not found — removed from env. Using Puppeteer bundled browser (or unset CHROME path). Fix or remove this variable in your host / Docker / PM2 config.`
     );
-    return undefined;
   }
   const fallbacks = [
     '/usr/bin/google-chrome-stable',
