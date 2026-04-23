@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiCopy, FiLogOut, FiSettings, FiTrash2 } from 'react-icons/fi';
+import { FiCopy, FiKey, FiLogOut, FiSettings, FiTrash2 } from 'react-icons/fi';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -8,10 +8,11 @@ import { Input } from '../components/ui/Input.jsx';
 import { Toast } from '../components/ui/Toast.jsx';
 import { useToast } from '../hooks/useToast.js';
 import { agencyAPI } from '../lib/api.js';
-import { PLANS, normalizePlanId } from '../data/plans.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useAuthStore } from '../store/authStore.js';
 import { displayAgencyTitle } from '../lib/agencyDisplay.js';
+import { BRAND_NAME } from '../constants/brand.js';
+import { PLANS } from '../data/plans.js';
 
 const ACCENT = '#7c3aed';
 
@@ -99,11 +100,17 @@ export function AgencyDashboardPage() {
   const [savingName, setSavingName] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createPlan, setCreatePlan] = useState('personal');
+  const [createPlan, setCreatePlan] = useState('advanced');
   const [createLabel, setCreateLabel] = useState('');
   const [createMaxUsers, setCreateMaxUsers] = useState(10);
   const [createExpiresLocal, setCreateExpiresLocal] = useState('');
   const [creating, setCreating] = useState(false);
+
+  const [passwordMember, setPasswordMember] = useState(null);
+  const [newMemberPassword, setNewMemberPassword] = useState('');
+  const [confirmMemberPassword, setConfirmMemberPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordFormError, setPasswordFormError] = useState('');
 
   const load = useCallback(async () => {
     setError('');
@@ -125,25 +132,18 @@ export function AgencyDashboardPage() {
 
   useEffect(() => {
     if (!createOpen) return;
-    setCreatePlan('personal');
+    setCreatePlan('advanced');
     setCreateLabel('');
     setCreateMaxUsers(10);
     setCreateExpiresLocal('');
   }, [createOpen]);
 
-  const activeMembers = useMemo(
-    () => (data?.members || []).filter((m) => m.is_active !== false),
-    [data?.members]
+  const membersList = useMemo(() => data?.members || [], [data?.members]);
+  const activeMemberCount = useMemo(
+    () => membersList.filter((m) => m.is_active !== false).length,
+    [membersList]
   );
-  const memberCount = activeMembers.length;
-  const activeLinks = useMemo(
-    () => (data?.links || []).filter((l) => l.is_active !== false),
-    [data?.links]
-  );
-  const activeLinkCount = activeLinks.length;
   const maxSeats = Number(data?.max_seats) || 0;
-  const seatsUsed = Number(data?.seats_used) || 0;
-  const usagePct = maxSeats > 0 ? Math.min(100, Math.round((seatsUsed / maxSeats) * 100)) : 0;
 
   const openEditName = () => {
     const stored = String(data?.agency_name || '').trim();
@@ -187,7 +187,7 @@ export function AgencyDashboardPage() {
       setCreateLabel('');
       setCreateMaxUsers(10);
       setCreateExpiresLocal('');
-      setCreatePlan('personal');
+      setCreatePlan('advanced');
       await load();
       try {
         await navigator.clipboard.writeText(url);
@@ -231,14 +231,54 @@ export function AgencyDashboardPage() {
     }
   };
 
-  const removeMember = async (memberId) => {
-    if (!window.confirm('Remove this member? Their plan will revert to Personal.')) return;
+  const setMemberActive = async (memberId, nextActive) => {
+    if (!nextActive) {
+      if (
+        !window.confirm(
+          `Deactivate this member? They lose agency access and their plan reverts to ${PLANS.personal.name}. You can turn them active again if you have an open seat.`
+        )
+      ) {
+        return;
+      }
+    } else if (!window.confirm('Reactivate this member? They regain agency access and their invite plan tier.')) {
+      return;
+    }
     try {
-      await agencyAPI.removeMember(memberId);
-      showToast('Member removed', 'success');
+      await agencyAPI.patchMember(memberId, { is_active: nextActive });
+      showToast(nextActive ? 'Member activated' : 'Member deactivated', 'success');
       await load();
     } catch (err) {
-      showToast(err.response?.data?.message || err.message || 'Remove failed', 'error');
+      showToast(err.response?.data?.message || err.message || 'Update failed', 'error');
+    }
+  };
+
+  const openPasswordModal = (m) => {
+    setPasswordFormError('');
+    setNewMemberPassword('');
+    setConfirmMemberPassword('');
+    setPasswordMember(m);
+  };
+
+  const submitMemberPassword = async (e) => {
+    e.preventDefault();
+    setPasswordFormError('');
+    if (newMemberPassword.length < 8) {
+      setPasswordFormError('Password must be at least 8 characters.');
+      return;
+    }
+    if (newMemberPassword !== confirmMemberPassword) {
+      setPasswordFormError('Passwords do not match.');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await agencyAPI.setMemberPassword(passwordMember.member_id, newMemberPassword);
+      showToast('Password updated', 'success');
+      setPasswordMember(null);
+    } catch (err) {
+      setPasswordFormError(err.response?.data?.message || err.message || 'Could not update password.');
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -320,50 +360,13 @@ export function AgencyDashboardPage() {
                 </div>
               </div>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  {
-                    key: 'mem',
-                    value: `${memberCount}/${maxSeats}`,
-                    label: 'Members',
-                    valueClass: 'text-slate-900',
-                  },
-                  {
-                    key: 'tier',
-                    value: PLANS[normalizePlanId(data.owner_plan || profile?.plan)]?.name || PLANS.personal.name,
-                    label: 'Your account plan',
-                    valueClass: 'text-violet-600',
-                  },
-                  {
-                    key: 'links',
-                    value: activeLinkCount,
-                    label: 'Active links',
-                    valueClass: 'text-slate-900',
-                  },
-                  {
-                    key: 'st',
-                    value: data.is_active !== false ? 'Active' : 'Inactive',
-                    label: 'Status',
-                    valueClass: data.is_active !== false ? 'text-emerald-600' : 'text-slate-400',
-                  },
-                ].map((card) => (
-                  <div key={card.key} className={`${cardClass} px-5 py-5 transition hover:shadow-md`}>
-                    <p className={`text-2xl font-extrabold tabular-nums md:text-3xl ${card.valueClass}`}>{card.value}</p>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-500">{card.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className={`${cardClass} mt-8 p-4`}>
-                <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/90">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 transition-all duration-500"
-                    style={{ width: `${usagePct}%` }}
-                  />
+              <div className="mt-8 grid gap-4 sm:max-w-md">
+                <div className={`${cardClass} px-5 py-5 transition hover:shadow-md`}>
+                  <p className="text-2xl font-extrabold tabular-nums text-slate-900 md:text-3xl">
+                    {activeMemberCount}/{maxSeats}
+                  </p>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-500">Active members</p>
                 </div>
-                <p className="mt-2 text-center text-xs font-medium text-slate-500">
-                  {seatsUsed} / {maxSeats} seats used
-                </p>
               </div>
 
               <section className="mt-12">
@@ -372,7 +375,7 @@ export function AgencyDashboardPage() {
                     <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Member invite links</h2>
                     <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600">
                       Use <strong className="font-semibold text-slate-800">Generate invite link</strong> to choose a
-                      Tier&nbsp;1 plan (Personal, Advanced, or Ultimate) for that invite. Each URL is unique and only
+                      Tier&nbsp;1 plan ({PLANS.personal.name}, {PLANS.advanced.name}, or {PLANS.ultimate.name}) for that invite. Each URL is unique and only
                       applies the plan you pick when you generate it — copy invite URLs from the table below.
                     </p>
                   </div>
@@ -392,38 +395,26 @@ export function AgencyDashboardPage() {
                     <table className="min-w-full text-left text-sm">
                       <thead className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold uppercase tracking-wide text-slate-500">
                         <tr>
-                          <th className="px-4 py-3 pl-5">Tier</th>
-                          <th className="px-4 py-3">Link</th>
+                          <th className="px-4 py-3 pl-5">Link</th>
                           <th className="px-4 py-3">Uses</th>
-                          <th className="px-4 py-3">Status</th>
                           <th className="px-4 py-3 pr-5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {(data.links || []).length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="px-6 py-14 text-center text-sm font-medium text-slate-500">
+                            <td colSpan={3} className="px-6 py-14 text-center text-sm font-medium text-slate-500">
                               No invite links yet — use <strong className="text-slate-700">Generate invite link</strong>{' '}
                               above to pick a plan and create your first URL.
                             </td>
                           </tr>
                         ) : (
                           (data.links || []).map((link) => {
-                            const pid = normalizePlanId(link.assigned_plan);
-                            const planMeta = PLANS[pid] || PLANS.personal;
                             const active = link.is_active !== false;
                             const url = joinUrl(link.token);
                             return (
                               <tr key={link.id || link.token} className="text-slate-800 transition hover:bg-slate-50/80">
-                                <td className="px-4 py-3.5 pl-5 align-middle">
-                                  <span
-                                    className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm"
-                                    style={{ background: planMeta.color || ACCENT }}
-                                  >
-                                    {planMeta.name}
-                                  </span>
-                                </td>
-                                <td className="max-w-[min(52vw,420px)] px-4 py-3.5 align-middle">
+                                <td className="max-w-[min(52vw,420px)] px-4 py-3.5 pl-5 align-middle">
                                   <code
                                     className="block truncate font-mono text-[11px] text-slate-600"
                                     title={url}
@@ -434,17 +425,6 @@ export function AgencyDashboardPage() {
                                 <td className="whitespace-nowrap px-4 py-3.5 align-middle font-semibold tabular-nums text-slate-700">
                                   {link.used_count}
                                   {link.max_users != null ? ` / ${link.max_users}` : ''}
-                                </td>
-                                <td className="px-4 py-3.5 align-middle">
-                                  <span
-                                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                                      active
-                                        ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80'
-                                        : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
-                                    }`}
-                                  >
-                                    {active ? 'Active' : 'Inactive'}
-                                  </span>
                                 </td>
                                 <td className="px-4 py-3.5 pr-5 text-right align-middle">
                                   <div className="inline-flex gap-1.5">
@@ -480,7 +460,7 @@ export function AgencyDashboardPage() {
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Agency members</h2>
                 <p className="mt-1 text-sm text-slate-600">People who joined through your invite links.</p>
                 <div className={`${cardClass} mt-4 overflow-hidden`}>
-                  {activeMembers.length === 0 ? (
+                  {membersList.length === 0 ? (
                     <div className="flex flex-col items-center bg-slate-50/30 px-6 py-16 text-center">
                       <div className="max-w-md rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-10 shadow-sm">
                         <p className="text-sm font-semibold text-slate-800">No members yet</p>
@@ -496,17 +476,19 @@ export function AgencyDashboardPage() {
                           <tr>
                             <th className="px-4 py-3 pl-5">Member</th>
                             <th className="px-4 py-3">Email</th>
-                            <th className="px-4 py-3">Plan</th>
                             <th className="px-4 py-3">Joined</th>
-                            <th className="px-4 py-3 pr-5 text-right" aria-label="Actions" />
+                            <th className="px-4 py-3">Active</th>
+                            <th className="px-4 py-3 pr-5 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
-                          {activeMembers.map((m) => {
-                            const pid = normalizePlanId(m.assigned_plan);
-                            const planMeta = PLANS[pid] || PLANS.personal;
+                          {membersList.map((m) => {
+                            const isMemberActive = m.is_active !== false;
                             return (
-                              <tr key={m.member_id} className="text-slate-800 transition hover:bg-slate-50/80">
+                              <tr
+                                key={m.member_id}
+                                className={`text-slate-800 transition hover:bg-slate-50/80 ${!isMemberActive ? 'opacity-70' : ''}`}
+                              >
                                 <td className="px-4 py-3.5 pl-5">
                                   <div className="flex items-center gap-3">
                                     {m.avatar_url ? (
@@ -519,7 +501,7 @@ export function AgencyDashboardPage() {
                                       <div
                                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm ring-2 ring-white"
                                         style={{
-                                          background: `linear-gradient(135deg, ${planMeta.color || ACCENT}, #4338ca)`,
+                                          background: `linear-gradient(135deg, ${ACCENT}, #4338ca)`,
                                         }}
                                       >
                                         {memberInitials(m.full_name, m.email)}
@@ -534,23 +516,33 @@ export function AgencyDashboardPage() {
                                   </div>
                                 </td>
                                 <td className="max-w-[200px] truncate px-4 py-3.5 text-slate-600">{m.email || '—'}</td>
-                                <td className="px-4 py-3.5">
-                                  <span
-                                    className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm"
-                                    style={{ background: planMeta.color || ACCENT }}
-                                  >
-                                    {planMeta.name}
-                                  </span>
-                                </td>
                                 <td className="px-4 py-3.5 text-slate-600">{formatJoined(m.joined_at)}</td>
+                                <td className="px-4 py-3.5">
+                                  <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={isMemberActive}
+                                    aria-label={isMemberActive ? 'Member active' : 'Member inactive'}
+                                    onClick={() => void setMemberActive(m.member_id, !isMemberActive)}
+                                    className={`relative h-7 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                      isMemberActive ? 'bg-emerald-500' : 'bg-slate-300'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`absolute top-0.5 left-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ease-out ${
+                                        isMemberActive ? 'translate-x-[1.125rem]' : 'translate-x-0'
+                                      }`}
+                                    />
+                                  </button>
+                                </td>
                                 <td className="px-4 py-3.5 pr-5 text-right">
                                   <button
                                     type="button"
-                                    onClick={() => void removeMember(m.member_id)}
-                                    className="rounded-lg border border-transparent px-2 py-1 text-sm font-medium text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                    aria-label="Remove member"
+                                    onClick={() => openPasswordModal(m)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
                                   >
-                                    Remove
+                                    <FiKey className="h-3.5 w-3.5" aria-hidden />
+                                    Change password
                                   </button>
                                 </td>
                               </tr>
@@ -620,7 +612,7 @@ export function AgencyDashboardPage() {
       >
         <form id="agency-create-link-form" onSubmit={submitCreateLink} className="space-y-4">
           <p className="text-sm leading-relaxed text-slate-600">
-            Choose the SignatureBuilder tier for people who join through this URL. You can create multiple links with
+            Choose the {BRAND_NAME} tier for people who join through this URL. You can create multiple links with
             different plans or seat limits.
           </p>
           <div>
@@ -636,9 +628,9 @@ export function AgencyDashboardPage() {
               onChange={(e) => setCreatePlan(e.target.value)}
               className="w-full rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              <option value="personal">Personal</option>
-              <option value="advanced">Advanced</option>
-              <option value="ultimate">Ultimate</option>
+              <option value="personal">{PLANS.personal.name}</option>
+              <option value="advanced">{PLANS.advanced.name}</option>
+              <option value="ultimate">{PLANS.ultimate.name}</option>
             </select>
             <p className="mt-1.5 text-xs text-slate-500">
               Team members who join through this link receive this Tier 1 plan.
@@ -676,6 +668,48 @@ export function AgencyDashboardPage() {
               Your local date and time. Leave empty for no expiration. The server stores it as UTC (ISO).
             </p>
           </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(passwordMember)}
+        onClose={() => !passwordSaving && setPasswordMember(null)}
+        title={passwordMember ? `New password — ${passwordMember.full_name || passwordMember.email || 'Member'}` : 'New password'}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" disabled={passwordSaving} onClick={() => setPasswordMember(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="agency-member-password-form" disabled={passwordSaving}>
+              {passwordSaving ? 'Saving…' : 'Update password'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="agency-member-password-form" onSubmit={submitMemberPassword} className="space-y-4">
+          {passwordFormError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{passwordFormError}</p>
+          ) : null}
+          <p className="text-sm text-slate-600">
+            Sets this member&apos;s sign-in password for their account (email login). Share the new password with them
+            securely.
+          </p>
+          <Input
+            label="New password"
+            type="password"
+            autoComplete="new-password"
+            value={newMemberPassword}
+            onChange={(e) => setNewMemberPassword(e.target.value)}
+            minLength={8}
+          />
+          <Input
+            label="Confirm password"
+            type="password"
+            autoComplete="new-password"
+            value={confirmMemberPassword}
+            onChange={(e) => setConfirmMemberPassword(e.target.value)}
+            minLength={8}
+          />
         </form>
       </Modal>
 

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { Router } from 'express';
 import { supabaseAdmin } from '../services/supabase.js';
-import { normalizePlanId, PLAN_ORDER } from '../data/plans.js';
+import { normalizePlanId, PLAN_ORDER, PLAN_IDS } from '../data/plans.js';
 
 const router = Router();
 
@@ -168,6 +168,193 @@ router.delete('/registration-links/:id', async (req, res) => {
     return res.status(204).send();
   } catch (e) {
     console.error('[admin/registration-links DELETE]', e);
+    return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
+  }
+});
+
+// ─── Admin-provisioned app users (main product accounts from Agencies page) ─
+
+router.get('/app-users', async (_req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED' });
+    }
+    const { data, error } = await supabaseAdmin
+      .from('admin_provisioned_app_users')
+      .select('id, user_id, email, full_name, is_disabled, created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return res.json({ users: data || [] });
+  } catch (e) {
+    console.error('[admin/app-users GET]', e);
+    return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
+  }
+});
+
+/** Create a Supabase Auth app user (main product) with Gold tier (`advanced`) on `profiles`. */
+router.post('/app-users', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED' });
+    }
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const username = String(req.body?.username || '').trim();
+    const password = String(req.body?.password || '');
+    if (!username || username.length < 2) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Username must be at least 2 characters.' });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid email is required.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Password must be at least 8 characters.' });
+    }
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: username },
+    });
+
+    if (authError) {
+      const msg = String(authError.message || '');
+      if (/already|registered|exists/i.test(msg) || authError.status === 422) {
+        return res.status(409).json({ error: 'DUPLICATE', message: 'An account with this email already exists.' });
+      }
+      console.error('[admin/app-users POST] auth', authError);
+      return res.status(400).json({ error: 'AUTH_ERROR', message: msg || 'Could not create user.' });
+    }
+
+    const userId = authData.user?.id;
+    if (!userId) {
+      return res.status(500).json({ error: 'SERVER_ERROR', message: 'User id missing after create.' });
+    }
+
+    const planUpdatedAt = new Date().toISOString();
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        plan: PLAN_IDS.ADVANCED,
+        plan_updated_at: planUpdatedAt,
+        full_name: username,
+      })
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('[admin/app-users POST] profile', profileError);
+      return res.status(500).json({
+        error: 'PROFILE_ERROR',
+        message: 'User was created but the profile plan could not be set. Fix manually in Supabase.',
+      });
+    }
+
+    const { error: regErr } = await supabaseAdmin.from('admin_provisioned_app_users').insert({
+      user_id: userId,
+      email,
+      full_name: username,
+      is_disabled: false,
+    });
+    if (regErr) {
+      console.error('[admin/app-users POST] registry', regErr);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return res.status(500).json({
+        error: 'REGISTRY_ERROR',
+        message:
+          regErr.message?.includes('does not exist') || regErr.code === '42P01'
+            ? 'Database migration missing: apply 058_admin_provisioned_app_users.sql (admin_provisioned_app_users).'
+            : 'Could not record the new user; creation was rolled back.',
+      });
+    }
+
+    return res.status(201).json({
+      user: { id: userId, email: authData.user.email, full_name: username, plan: PLAN_IDS.ADVANCED },
+    });
+  } catch (e) {
+    console.error('[admin/app-users POST]', e);
+    return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
+  }
+});
+
+router.patch('/app-users/:userId', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED' });
+    }
+    const userId = String(req.params.userId || '').trim();
+    if (!userId) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing user id.' });
+    }
+    if (typeof req.body?.is_disabled !== 'boolean') {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Body must include is_disabled (boolean).' });
+    }
+    const disabled = req.body.is_disabled;
+
+    const { data: row, error: fe } = await supabaseAdmin
+      .from('admin_provisioned_app_users')
+      .select('id, user_id, is_disabled')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (fe) throw fe;
+    if (!row) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'User is not in the provisioned list.' });
+    }
+
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      ban_duration: disabled ? '876600h' : 'none',
+    });
+    if (authErr) {
+      console.error('[admin/app-users PATCH] auth', authErr);
+      return res.status(400).json({
+        error: 'AUTH_ERROR',
+        message: authErr.message || 'Could not update sign-in status.',
+      });
+    }
+
+    const { data: updated, error: ue } = await supabaseAdmin
+      .from('admin_provisioned_app_users')
+      .update({ is_disabled: disabled })
+      .eq('id', row.id)
+      .select('id, user_id, email, full_name, is_disabled, created_at')
+      .single();
+    if (ue) throw ue;
+    return res.json({ user: updated });
+  } catch (e) {
+    console.error('[admin/app-users PATCH]', e);
+    return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
+  }
+});
+
+router.delete('/app-users/:userId', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED' });
+    }
+    const userId = String(req.params.userId || '').trim();
+    if (!userId) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing user id.' });
+    }
+    const { data: row, error: fe } = await supabaseAdmin
+      .from('admin_provisioned_app_users')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (fe) throw fe;
+    if (!row) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'User is not in the provisioned list.' });
+    }
+
+    const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (delErr) {
+      console.error('[admin/app-users DELETE] auth', delErr);
+      return res.status(400).json({
+        error: 'AUTH_ERROR',
+        message: delErr.message || 'Could not delete user.',
+      });
+    }
+    return res.status(204).send();
+  } catch (e) {
+    console.error('[admin/app-users DELETE]', e);
     return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
   }
 });

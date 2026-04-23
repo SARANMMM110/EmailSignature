@@ -32,12 +32,12 @@ const FAQ = [
     a: 'Yes — Gmail, Outlook, Yahoo, Apple Mail, and Spark.',
   },
   {
-    q: 'Does Personal include copy to clipboard and PNG export?',
-    a: 'Yes. Personal includes server-rendered signature PNGs for Copy to clipboard and Copy HTML code. Advanced and Ultimate add more layouts, premium CTA banners, higher limits, and hosted image URL options where configured.',
+    q: 'Does Bronze include copy to clipboard and PNG export?',
+    a: 'Yes. Bronze includes server-rendered signature PNGs for Copy to clipboard and Copy HTML code. Gold and Silver add more layouts, premium CTA banners, higher limits, and hosted image URL options where configured.',
   },
   {
     q: 'Is there a free trial?',
-    a: 'Start on Personal and explore the editor. Upgrade in one click whenever you hit a limit.',
+    a: 'Start on Bronze and explore the editor. Upgrade in one click whenever you hit a limit.',
   },
 ];
 
@@ -188,13 +188,13 @@ export function PricingPage() {
                       Feature
                     </th>
                     <th className="border-b border-slate-200 px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-600">
-                      Personal
+                      {PLANS.personal.name}
                     </th>
                     <th className="border-b border-slate-200 bg-blue-50/50 px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-[#1d4ed8]">
-                      Advanced
+                      {PLANS.advanced.name}
                     </th>
                     <th className="border-b border-slate-200 px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-600">
-                      Ultimate
+                      {PLANS.ultimate.name}
                     </th>
                   </tr>
                 </thead>
@@ -258,7 +258,7 @@ export function PricingPage() {
         <section className="mx-auto mt-20 max-w-xl rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/30 p-8 text-center shadow-lg shadow-slate-900/[0.04] sm:p-10">
           <h2 className="text-xl font-bold text-slate-900">Not sure yet?</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Start on Personal and move up when you need more layouts, banners, or exports. Limits are always visible in
+            Start on Bronze and move up when you need more layouts, banners, or exports. Limits are always visible in
             the app.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">

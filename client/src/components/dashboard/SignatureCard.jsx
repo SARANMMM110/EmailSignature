@@ -18,6 +18,7 @@ import { bundleRailPxForSignature, isImageTemplateSignature } from '../../lib/te
 import { useI18n } from '../../hooks/useI18n.js';
 import { usePlanGate } from '../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../store/upgradeModalStore.js';
+import { PLANS } from '../../data/plans.js';
 
 function formatDashboardDate(iso, lang) {
   if (!iso) return '—';
@@ -335,7 +336,7 @@ export function SignatureCard({
     if (!gate.can('png_rich_clipboard_render')) {
       showUpgradeModal({
         feature: 'png_rich_clipboard_render',
-        title: 'PNG Clipboard — Advanced Feature',
+        title: `PNG Clipboard — ${PLANS.advanced.name} feature`,
         message: 'Copy your signature as a high-quality PNG image directly to clipboard.',
       });
       return false;

@@ -4,8 +4,10 @@ import { FiCheckCircle } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth.js';
 import { GoogleIcon } from '../components/icons/GoogleIcon.jsx';
 import { consumeAgencyInviteLink, getAgencyJoinPreview, getAgencySetupPreview } from '../lib/api.js';
-import { clearStoredRegistrationRef } from '../lib/registrationRef.js';
+import { clearStoredRegistrationRef, REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
 import { PLANS, normalizePlanId } from '../data/plans.js';
+import { BrandLockup } from '../components/BrandLockup.jsx';
 
 function parseAgencyInvites(location, searchParams) {
   let setupToken = '';
@@ -13,7 +15,7 @@ function parseAgencyInvites(location, searchParams) {
 
   const fromQ = searchParams.get('from');
   if (fromQ === 'agency-setup') {
-    setupToken = searchParams.get('token')?.trim() || '';
+    setupToken = searchParams.get('token')?.trim() || searchParams.get('tier_token')?.trim() || '';
   } else if (fromQ === 'agency-join') {
     joinLink = searchParams.get('agency_link')?.trim() || '';
   }
@@ -22,7 +24,7 @@ function parseAgencyInvites(location, searchParams) {
     const from = location.state?.from;
     if (from?.pathname === '/agency-setup' && from.search) {
       const q = new URLSearchParams(String(from.search).replace(/^\?/, ''));
-      setupToken = q.get('token')?.trim() || '';
+      setupToken = q.get('token')?.trim() || q.get('tier_token')?.trim() || '';
     }
     if (from?.pathname === '/join' && from.search) {
       const q = new URLSearchParams(String(from.search).replace(/^\?/, ''));
@@ -33,6 +35,8 @@ function parseAgencyInvites(location, searchParams) {
   if (!setupToken && !joinLink) {
     if (searchParams.get('agency_link')?.trim()) {
       joinLink = searchParams.get('agency_link').trim();
+    } else if (searchParams.get('tier_token')?.trim()) {
+      setupToken = searchParams.get('tier_token').trim();
     } else if (searchParams.get('token')?.trim()) {
       setupToken = searchParams.get('token').trim();
     }
@@ -68,6 +72,10 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const refParam = searchParams.get('ref')?.trim() || '';
+  const regRefPlanId = useRegistrationRefPreviewStore((s) => s.planId);
+  const regRefPlanName = useRegistrationRefPreviewStore((s) => s.planName);
+  const regRefLoading = useRegistrationRefPreviewStore((s) => s.loading);
   const { session, loading, loginWithGoogle, loginWithEmail } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,6 +117,13 @@ export function LoginPage() {
   useEffect(() => {
     if (joinLink) clearStoredRegistrationRef();
   }, [joinLink]);
+
+  useEffect(() => {
+    if (refParam) {
+      sessionStorage.setItem(REGISTRATION_REF_STORAGE_KEY, refParam);
+    }
+    void useRegistrationRefPreviewStore.getState().syncFromStorage();
+  }, [refParam]);
 
   useEffect(() => {
     if (!joinLink) {
@@ -173,7 +188,7 @@ export function LoginPage() {
       const tier = agencyTierLabel(setupPreview?.agency_type);
       const valid = setupPreview?.is_valid && !setupPreview?.expired && !setupPreview?.already_used;
       const invalidMsg = setupPreview?.already_used
-        ? 'This agency invitation has already been used.'
+        ? 'This agency purchase link has reached its activation limit. Ask your administrator for a new tier link if you need another organization.'
         : setupPreview?.expired
           ? 'This agency invitation has expired.'
           : setupPreview && !setupPreview.is_valid
@@ -196,7 +211,7 @@ export function LoginPage() {
     }
     if (joinLink) {
       const planId = joinPreview?.assigned_plan ? normalizePlanId(joinPreview.assigned_plan) : 'personal';
-      const planName = PLANS[planId]?.name || 'Personal';
+      const planName = PLANS[planId]?.name || PLANS.personal.name;
       const agencyName = joinPreview?.agency_name?.trim() || 'the team you were invited to';
       const valid = joinPreview?.is_valid;
       const invalidMsg =
@@ -224,8 +239,39 @@ export function LoginPage() {
           : null,
       };
     }
+    if (!setupToken && !joinLink && (refParam || regRefLoading || regRefPlanId)) {
+      const valid = Boolean(regRefPlanId);
+      const storedRef =
+        typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(REGISTRATION_REF_STORAGE_KEY)?.trim() : '';
+      const invalidMsg =
+        !regRefLoading && !valid && (refParam || storedRef)
+          ? 'This signup invite is not valid anymore (or it expired). You can still sign in; your plan stays as it is until you use a valid invite.'
+          : null;
+      return {
+        kind: 'registration_ref',
+        show: true,
+        valid,
+        invalidMsg,
+        planLine: valid
+          ? `After you sign in, your account will be set to the ${regRefPlanName || regRefPlanId} plan from this invite.`
+          : regRefLoading
+            ? 'Checking your invite link…'
+            : null,
+        joinLine: valid ? 'Your plan in the app will match this invite as soon as sign-in completes.' : null,
+      };
+    }
     return { show: false };
-  }, [setupToken, joinLink, setupPreview, joinPreview, invitePreviewLoading]);
+  }, [
+    setupToken,
+    joinLink,
+    setupPreview,
+    joinPreview,
+    invitePreviewLoading,
+    refParam,
+    regRefPlanId,
+    regRefPlanName,
+    regRefLoading,
+  ]);
 
   const handleGoogle = async () => {
     setError('');
@@ -267,7 +313,7 @@ export function LoginPage() {
       <div className="mx-auto w-full max-w-[420px]">
         <div className="mb-10 text-center">
           <Link to="/" className="inline-block text-2xl font-bold tracking-tight text-slate-900">
-            Signature<span className="text-blue-600">Builder</span>
+            <BrandLockup />
           </Link>
           <p className="mt-2 text-sm text-slate-600">Sign in to manage your email signatures</p>
         </div>
@@ -277,13 +323,17 @@ export function LoginPage() {
             className={`mb-6 flex gap-3 rounded-xl px-4 py-4 text-white shadow-md ${
               inviteBanner.valid === false && inviteBanner.invalidMsg
                 ? 'bg-gradient-to-br from-amber-700 to-orange-600'
-                : 'bg-gradient-to-br from-amber-500 to-orange-500'
+                : inviteBanner.kind === 'registration_ref'
+                  ? 'bg-gradient-to-br from-emerald-600 to-teal-600'
+                  : 'bg-gradient-to-br from-amber-500 to-orange-500'
             }`}
             role="status"
           >
             <FiCheckCircle className="mt-0.5 h-6 w-6 shrink-0 text-white/95" aria-hidden />
             <div className="min-w-0 text-left">
-              <p className="text-sm font-bold tracking-tight">Registration link active</p>
+              <p className="text-sm font-bold tracking-tight">
+                {inviteBanner.kind === 'registration_ref' ? 'Plan invite active' : 'Registration link active'}
+              </p>
               {inviteBanner.invalidMsg ? (
                 <p className="mt-1 text-sm font-medium text-white/95">{inviteBanner.invalidMsg}</p>
               ) : (

@@ -7,6 +7,7 @@ import { LandingSignatureIframe } from '../components/landing/LandingSignatureIf
 import { LandingTemplateShowcase } from '../components/landing/LandingTemplateShowcase.jsx';
 import { LandingPaletteDemoDark } from '../components/landing/LandingPaletteDemoDark.jsx';
 import { ScrollReveal } from '../components/landing/ScrollReveal.jsx';
+import { BRAND_NAME } from '../constants/brand.js';
 
 function LogoMark({ className = '', inverted = false }) {
   return (
@@ -115,7 +116,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens when I change my brand colors?',
-    a: 'Pick a new palette in the editor — your live preview and saved signature update instantly. Duplicate signatures on Advanced or Ultimate if you need different brands side by side.',
+    a: 'Pick a new palette in the editor — your live preview and saved signature update instantly. Duplicate signatures on Gold or Silver if you need different brands side by side.',
   },
   {
     q: 'Can I use my own Figma design?',
@@ -123,7 +124,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Which plan should I start on?',
-    a: 'Most people start on Personal (up to 3 signatures and 5 layouts). Upgrade to Advanced when you want CTA banners, custom palettes, PNG export, or to hide the “Made with” badge.',
+    a: 'Most people start on Bronze (up to 3 signatures and 5 layouts). Upgrade to Gold when you want CTA banners, custom palettes, PNG export, or to hide the “Made with” badge.',
   },
   {
     q: 'How do I add the signature to Gmail?',
@@ -224,7 +225,8 @@ export function LandingPage() {
           <Link to="/" className="sb-landing-nav-logo relative z-10 flex min-w-0 items-center gap-2.5">
             <LogoMark />
             <span className="truncate text-base font-semibold tracking-tight sm:text-lg">
-              Signature<span style={{ color: 'var(--sb-color-accent)' }}>Studio</span>
+              Signature{' '}
+              <span style={{ color: 'var(--sb-color-accent)' }}>Studio</span>
             </span>
           </Link>
           <div className="pointer-events-none absolute inset-x-0 hidden items-center justify-center md:flex">
@@ -756,7 +758,7 @@ export function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <p className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--sb-color-accent)]">Pricing</p>
             <h2 className="mx-auto mt-3 text-center text-[32px] font-normal lg:text-[38px]" style={serif}>
-              Personal, Advanced, and Ultimate
+              {`${PLANS.personal.name}, ${PLANS.advanced.name}, and ${PLANS.ultimate.name}`}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-[var(--gray-600)]">
               Every plan includes curated email-safe layouts, live preview, and install guides for Gmail, Outlook, and more.
@@ -994,7 +996,7 @@ export function LandingPage() {
               <Link to="/" className="flex items-center gap-2">
                 <LogoMark inverted className="!h-8 !w-8 !text-xs" />
                 <span className="text-lg font-semibold text-white">
-                  Signature<span className="text-blue-400">Studio</span>
+                  Signature <span className="text-blue-400">Studio</span>
                 </span>
               </Link>
               <p className="mt-4 text-sm leading-relaxed text-[var(--gray-500)]">
@@ -1051,7 +1053,9 @@ export function LandingPage() {
           </div>
           <div className="mt-12 border-t border-[var(--gray-800)] pt-8">
             <div className="flex flex-col items-center justify-between gap-4 text-xs text-[var(--gray-500)] sm:flex-row">
-              <p>© 2024 SignatureStudio. All rights reserved.</p>
+              <p>
+                © {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.
+              </p>
               <p>Made with ♥ for email professionals worldwide</p>
             </div>
           </div>

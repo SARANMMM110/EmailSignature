@@ -316,6 +316,10 @@ export const agencyAPI = {
 
   /** Members */
   getMembers: () => api.get('agency/members'),
+  patchMember: (memberId, body) =>
+    api.patch(`agency/members/${encodeURIComponent(String(memberId).trim())}`, body),
+  setMemberPassword: (memberId, password) =>
+    api.post(`agency/members/${encodeURIComponent(String(memberId).trim())}/password`, { password }),
   removeMember: (memberId) =>
     api.delete(`agency/members/${encodeURIComponent(String(memberId).trim())}`),
 

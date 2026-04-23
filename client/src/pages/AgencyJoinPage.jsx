@@ -7,6 +7,7 @@ import { clearStoredRegistrationRef } from '../lib/registrationRef.js';
 import { PLANS, normalizePlanId } from '../data/plans.js';
 import { Toast } from '../components/ui/Toast.jsx';
 import { useToast } from '../hooks/useToast.js';
+import { BrandLockup } from '../components/BrandLockup.jsx';
 
 export function AgencyJoinPage() {
   const navigate = useNavigate();
@@ -163,7 +164,7 @@ export function AgencyJoinPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/80 px-4 py-12">
       <div className="mx-auto w-full max-w-[440px]">
         <Link to="/" className="mb-8 inline-block text-lg font-bold tracking-tight text-slate-900">
-          Signature<span className="text-blue-600">Builder</span>
+          <BrandLockup />
         </Link>
 
         <div

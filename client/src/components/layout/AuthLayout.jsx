@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
+import { BrandLockup } from '../BrandLockup.jsx';
 
 export function AuthLayout({ children, title, subtitle }) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <Link to="/" className="text-lg font-semibold text-blue-600">
-          Email Signature Builder
+        <Link to="/" className="text-lg font-semibold text-slate-900">
+          <BrandLockup />
         </Link>
       </header>
       <main className="flex flex-1 items-center justify-center p-6">

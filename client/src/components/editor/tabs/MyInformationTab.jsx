@@ -8,6 +8,8 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { useI18n } from '../../../hooks/useI18n.js';
 import { usePlanGate } from '../../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
+import { BRAND_NAME } from '../../../constants/brand.js';
+import { PLANS } from '../../../data/plans.js';
 import {
   isImageTemplateSignature,
   signatureLayoutSupportsLogo,
@@ -577,7 +579,7 @@ export function MyInformationTab({ onToast }) {
                   <span className="text-sm font-medium text-slate-800">Link on signature</span>
                   {!canWholeSigLink ? (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-900">
-                      Advanced
+                      {PLANS.advanced.name}
                     </span>
                   ) : null}
                 </div>
@@ -599,7 +601,7 @@ export function MyInformationTab({ onToast }) {
                           feature: 'whole_sig_clickthrough_url',
                           requiredPlan: 'advanced',
                           title: 'Clickable signature',
-                          message: 'Makes the entire signature clickable. Available on Advanced and Ultimate.',
+                          message: `Makes the entire signature clickable. Available on ${PLANS.advanced.name} and ${PLANS.ultimate.name}.`,
                         })
                       }
                     >
@@ -609,7 +611,7 @@ export function MyInformationTab({ onToast }) {
                 </div>
                 {!canWholeSigLink ? (
                   <p className="text-xs text-slate-400">
-                    Makes the entire signature clickable. Available on Advanced and Ultimate.
+                    {`Makes the entire signature clickable. Available on ${PLANS.advanced.name} and ${PLANS.ultimate.name}.`}
                   </p>
                 ) : null}
               </div>
@@ -628,7 +630,7 @@ export function MyInformationTab({ onToast }) {
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Toggle
-                    label='Show "Made with SignatureBuilder" badge'
+                    label={`Show "Made with ${BRAND_NAME}" badge`}
                     checked={badgePlanLocked ? true : signature.show_badge !== false}
                     disabled={badgePlanLocked}
                     onChange={(v) => {
@@ -636,7 +638,7 @@ export function MyInformationTab({ onToast }) {
                         showUpgradeModal({
                           feature: 'hide_made_with_badge',
                           requiredPlan: 'advanced',
-                          message: 'Upgrade to Advanced to hide the SignatureBuilder badge.',
+                          message: `Upgrade to ${PLANS.advanced.name} to hide the ${BRAND_NAME} badge.`,
                         });
                         return;
                       }
@@ -645,13 +647,13 @@ export function MyInformationTab({ onToast }) {
                   />
                   {badgePlanLocked ? (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-900">
-                      Required on Personal
+                      {`Required on ${PLANS.personal.name}`}
                     </span>
                   ) : null}
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
                   {badgePlanLocked
-                    ? 'Upgrade to Advanced to remove branding.'
+                    ? `Upgrade to ${PLANS.advanced.name} to remove branding.`
                     : 'Optional branding below your signature.'}
                 </p>
               </div>

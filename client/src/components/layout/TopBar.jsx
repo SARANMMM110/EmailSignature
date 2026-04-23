@@ -4,6 +4,8 @@ import { Button } from '../ui/Button.jsx';
 import { useAuthStore } from '../../store/authStore.js';
 import { getPlan } from '../../data/plans.js';
 import { effectiveTier1PlanId } from '../../lib/effectiveTier1Plan.js';
+import { BrandLockup } from '../BrandLockup.jsx';
+import { useRegistrationRefPreviewStore } from '../../store/registrationRefPreviewStore.js';
 
 function PlanBadge({ planId }) {
   const meta = getPlan(planId);
@@ -50,6 +52,7 @@ export function TopBar({ onSignOut }) {
   const isAgencyOwner = useAuthStore((s) => s.isAgencyOwner);
   const isAgencyMember = useAuthStore((s) => s.isAgencyMember);
   const agencyInfo = useAuthStore((s) => s.agencyInfo);
+  const pendingRegPlanId = useRegistrationRefPreviewStore((s) => s.planId);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -69,7 +72,7 @@ export function TopBar({ onSignOut }) {
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
       <div className="flex items-center gap-6">
         <Link to="/dashboard" className="font-semibold text-slate-900">
-          Signature<span className="text-blue-600">Builder</span>
+          <BrandLockup />
         </Link>
         <nav className="hidden gap-4 text-sm text-slate-600 sm:flex">
           <Link to="/dashboard" className="hover:text-slate-900">
@@ -106,7 +109,9 @@ export function TopBar({ onSignOut }) {
             <div className="border-b border-slate-100 px-4 pb-3">
               <p className="truncate text-xs font-semibold text-slate-900">{user?.email}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {profile ? <PlanBadge planId={effectiveTier1PlanId(profile)} /> : null}
+                {profile ? (
+                  <PlanBadge planId={effectiveTier1PlanId(profile, { pendingRegistrationPlanId: pendingRegPlanId || undefined })} />
+                ) : null}
                 {showAgencyBadge ? (
                   <AgencyBadgePill isOwner={isAgencyOwner} agencyType={agencyInfo?.agency_type} />
                 ) : null}

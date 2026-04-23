@@ -4,6 +4,7 @@ import { adminApi, setAdminToken } from '../../lib/adminApi.js';
 
 export function AdminAccountPage() {
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -18,6 +19,7 @@ export function AdminAccountPage() {
       .then(({ data }) => {
         setUsername(data?.username || '');
         setNewUsername(data?.username || '');
+        setDisplayName(data?.display_name || '');
       })
       .catch(() => setError('Could not load account.'));
   }, []);
@@ -48,6 +50,7 @@ export function AdminAccountPage() {
       }
       setUsername(data.username);
       setNewUsername(data.username);
+      if (data.display_name != null) setDisplayName(data.display_name);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -82,6 +85,18 @@ export function AdminAccountPage() {
           {message ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
               {message}
+            </div>
+          ) : null}
+
+          {displayName ? (
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                Display name
+              </label>
+              <p className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-800">
+                {displayName}
+              </p>
+              <p className="mt-1.5 text-xs text-slate-500">Shown on agency tier links you create. Contact support to change it.</p>
             </div>
           ) : null}
 

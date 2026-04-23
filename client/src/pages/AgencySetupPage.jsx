@@ -3,6 +3,7 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { getAgencySetupPreview, agencyAPI } from '../lib/api.js';
 import { Toast } from '../components/ui/Toast.jsx';
+import { BrandLockup } from '../components/BrandLockup.jsx';
 import { useToast } from '../hooks/useToast.js';
 
 function IconBuilding({ className = 'h-14 w-14 text-blue-600' }) {
@@ -19,11 +20,15 @@ function IconBuilding({ className = 'h-14 w-14 text-blue-600' }) {
 
 export function AgencySetupPage() {
   const [searchParams] = useSearchParams();
-  const token = useMemo(() => searchParams.get('token')?.trim() || '', [searchParams]);
+  const token = useMemo(
+    () => searchParams.get('token')?.trim() || searchParams.get('tier_token')?.trim() || '',
+    [searchParams]
+  );
   const session = useAuthStore((s) => s.session);
   const loading = useAuthStore((s) => s.loading);
   const initialized = useAuthStore((s) => s.initialized);
   const isAgencyOwner = useAuthStore((s) => s.isAgencyOwner);
+  const isAgencyMember = useAuthStore((s) => s.isAgencyMember);
 
   const { toast, showToast, dismiss } = useToast();
   const [preview, setPreview] = useState(null);
@@ -64,18 +69,25 @@ export function AgencySetupPage() {
       showToast('Agency account activated!', 'success');
       setDone(true);
     } catch (err) {
+      const status = err.response?.status;
       const code = err.response?.data?.error;
       const msg = err.response?.data?.message || err.message || 'Activation failed.';
-      if (code === 'TOKEN_EXPIRED' || err.response?.status === 410) {
+      if (code === 'TOKEN_EXPIRED' || status === 410) {
         showToast('This agency invitation has expired', 'error');
-      } else if (code === 'TOKEN_ALREADY_USED' || err.response?.status === 409) {
-        if (msg.toLowerCase().includes('already')) {
-          showToast('You already have an agency account', 'error');
-        } else {
-          showToast('This invitation has already been used', 'error');
-        }
-      } else if (err.response?.status === 404) {
+      } else if (code === 'TOKEN_EXHAUSTED') {
+        showToast(msg || 'This link has reached its activation limit.', 'error');
+      } else if (code === 'ALREADY_HAS_AGENCY') {
+        showToast(msg || 'You already have an agency account.', 'error');
+      } else if (code === 'ALREADY_IN_AGENCY') {
+        showToast(
+          msg ||
+            'Leave your current agency in Account settings before you can activate a new agency from this link.',
+          'error'
+        );
+      } else if (code === 'TOKEN_NOT_FOUND' || status === 404) {
         showToast('Invalid or inactive invitation', 'error');
+      } else if (status === 409) {
+        showToast(msg, 'error');
       } else {
         showToast(msg, 'error');
       }
@@ -99,6 +111,7 @@ export function AgencySetupPage() {
     if (token) {
       loginQs.set('from', 'agency-setup');
       loginQs.set('token', token);
+      loginQs.set('tier_token', token);
     }
     const loginSearch = loginQs.toString() ? `?${loginQs.toString()}` : '';
     return (
@@ -126,7 +139,7 @@ export function AgencySetupPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-16">
         <div className="mx-auto w-full max-w-[480px]">
           <Link to="/" className="mb-10 inline-block text-lg font-bold tracking-tight text-slate-900">
-            Signature<span className="text-blue-600">Builder</span>
+            <BrandLockup />
           </Link>
           <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
             <p className="text-sm font-medium text-slate-600">You already have an agency account.</p>
@@ -149,7 +162,7 @@ export function AgencySetupPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-16">
       <div className="mx-auto w-full max-w-[480px]">
         <Link to="/" className="mb-10 inline-block text-lg font-bold tracking-tight text-slate-900">
-          Signature<span className="text-blue-600">Builder</span>
+          <BrandLockup />
         </Link>
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50">
@@ -163,7 +176,26 @@ export function AgencySetupPage() {
                     : 'Sign in to activate your agency account from this link.'}
                 </p>
                 <p className="mt-2 text-xs font-medium text-white/85">
-                  {typeLabel} · capacity <span className="font-bold text-white">{seatsLabel}</span>
+                  {typeLabel} · up to <span className="font-bold text-white">{preview?.max_seats ?? '—'}</span> seats
+                  after you activate · owner link{' '}
+                  <span className="font-bold text-white">
+                    {preview?.owner_link_total == null
+                      ? `${preview?.owner_link_used ?? 0} (unlimited)`
+                      : `${preview?.owner_link_used ?? 0}/${preview.owner_link_total}`}
+                  </span>
+                </p>
+              </div>
+            ) : null}
+            {isAgencyMember && !done ? (
+              <div className="mb-6 w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+                <p className="font-semibold">You&apos;re already a member of another agency</p>
+                <p className="mt-1 text-xs leading-relaxed text-amber-900/95">
+                  This link creates a new agency <strong className="font-semibold">you</strong> own. Leave your current
+                  team first in{' '}
+                  <Link to="/settings" className="font-semibold text-amber-950 underline hover:no-underline">
+                    Account settings
+                  </Link>
+                  , then return here to activate.
                 </p>
               </div>
             ) : null}
@@ -205,7 +237,7 @@ export function AgencySetupPage() {
                   ) : preview && !preview.is_valid ? (
                     <p className="mt-2 text-xs font-medium text-amber-700">
                       {preview.already_used
-                        ? 'This invitation has already been used.'
+                        ? 'This purchase link has reached the maximum number of agency activations. Ask your administrator for a new link if you need another organization.'
                         : preview.expired
                           ? 'This agency invitation has expired.'
                           : 'This invitation is not valid.'}
@@ -214,7 +246,9 @@ export function AgencySetupPage() {
                 </div>
                 <button
                   type="button"
-                  disabled={submitting || previewLoading || (preview && !preview.is_valid)}
+                  disabled={
+                    submitting || previewLoading || (preview && !preview.is_valid) || isAgencyMember
+                  }
                   onClick={() => void activate()}
                   className="mt-8 w-full rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >

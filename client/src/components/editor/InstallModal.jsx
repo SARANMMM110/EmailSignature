@@ -12,8 +12,10 @@ import { useEditorStore } from '../../store/editorStore.js';
 import { formatInstallGuide } from '../../content/installClientGuides.js';
 import { usePlanGate } from '../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../store/upgradeModalStore.js';
+import { BRAND_NAME } from '../../constants/brand.js';
+import { PLANS } from '../../data/plans.js';
 
-const BRAND = 'SignatureBuilder';
+const BRAND = BRAND_NAME;
 
 const CLIENTS = [
   { id: 'gmail', name: 'Gmail' },
@@ -145,7 +147,7 @@ export function InstallModal({ open, onClose, onToast }) {
     if (!gate.can('png_rich_clipboard_render')) {
       showUpgradeModal({
         feature: 'png_rich_clipboard_render',
-        title: 'PNG Clipboard — Advanced Feature',
+        title: `PNG Clipboard — ${PLANS.advanced.name} feature`,
         message: 'Copy your signature as a high-quality PNG image directly to clipboard.',
       });
       return;

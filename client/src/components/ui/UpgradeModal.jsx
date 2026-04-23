@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PLANS, PLAN_ORDER, PLAN_IDS, normalizePlanId, minPlanForFeature } from '../../data/plans.js';
 import { useUpgradeModalStore } from '../../store/upgradeModalStore.js';
 import { usePlanGate } from '../../hooks/usePlanGate.js';
+import { BRAND_NAME } from '../../constants/brand.js';
 
 const FEATURE_HEADLINE = {
   max_active_signatures: 'More active signatures',
@@ -15,7 +16,7 @@ const FEATURE_HEADLINE = {
   whole_sig_clickthrough_url: 'Clickable signature',
   png_rich_clipboard_render: 'PNG clipboard export',
   hosted_png_image_url_flow: 'Hosted image URL',
-  hide_made_with_badge: 'Remove SignatureBuilder branding',
+  hide_made_with_badge: `Remove ${BRAND_NAME} branding`,
   media_upload_limit_mb: 'Larger uploads',
 };
 
@@ -35,7 +36,7 @@ const ULTIMATE_BULLETS = [
   '20+ layout templates (all future layouts)',
   '10 CTA banner templates',
   '25MB media uploads',
-  'Everything in Advanced, plus room to scale',
+  `Everything in ${PLANS.advanced.name}, plus room to scale`,
 ];
 
 function planCardsToShow(requiredPlanId, currentPlanId) {
@@ -107,7 +108,9 @@ export function UpgradeModal() {
 
           <div className="mt-6">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              {effectiveRequired === 'ultimate' ? 'What you get with Ultimate' : 'What you get with Advanced'}
+              {effectiveRequired === 'ultimate'
+                ? `What you get with ${PLANS.ultimate.name}`
+                : `What you get with ${PLANS.advanced.name}`}
             </p>
             <ul className="mt-3 space-y-2 text-sm text-slate-700">
               {(effectiveRequired === 'ultimate' ? ULTIMATE_BULLETS : ADVANCED_BULLETS).map((line) => (

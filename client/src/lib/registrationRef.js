@@ -8,4 +8,9 @@ export function clearStoredRegistrationRef() {
   } catch {
     /* ignore */
   }
+  queueMicrotask(() => {
+    import('../store/registrationRefPreviewStore.js')
+      .then((m) => m.useRegistrationRefPreviewStore.getState().clear())
+      .catch(() => {});
+  });
 }

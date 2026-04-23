@@ -43,7 +43,7 @@ export function AdminRegistrationLinksPage() {
   const [listError, setListError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [planId, setPlanId] = useState('personal');
+  const [planId, setPlanId] = useState('advanced');
   const [maxUses, setMaxUses] = useState('1000');
   const [expiresLocal, setExpiresLocal] = useState('');
   const [createError, setCreateError] = useState('');
@@ -106,7 +106,7 @@ export function AdminRegistrationLinksPage() {
         setShowCreate(false);
         setMaxUses('1000');
         setExpiresLocal('');
-        setPlanId('personal');
+        setPlanId('advanced');
         showToast('Invite link created');
       }
     } catch (err) {

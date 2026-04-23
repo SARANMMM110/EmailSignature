@@ -8,6 +8,7 @@ import {
   FiArrowLeftCircle,
 } from 'react-icons/fi';
 import { clearAdminToken } from '../../lib/adminApi.js';
+import { BrandLockup } from '../BrandLockup.jsx';
 
 const navCls = ({ isActive }) =>
   `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
@@ -32,7 +33,9 @@ export function AdminSidebar() {
             S
           </span>
           <span className="leading-tight">
-            <span className="block font-semibold tracking-tight text-white">SignatureBuilder</span>
+            <span className="block font-semibold tracking-tight text-white">
+              <BrandLockup accentClassName="text-indigo-200" />
+            </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300/90">Control</span>
           </span>
         </Link>

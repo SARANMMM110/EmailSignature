@@ -24,7 +24,7 @@ export function normalizePlanId(plan) {
 export const PLANS = {
   personal: {
     id: 'personal',
-    name: 'Personal',
+    name: 'Bronze',
     limits: {
       max_active_signatures: 3,
       max_saved_custom_palettes: 0,
@@ -52,7 +52,7 @@ export const PLANS = {
   },
   advanced: {
     id: 'advanced',
-    name: 'Advanced',
+    name: 'Gold',
     limits: {
       max_active_signatures: 10,
       max_saved_custom_palettes: 5,
@@ -80,7 +80,7 @@ export const PLANS = {
   },
   ultimate: {
     id: 'ultimate',
-    name: 'Ultimate',
+    name: 'Silver',
     limits: {
       max_active_signatures: Infinity,
       max_saved_custom_palettes: Infinity,

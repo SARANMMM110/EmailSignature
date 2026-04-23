@@ -19,6 +19,7 @@ import { palettesAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
 import { getPlan } from '../data/plans.js';
 import { effectiveTier1PlanId } from '../lib/effectiveTier1Plan.js';
 import { usePlanGate } from '../hooks/usePlanGate.js';
+import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
 import { normalizeLang } from '../i18n/appStrings.js';
 import { useAuthStore } from '../store/authStore.js';
 import { useEditorStore } from '../store/editorStore.js';
@@ -128,6 +129,7 @@ function DropZoneArea({ getRootProps, getInputProps, isDragActive, previewUrl, e
 export function SettingsPage() {
   const { t } = useI18n();
   const gate = usePlanGate();
+  const pendingRegPlanId = useRegistrationRefPreviewStore((s) => s.planId);
   const { user, profile, updateProfile, logout, isAgencyMember, agencyInfo } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -285,7 +287,9 @@ export function SettingsPage() {
     multiple: false,
   });
 
-  const planMeta = getPlan(effectiveTier1PlanId(profile));
+  const planMeta = getPlan(
+    effectiveTier1PlanId(profile, { pendingRegistrationPlanId: pendingRegPlanId || undefined })
+  );
   const planLabel = planMeta.name;
   const isPaidPlan = planMeta.id === 'advanced' || planMeta.id === 'ultimate';
 

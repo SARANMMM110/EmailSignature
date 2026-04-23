@@ -10,11 +10,27 @@ function activeMemberAssignedPlan(profile) {
 }
 
 /**
- * Tier-1 plan for UI: if the user has an active `agency_members` row, use its `assigned_plan`
- * (invite tier). That can disagree with `profiles.plan` when redeem/join races or legacy data.
- * Otherwise use the profile row (and dev override metadata when present).
+ * Tier used for entitlements (feature gates, limits) — profile / agency assignment only,
+ * not a signup `?ref=` that has not been redeemed yet.
  */
-export function effectiveTier1PlanId(profile) {
+export function entitlementTier1PlanId(profile) {
+  const fromMembership = activeMemberAssignedPlan(profile);
+  if (fromMembership) return fromMembership;
+  if (profile?._devPlanUiOverride?.databasePlan != null) {
+    return normalizePlanId(profile._devPlanUiOverride.databasePlan);
+  }
+  return normalizePlanId(profile?.plan || 'personal');
+}
+
+/**
+ * Tier-1 plan for UI badges (sidebar, settings label, etc.).
+ * Pending `?ref=` registration invite wins first so the app matches the link the user followed; ref is
+ * cleared after redeem or skip. Then agency member assigned tier, then dev override, then `profiles.plan`.
+ * Feature limits use {@link entitlementTier1PlanId} instead (no pending-ref override).
+ */
+export function effectiveTier1PlanId(profile, opts = {}) {
+  const pending = opts.pendingRegistrationPlanId;
+  if (pending) return normalizePlanId(pending);
   const fromMembership = activeMemberAssignedPlan(profile);
   if (fromMembership) return fromMembership;
   if (profile?._devPlanUiOverride?.databasePlan != null) {

@@ -4,9 +4,15 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiLock, FiUser, FiArrowRight } from 'react-icons/fi';
 import { getApiOrigin } from '../../lib/api.js';
 import { adminApi, setAdminToken, getAdminToken } from '../../lib/adminApi.js';
+import { BrandLockup } from '../../components/BrandLockup.jsx';
 
-const DEMO_USER = 'admin';
-const DEMO_PASS = 'AdminDemo!2026';
+const DEMO_ACCOUNTS = [
+  ['admin', 'AdminDemo!2026'],
+  // ['saran', 'Saran123'],
+  // ['just', 'Just123'],
+  // ['vineet', 'Vineet123'],
+  // ['frank', 'Frank123'],
+];
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
@@ -80,7 +86,9 @@ export function AdminLoginPage() {
               S
             </span>
             <span>
-              <span className="block text-xl font-semibold tracking-tight text-white">SignatureBuilder</span>
+              <span className="block text-xl font-semibold tracking-tight text-white">
+                <BrandLockup accentClassName="text-indigo-200" />
+              </span>
               <span className="mt-1 block text-xs font-bold uppercase tracking-[0.25em] text-indigo-300/90">
                 Admin console
               </span>
@@ -88,11 +96,16 @@ export function AdminLoginPage() {
           </Link>
           <p className="mt-4 text-sm text-slate-400">Sign in with your admin username and password</p>
           {import.meta.env.DEV ? (
-            <p className="mx-auto mt-4 max-w-sm rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-3 text-left text-xs leading-relaxed text-slate-400 backdrop-blur-sm">
-              <span className="font-semibold text-slate-300">Demo</span> — user{' '}
-              <code className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-indigo-200">{DEMO_USER}</code> / pass{' '}
-              <code className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-indigo-200">{DEMO_PASS}</code>
-            </p>
+            <div className="mx-auto mt-4 max-w-sm rounded-xl border border-slate-700/80 bg-slate-900/60 px-4 py-3 text-left text-xs leading-relaxed text-slate-400 backdrop-blur-sm">
+              <p className="font-semibold text-slate-300">Local demo logins</p>
+              <ul className="mt-2 space-y-1 font-mono text-[11px] text-indigo-200/95">
+                {DEMO_ACCOUNTS.map(([u, p]) => (
+                  <li key={u}>
+                    <span className="text-slate-500">{u}</span> / {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
         </div>
 

@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import { getPlan, planHasAccess, minPlanForFeature } from '../data/plans.js';
-import { effectiveTier1PlanId } from '../lib/effectiveTier1Plan.js';
+import { entitlementTier1PlanId } from '../lib/effectiveTier1Plan.js';
 
 /**
  * Returns gate helpers based on the current user's plan.
  */
 export function usePlanGate() {
   const profile = useAuthStore((s) => s.profile);
-  const userPlanId = effectiveTier1PlanId(profile);
+  const userPlanId = entitlementTier1PlanId(profile);
   const userPlan = getPlan(userPlanId);
 
   return useMemo(

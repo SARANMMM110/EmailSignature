@@ -9,7 +9,7 @@ export function SupportFab() {
   })();
   const href =
     raw ||
-    'mailto:hello@signaturebuilder.io?subject=Support%20%E2%80%94%20SignatureBuilder';
+    'mailto:hello@signaturebuilder.io?subject=Support%20%E2%80%94%20Signature%20Studio';
   const isMailto = /^mailto:/i.test(href);
   const label = isMailto ? 'Contact support' : 'Help & support';
   return (

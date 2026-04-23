@@ -17,7 +17,7 @@ import { TEMPLATE_20_MARKUP } from './template20Html.js';
 const UUID_RE_TEMPLATE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const BADGE =
-  '{{#if show_badge}}<table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;"><tr><td style="padding-top:6px;font-size:7px;color:#94a3b8;font-family:{{font_family}};">Made with SignatureBuilder</td></tr></table>{{/if}}';
+  '{{#if show_badge}}<table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;"><tr><td style="padding-top:6px;font-size:7px;color:#94a3b8;font-family:{{font_family}};">Made with Signature Studio</td></tr></table>{{/if}}';
 
 /** Gmail/outlook-safe contact row (table cells, no flex). */
 const rowEmail = `<tr>

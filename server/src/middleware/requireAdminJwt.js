@@ -11,7 +11,7 @@ export function requireAdminJwt(req, res, next) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Admin session required.' });
     }
     const payload = verifyAdminToken(token);
-    if (payload.typ !== 'admin') {
+    if (payload.typ !== 'admin' || !payload.sub) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Invalid admin session.' });
     }
     req.adminAuth = payload;

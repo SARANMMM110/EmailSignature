@@ -4,6 +4,8 @@ import { useAuth } from '../hooks/useAuth.js';
 import { GoogleIcon } from '../components/icons/GoogleIcon.jsx';
 import { getPublicRegistrationLinkPreview } from '../lib/api.js';
 import { REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { BrandLockup } from '../components/BrandLockup.jsx';
+import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -24,6 +26,10 @@ export function SignupPage() {
     if (refParam) {
       sessionStorage.setItem(REGISTRATION_REF_STORAGE_KEY, refParam);
     }
+  }, [refParam]);
+
+  useEffect(() => {
+    void useRegistrationRefPreviewStore.getState().syncFromStorage();
   }, [refParam]);
 
   useEffect(() => {
@@ -98,7 +104,7 @@ export function SignupPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-12">
         <div className="mx-auto w-full max-w-[420px] text-center">
           <Link to="/" className="inline-block text-2xl font-bold tracking-tight text-slate-900">
-            Signature<span className="text-blue-600">Builder</span>
+            <BrandLockup />
           </Link>
           <div className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">
@@ -126,7 +132,7 @@ export function SignupPage() {
       <div className="mx-auto w-full max-w-[420px]">
         <div className="mb-10 text-center">
           <Link to="/" className="inline-block text-2xl font-bold tracking-tight text-slate-900">
-            Signature<span className="text-blue-600">Builder</span>
+            <BrandLockup />
           </Link>
           <p className="mt-2 text-sm text-slate-600">Create your account in seconds</p>
         </div>

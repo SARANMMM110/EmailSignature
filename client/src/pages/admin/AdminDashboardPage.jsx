@@ -91,13 +91,15 @@ export function AdminDashboardPage() {
                 plan you attach to each link.
               </p>
             </div>
-            <Link
-              to="/admin/registration-links"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800"
-            >
-              Manage links
-              <FiArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <Link
+                to="/admin/registration-links"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800"
+              >
+                Manage links
+                <FiArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

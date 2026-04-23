@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import api from '../lib/api.js';
 import { normalizePlanId } from '../data/plans.js';
-import { effectiveTier1PlanId } from '../lib/effectiveTier1Plan.js';
-import { REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { entitlementTier1PlanId } from '../lib/effectiveTier1Plan.js';
+import { clearStoredRegistrationRef, REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
 
 /**
  * After sign-in / sign-up: redeem a stored `?ref=` code once, then align `profiles.plan`
@@ -16,6 +17,7 @@ export function RegistrationRedeemBootstrap() {
     if (!userId) return undefined;
     let cancelled = false;
     (async () => {
+      await useRegistrationRefPreviewStore.getState().syncFromStorage();
       const raw = sessionStorage.getItem(REGISTRATION_REF_STORAGE_KEY);
       const code = raw?.trim();
 
@@ -25,9 +27,9 @@ export function RegistrationRedeemBootstrap() {
           const { data } = await api.post('me/redeem-registration-link', { code });
           redeemPayload = data;
           if (!cancelled && data?.ok) {
-            sessionStorage.removeItem(REGISTRATION_REF_STORAGE_KEY);
+            clearStoredRegistrationRef();
           } else if (!cancelled && data?.error === 'SKIP_AGENCY_USER') {
-            sessionStorage.removeItem(REGISTRATION_REF_STORAGE_KEY);
+            clearStoredRegistrationRef();
           }
         } catch (e) {
           const err = e.response?.data?.error;
@@ -35,7 +37,7 @@ export function RegistrationRedeemBootstrap() {
             await api.post('me/sync-registration-plan').catch(() => {});
           }
           if (!cancelled && ['ALREADY_REDEEMED', 'INVALID_CODE', 'LINK_EXHAUSTED', 'SKIP_AGENCY_USER'].includes(err)) {
-            sessionStorage.removeItem(REGISTRATION_REF_STORAGE_KEY);
+            clearStoredRegistrationRef();
           }
         }
       }
@@ -48,7 +50,7 @@ export function RegistrationRedeemBootstrap() {
           !cancelled &&
           redeemPayload?.ok === true &&
           redeemPayload.plan_id &&
-          effectiveTier1PlanId(useAuthStore.getState().profile) !== normalizePlanId(redeemPayload.plan_id)
+          entitlementTier1PlanId(useAuthStore.getState().profile) !== normalizePlanId(redeemPayload.plan_id)
         ) {
           await new Promise((r) => setTimeout(r, 450));
           if (!cancelled) await useAuthStore.getState().fetchProfile();

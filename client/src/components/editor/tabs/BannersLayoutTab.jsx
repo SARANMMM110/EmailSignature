@@ -38,6 +38,7 @@ import { resolvePaletteColorsFromDesign } from '../../../lib/resolveDesignPalett
 import { useI18n } from '../../../hooks/useI18n.js';
 import { usePlanGate } from '../../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
+import { PLANS } from '../../../data/plans.js';
 
 const BANNER_DOC_W = 470;
 const BANNER_DOC_H = 136;
@@ -449,19 +450,21 @@ export function BannersLayoutTab({ onToast }) {
           <div className="text-3xl" aria-hidden>
             📢
           </div>
-          <h3 className="mt-3 text-base font-bold text-slate-900">CTA Banners — Advanced and Ultimate</h3>
+          <h3 className="mt-3 text-base font-bold text-slate-900">{`CTA Banners — ${PLANS.advanced.name} and ${PLANS.ultimate.name}`}</h3>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
-            Add clickable call-to-action banners below your signature. This feature is included on Advanced (5 templates)
-            and Ultimate (10 templates).
+            Add clickable call-to-action banners below your signature. This feature is included on {PLANS.advanced.name}{' '}
+            (5 templates) and {PLANS.ultimate.name} (10 templates).
           </p>
           <button
             type="button"
             className="mt-6 inline-flex rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-[#1d4ed8]"
             onClick={() => navigate('/settings#plan')}
           >
-            Upgrade to Advanced →
+            {`Upgrade to ${PLANS.advanced.name} →`}
           </button>
-          <p className="mt-3 text-xs text-slate-400">Advanced: 5 banner templates · Ultimate: 10 banner templates</p>
+          <p className="mt-3 text-xs text-slate-400">
+            {PLANS.advanced.name}: 5 banner templates · {PLANS.ultimate.name}: 10 banner templates
+          </p>
         </div>
       </div>
     );
@@ -527,20 +530,20 @@ export function BannersLayoutTab({ onToast }) {
                       requiredPlan: gate.planId === 'personal' ? 'advanced' : 'ultimate',
                       message:
                         gate.planId === 'personal'
-                          ? 'Upgrade to Advanced to unlock CTA banner templates.'
-                          : 'Upgrade to Ultimate for more banner templates.',
+                          ? `Upgrade to ${PLANS.advanced.name} to unlock CTA banner templates.`
+                          : `Upgrade to ${PLANS.ultimate.name} for more banner templates.`,
                     });
                   } else if (customLocked) {
                     showUpgradeModal({
                       feature: 'custom_banner_image_upload',
                       requiredPlan: 'advanced',
-                      message: 'Upload a custom image for your banner strip on Advanced or Ultimate.',
+                      message: `Upload a custom image for your banner strip on ${PLANS.advanced.name} or ${PLANS.ultimate.name}.`,
                     });
                   } else if (premiumLocked) {
                     showUpgradeModal({
                       feature: 'premium_banner_presets',
                       requiredPlan: 'advanced',
-                      message: 'Premium banner styles are included on Advanced and Ultimate.',
+                      message: `Premium banner styles are included on ${PLANS.advanced.name} and ${PLANS.ultimate.name}.`,
                     });
                   }
                 }}

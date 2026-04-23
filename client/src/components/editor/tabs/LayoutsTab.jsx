@@ -29,6 +29,7 @@ import { usePlanGate } from '../../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
 import { lockedTemplateIdsForPlan } from '../../../lib/templatePlanOrder.js';
 import { useEditorStore } from '../../../store/editorStore.js';
+import { PLANS } from '../../../data/plans.js';
 
 function IconSlidersGray() {
   return (
@@ -218,7 +219,7 @@ export function LayoutsTab() {
                   selected={active}
                   disabled={editorSaving}
                   locked={locked}
-                  requiredPlanLabel={gate.planId === 'personal' ? 'Advanced' : 'Ultimate'}
+                  requiredPlanLabel={gate.planId === 'personal' ? PLANS.advanced.name : PLANS.ultimate.name}
                   onLocked={() =>
                     showUpgradeModal({
                       feature: 'layout_templates',

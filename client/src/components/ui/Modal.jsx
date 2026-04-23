@@ -9,6 +9,8 @@ export function Modal({
   footer,
   size = 'md',
   className = '',
+  /** @type {'light' | 'dark'} */
+  tone = 'light',
 }) {
   useEffect(() => {
     if (!open) return;
@@ -26,6 +28,14 @@ export function Modal({
     xl: 'max-w-4xl',
   };
 
+  const panel =
+    tone === 'dark'
+      ? 'rounded-xl bg-slate-900 shadow-xl ring-1 ring-slate-600/80'
+      : 'rounded-xl bg-white shadow-xl ring-1 ring-slate-200';
+  const headerBorder = tone === 'dark' ? 'border-slate-600' : 'border-slate-100';
+  const titleCls = tone === 'dark' ? 'text-slate-100' : 'text-slate-900';
+  const footerBorder = tone === 'dark' ? 'border-slate-600' : 'border-slate-100';
+
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${className}`.trim()}
@@ -39,16 +49,21 @@ export function Modal({
         onClick={onClose}
       />
       <div
-        className={`relative z-10 w-full ${widths[size] || widths.md} rounded-xl bg-white shadow-xl ring-1 ring-slate-200`}
+        className={`relative z-10 flex max-h-[min(90vh,900px)] w-full flex-col ${widths[size] || widths.md} ${panel}`}
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <Button variant="ghost" className="!p-2" onClick={onClose} aria-label="Close">
+        <div className={`flex shrink-0 items-center justify-between border-b px-5 py-4 ${headerBorder}`}>
+          <h2 className={`text-lg font-semibold ${titleCls}`}>{title}</h2>
+          <Button
+            variant="ghost"
+            className={tone === 'dark' ? '!p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-100' : '!p-2'}
+            onClick={onClose}
+            aria-label="Close"
+          >
             ✕
           </Button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="border-t border-slate-100 px-5 py-4">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {footer ? <div className={`shrink-0 border-t px-5 py-4 ${footerBorder}`}>{footer}</div> : null}
       </div>
     </div>
   );

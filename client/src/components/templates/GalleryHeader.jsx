@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../hooks/useI18n.js';
+import { BrandLockup } from '../BrandLockup.jsx';
 
 /** Centered brand row (Emailee-style): circular mark + wordmark. */
 export function GalleryHeader() {
@@ -22,13 +23,13 @@ export function GalleryHeader() {
             }}
             aria-hidden
           >
-            SB
+            SS
           </span>
           <span
             className="font-serif text-[1.35rem] italic leading-none tracking-tight text-[#1e293b] md:text-[1.5rem]"
             style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
           >
-            Signature<span className="text-[#2563eb]">Builder</span>
+            <BrandLockup accentClassName="text-[#2563eb]" />
           </span>
         </div>
       </div>

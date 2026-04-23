@@ -15,6 +15,7 @@ import { usePlanGate } from '../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import api, { templatesAPI, signaturesAPI } from '../lib/api.js';
 import { lockedTemplateIdsForPlan } from '../lib/templatePlanOrder.js';
+import { PLANS } from '../data/plans.js';
 import {
   displayNameForTemplateRow,
   TEMPLATE_10_CANONICAL_COLORS,
@@ -171,8 +172,8 @@ export function TemplateGalleryPage() {
           requiredPlan: gate.planId === 'personal' ? 'advanced' : 'ultimate',
           message:
             gate.planId === 'personal'
-              ? `Your ${gate.plan.name} plan includes the first ${gate.limitText('layout_templates')} layouts in the catalog. Upgrade to Advanced for 10 templates, or Ultimate for unlimited.`
-              : `Your ${gate.plan.name} plan includes ${gate.limitText('layout_templates')} layouts. Upgrade to Ultimate for unlimited templates.`,
+              ? `Your ${gate.plan.name} plan includes the first ${gate.limitText('layout_templates')} layouts in the catalog. Upgrade to ${PLANS.advanced.name} for 10 templates, or ${PLANS.ultimate.name} for unlimited.`
+              : `Your ${gate.plan.name} plan includes ${gate.limitText('layout_templates')} layouts. Upgrade to ${PLANS.ultimate.name} for unlimited templates.`,
         });
         return;
       }
@@ -248,7 +249,7 @@ export function TemplateGalleryPage() {
                     key={t.id}
                     template={t}
                     locked={lockedTemplateIds.has(t.id)}
-                    requiredPlanLabel={gate.planId === 'personal' ? 'Advanced' : 'Ultimate'}
+                    requiredPlanLabel={gate.planId === 'personal' ? PLANS.advanced.name : PLANS.ultimate.name}
                     onLocked={handleLockedTemplate}
                     onSelect={handleTemplatePick}
                     busy={selectingId === t.id}

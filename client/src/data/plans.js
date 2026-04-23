@@ -27,7 +27,7 @@ export function normalizePlanId(plan) {
 export const PLANS = {
   personal: {
     id: 'personal',
-    name: 'Personal',
+    name: 'Bronze',
     tagline: 'Perfect for freelancers & solo professionals',
     price_monthly: 7,
     price_yearly: 59,
@@ -36,7 +36,7 @@ export const PLANS = {
     stripe_price_id_yearly: env('VITE_STRIPE_PERSONAL_YEARLY'),
     color: '#4B6EF5',
     badge: null,
-    cta: 'Get Personal',
+    cta: 'Get Bronze',
 
     limits: {
       max_active_signatures: 3,
@@ -67,7 +67,7 @@ export const PLANS = {
 
   advanced: {
     id: 'advanced',
-    name: 'Advanced',
+    name: 'Gold',
     tagline: 'For growing professionals & small teams',
     price_monthly: 15,
     price_yearly: 119,
@@ -76,7 +76,7 @@ export const PLANS = {
     stripe_price_id_yearly: env('VITE_STRIPE_ADVANCED_YEARLY'),
     color: '#16a34a',
     badge: 'Most Popular',
-    cta: 'Get Advanced',
+    cta: 'Get Gold',
 
     limits: {
       max_active_signatures: 10,
@@ -107,7 +107,7 @@ export const PLANS = {
 
   ultimate: {
     id: 'ultimate',
-    name: 'Ultimate',
+    name: 'Silver',
     tagline: 'Unlimited power for power users & agencies',
     price_monthly: 29,
     price_yearly: 239,
@@ -116,7 +116,7 @@ export const PLANS = {
     stripe_price_id_yearly: env('VITE_STRIPE_ULTIMATE_YEARLY'),
     color: '#7c3aed',
     badge: 'Best Value',
-    cta: 'Get Ultimate',
+    cta: 'Get Silver',
 
     limits: {
       max_active_signatures: Infinity,
@@ -255,7 +255,7 @@ export const COMPARISON_TABLE = [
     ],
   },
   {
-    category: 'Advanced Tools',
+    category: 'Power tools',
     color: '#a5f3fc',
     rows: [
       { feature: 'Whole-Sig Click-through URL', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
@@ -275,6 +275,6 @@ export const COMPARISON_TABLE = [
   {
     category: 'Branding',
     color: '#86efac',
-    rows: [{ feature: 'Hide "Made with SignatureBuilder" Badge', personal: 'No', advanced: 'Yes', ultimate: 'Yes' }],
+    rows: [{ feature: 'Hide "Made with Signature Studio" Badge', personal: 'No', advanced: 'Yes', ultimate: 'Yes' }],
   },
 ];

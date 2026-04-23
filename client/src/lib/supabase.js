@@ -11,7 +11,7 @@ export const isSupabaseConfigured = Boolean(url && anonKey);
 
 if (!isSupabaseConfigured) {
   console.warn(
-    '[Email Signature Builder] Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to client/.env (see .env.example). Auth is disabled until then.'
+    '[Signature Studio] Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to client/.env (see .env.example). Auth is disabled until then.'
   );
 }
 

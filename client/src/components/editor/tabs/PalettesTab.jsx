@@ -6,6 +6,7 @@ import { useEditorStore } from '../../../store/editorStore.js';
 import { usePlanGate } from '../../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
 import { Button } from '../../ui/Button.jsx';
+import { PLANS } from '../../../data/plans.js';
 import { Input } from '../../ui/Input.jsx';
 
 function normalizeColors(c) {
@@ -91,7 +92,7 @@ export function PalettesTab() {
       showUpgradeModal({
         feature: 'custom_palette_creation',
         requiredPlan: 'advanced',
-        title: 'Custom Palettes — Advanced Feature',
+        title: `Custom Palettes — ${PLANS.advanced.name} feature`,
         message: 'Create custom color palettes to match your exact brand colors.',
       });
       return;
@@ -112,7 +113,7 @@ export function PalettesTab() {
       showUpgradeModal({
         feature: 'custom_palette_creation',
         requiredPlan: 'advanced',
-        title: 'Custom Palettes — Advanced Feature',
+        title: `Custom Palettes — ${PLANS.advanced.name} feature`,
         message: 'Create custom color palettes to match your exact brand colors.',
       });
       return;

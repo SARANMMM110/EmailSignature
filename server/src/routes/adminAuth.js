@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import { supabaseAdmin } from '../services/supabase.js';
-import { ensureAdminCredentials, getAdminCredentialsRow } from '../services/adminCredentials.js';
+import { findAdminPanelUserByUsername, getAdminPanelUserById } from '../services/adminCredentials.js';
 import { signAdminToken } from '../services/adminJwt.js';
 import { requireAdminJwt } from '../middleware/requireAdminJwt.js';
 
@@ -17,35 +17,45 @@ router.post('/login', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({ error: 'BAD_REQUEST', message: 'Username and password are required.' });
     }
-    await ensureAdminCredentials();
-    const row = await getAdminCredentialsRow();
-    if (!row) {
+
+    let panelUser;
+    try {
+      panelUser = await findAdminPanelUserByUsername(username, { requireActive: true });
+    } catch (e) {
+      console.error('[adminAuth/login] admin_panel_users', e);
       return res.status(503).json({
         error: 'NOT_INITIALIZED',
         message:
-          'Admin credentials row is missing. Apply Supabase migrations (including 046_seed_admin_app_credentials.sql), ensure SUPABASE_SERVICE_ROLE_KEY is set, then restart the API.',
+          'Could not load admin users. Apply Supabase migration 055_admin_panel_users_tier_token_multi_use.sql and restart the API.',
       });
     }
-    const userOk = row.username.toLowerCase() === username.toLowerCase();
-    const passOk = bcrypt.compareSync(password, row.password_hash);
-    if (!userOk || !passOk) {
+    if (!panelUser || !bcrypt.compareSync(password, panelUser.password_hash)) {
       return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid username or password.' });
     }
-    const token = signAdminToken();
-    return res.json({ token, username: row.username });
+
+    const token = signAdminToken({
+      id: panelUser.id,
+      username: panelUser.username,
+      display_name: panelUser.display_name,
+    });
+    return res.json({
+      token,
+      username: panelUser.username,
+      display_name: panelUser.display_name,
+    });
   } catch (e) {
     console.error('[adminAuth/login]', e);
     return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
   }
 });
 
-router.get('/me', requireAdminJwt, async (_req, res) => {
+router.get('/me', requireAdminJwt, async (req, res) => {
   try {
-    const row = await getAdminCredentialsRow();
+    const row = await getAdminPanelUserById(req.adminAuth.sub);
     if (!row) {
       return res.status(503).json({ error: 'NOT_INITIALIZED' });
     }
-    return res.json({ username: row.username });
+    return res.json({ username: row.username, display_name: row.display_name });
   } catch (e) {
     return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
   }
@@ -57,14 +67,14 @@ router.patch('/credentials', requireAdminJwt, async (req, res) => {
       return res.status(503).json({ error: 'MISCONFIGURED' });
     }
     const current_password = String(req.body?.current_password || '');
-    const new_username = req.body?.new_username != null ? String(req.body.new_username).trim() : '';
+    const new_username = req.body?.new_username != null ? String(req.body.new_username).trim().toLowerCase() : '';
     const new_password = String(req.body?.new_password || '');
 
     if (!current_password) {
       return res.status(400).json({ error: 'BAD_REQUEST', message: 'Current password is required.' });
     }
 
-    const row = await getAdminCredentialsRow();
+    const row = await getAdminPanelUserById(req.adminAuth.sub);
     if (!row) {
       return res.status(503).json({ error: 'NOT_INITIALIZED' });
     }
@@ -97,17 +107,25 @@ router.patch('/credentials', requireAdminJwt, async (req, res) => {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('admin_app_credentials')
+      .from('admin_panel_users')
       .update(updates)
-      .eq('id', 1)
-      .select('username, updated_at')
+      .eq('id', req.adminAuth.sub)
+      .select('id, username, display_name, updated_at')
       .single();
     if (error) throw error;
 
-    const token = signAdminToken();
-    return res.json({ ok: true, username: data.username, updated_at: data.updated_at, token });
+    const token = signAdminToken({
+      id: data.id,
+      username: data.username,
+      display_name: data.display_name,
+    });
+    return res.json({ ok: true, username: data.username, display_name: data.display_name, updated_at: data.updated_at, token });
   } catch (e) {
     console.error('[adminAuth/credentials]', e);
+    const msg = e.message || '';
+    if (msg.includes('duplicate') || e.code === '23505') {
+      return res.status(409).json({ error: 'USERNAME_TAKEN', message: 'That username is already in use.' });
+    }
     return res.status(500).json({ error: 'SERVER_ERROR', message: e.message });
   }
 });

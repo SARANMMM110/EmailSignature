@@ -1,16 +1,9 @@
 import { Router } from 'express';
-import { v5 as uuidv5 } from 'uuid';
 import { requireAuth } from '../middleware/auth.js';
 import { isAgencyOwner } from '../middleware/agencyAuth.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { throwIfSupabaseError } from '../lib/supabaseRestError.js';
 import { normalizePlanId } from '../data/plans.js';
-
-/** Stable UUID for rows created via admin JWT (no Supabase user id on `req.user`). */
-const ADMIN_JWT_ACTOR_UUID = uuidv5(
-  'email-signature-builder:admin-jwt-panel',
-  '6ba7b811-9dad-11d1-80b4-00c04fd430c8'
-);
 
 function frontendBaseUrl() {
   const raw = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5173').trim();
@@ -24,11 +17,36 @@ function agencyTierTokenSetupUrl(rawToken) {
   return `${base}/agency-setup?token=${encodeURIComponent(token)}`;
 }
 
+/** Opens login first; after auth, user is sent to agency-setup with the same token. */
+function agencyTierTokenLoginUrl(rawToken) {
+  const base = frontendBaseUrl();
+  const token = String(rawToken || '').trim();
+  return `${base}/login?tier_token=${encodeURIComponent(token)}`;
+}
+
 function parseIsoOrNull(v) {
   if (v === '' || v === undefined || v === null) return null;
   const t = new Date(String(v)).getTime();
   if (Number.isNaN(t)) return 'invalid';
   return new Date(t).toISOString();
+}
+
+/** Seat-cap trigger (migration 054) raises these messages; map to HTTP for join flows. */
+function agencyMemberSeatCapResponse(err) {
+  const msg = `${err?.message ?? ''} ${err?.details ?? ''}`;
+  if (msg.includes('AGENCY_FULL')) {
+    return {
+      status: 409,
+      json: { error: 'AGENCY_FULL', message: 'This agency has no open seats.' },
+    };
+  }
+  if (msg.includes('LINK_FULL')) {
+    return {
+      status: 409,
+      json: { error: 'LINK_FULL', message: 'This invite link is full.' },
+    };
+  }
+  return null;
 }
 
 async function authEmailForUser(userId) {
@@ -73,6 +91,11 @@ agencyAdminRouter.post('/agency-tokens', async (req, res, next) => {
     if (!supabaseAdmin) {
       return res.status(503).json({ error: 'MISCONFIGURED', message: 'Supabase not configured.' });
     }
+    const adminId = req.adminAuth?.sub;
+    const adminDisplay = String(req.adminAuth?.display_name || req.adminAuth?.username || '').trim() || 'Admin';
+    if (!adminId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Admin session required.' });
+    }
     const agency_type = String(req.body?.agency_type || '').trim();
     if (!['100', '250', '500'].includes(agency_type)) {
       return res.status(400).json({
@@ -93,6 +116,20 @@ agencyAdminRouter.post('/agency-tokens', async (req, res, next) => {
         message: `max_seats must be between 1 and ${tierCap} for agency_type "${agency_type}".`,
       });
     }
+    const rawUses = req.body?.max_link_uses ?? req.body?.max_owner_uses;
+    let max_link_uses = null;
+    if (rawUses !== undefined && rawUses !== null && String(rawUses).trim() !== '') {
+      const n = Math.floor(Number(String(rawUses)));
+      if (!Number.isFinite(n) || n < 1 || n > 5000) {
+        return res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'max_link_uses must be empty for unlimited or an integer from 1 to 5000.',
+        });
+      }
+      max_link_uses = n;
+    }
+    const preset_agency_name =
+      req.body?.preset_agency_name != null ? String(req.body.preset_agency_name).trim() || null : null;
     let expires_at = parseIsoOrNull(req.body?.expires_at);
     if (expires_at === 'invalid') {
       return res.status(400).json({ error: 'BAD_REQUEST', message: 'Invalid expires_at.' });
@@ -103,20 +140,27 @@ agencyAdminRouter.post('/agency-tokens', async (req, res, next) => {
       .insert({
         agency_type,
         max_seats,
+        max_link_uses,
+        preset_agency_name,
+        created_by_admin_name: adminDisplay,
         expires_at,
-        created_by_admin: ADMIN_JWT_ACTOR_UUID,
+        created_by_admin: adminId,
         is_active: true,
       })
-      .select('id, token, agency_type, max_seats, expires_at, created_at')
+      .select('id, token, agency_type, max_seats, max_link_uses, preset_agency_name, expires_at, created_at')
       .single();
     throwIfSupabaseError(error);
     const full_url = agencyTierTokenSetupUrl(data.token);
+    const login_invite_url = agencyTierTokenLoginUrl(data.token);
     return res.status(201).json({
       token: data.token,
       full_url,
+      login_invite_url,
       id: data.id,
       agency_type: data.agency_type,
       max_seats: data.max_seats,
+      max_link_uses: data.max_link_uses,
+      preset_agency_name: data.preset_agency_name,
       expires_at: data.expires_at,
       created_at: data.created_at,
     });
@@ -133,12 +177,37 @@ agencyAdminRouter.get('/agency-tokens', async (_req, res, next) => {
     const { data: rows, error } = await supabaseAdmin
       .from('agency_tier_tokens')
       .select(
-        'id, token, agency_type, max_seats, label, created_by_admin, used_by, used_at, expires_at, is_active, created_at'
+        'id, token, agency_type, max_seats, max_link_uses, preset_agency_name, created_by_admin_name, label, created_by_admin, used_by, used_at, expires_at, is_active, created_at'
       )
       .order('created_at', { ascending: false });
     throwIfSupabaseError(error);
     const list = rows || [];
-    const usedIds = [...new Set(list.map((r) => r.used_by).filter(Boolean))];
+    const tokenIds = list.map((r) => r.id);
+    /** @type {Record<string, { agencyIds: string[], ownerIds: string[], seatsUsed: number, maxCap: number }>} */
+    const aggByToken = {};
+    if (tokenIds.length) {
+      const { data: agencyRows, error: ae } = await supabaseAdmin
+        .from('agencies')
+        .select('id, token_id, owner_id, seats_used, max_seats')
+        .in('token_id', tokenIds);
+      throwIfSupabaseError(ae);
+      for (const a of agencyRows || []) {
+        if (!a?.token_id) continue;
+        if (!aggByToken[a.token_id]) {
+          aggByToken[a.token_id] = { agencyIds: [], ownerIds: [], seatsUsed: 0, maxCap: 0 };
+        }
+        const g = aggByToken[a.token_id];
+        g.agencyIds.push(a.id);
+        if (a.owner_id) g.ownerIds.push(a.owner_id);
+        g.seatsUsed += Number(a.seats_used) || 0;
+        g.maxCap += Number(a.max_seats) || 0;
+      }
+    }
+    const ownerIdsForProfiles = [
+      ...list.map((r) => r.used_by).filter(Boolean),
+      ...Object.values(aggByToken).flatMap((g) => g.ownerIds),
+    ];
+    const usedIds = [...new Set(ownerIdsForProfiles)];
     let usedMap = {};
     if (usedIds.length) {
       const { data: profs, error: pe } = await supabaseAdmin
@@ -148,11 +217,26 @@ agencyAdminRouter.get('/agency-tokens', async (_req, res, next) => {
       throwIfSupabaseError(pe);
       usedMap = Object.fromEntries((profs || []).map((p) => [p.id, p]));
     }
-    const tokens = list.map((t) => ({
-      ...t,
-      full_url: agencyTierTokenSetupUrl(t.token),
-      used_by_profile: t.used_by ? usedMap[t.used_by] || null : null,
-    }));
+    const tokens = list.map((t) => {
+      const agg = aggByToken[t.id];
+      const linkMax = t.max_link_uses == null ? null : Number(t.max_link_uses);
+      const linkUsed = agg?.agencyIds.length ?? 0;
+      const cap = agg?.maxCap ? agg.maxCap : Number(t.max_seats) || 0;
+      const seatsUsed = agg?.seatsUsed ?? 0;
+      const firstAgencyId = agg?.agencyIds[0] ?? null;
+      const ownerId = t.used_by || agg?.ownerIds[0] || null;
+      return {
+        ...t,
+        full_url: agencyTierTokenSetupUrl(t.token),
+        login_invite_url: agencyTierTokenLoginUrl(t.token),
+        used_by_profile: ownerId ? usedMap[ownerId] || null : null,
+        agency_seats_used: seatsUsed,
+        agency_max_seats: cap,
+        agency_id: firstAgencyId,
+        link_activations_used: linkUsed,
+        link_activations_max: linkMax,
+      };
+    });
     return res.json(tokens);
   } catch (e) {
     next(e);
@@ -395,7 +479,7 @@ router.get('/setup/preview', async (req, res, next) => {
     }
     const { data: tier, error } = await supabaseAdmin
       .from('agency_tier_tokens')
-      .select('agency_type, max_seats, expires_at, used_by, is_active')
+      .select('agency_type, max_seats, max_link_uses, preset_agency_name, expires_at, used_by, is_active, id')
       .eq('token', token)
       .maybeSingle();
     if (error) throw error;
@@ -408,15 +492,25 @@ router.get('/setup/preview', async (req, res, next) => {
         already_used: false,
       });
     }
+    const { count: activationCount, error: ce } = await supabaseAdmin
+      .from('agencies')
+      .select('*', { count: 'exact', head: true })
+      .eq('token_id', tier.id);
+    if (ce) throw ce;
+    const used = Number(activationCount) || 0;
+    const linkMax = tier.max_link_uses == null ? null : Number(tier.max_link_uses);
     const expired = Boolean(tier.expires_at && new Date(tier.expires_at).getTime() <= Date.now());
-    const already_used = Boolean(tier.used_by);
+    const already_used = linkMax != null && used >= linkMax;
     const is_valid = !expired && !already_used;
     return res.json({
       agency_type: tier.agency_type,
       max_seats: tier.max_seats,
+      preset_agency_name: tier.preset_agency_name || null,
       is_valid,
       expired,
       already_used,
+      owner_link_used: used,
+      owner_link_total: linkMax,
     });
   } catch (e) {
     next(e);
@@ -484,11 +578,22 @@ router.post('/register-with-token', requireAuth, async (req, res, next) => {
     if (tier.expires_at && new Date(tier.expires_at).getTime() <= Date.now()) {
       return res.status(410).json({ error: 'TOKEN_EXPIRED', message: 'This agency token has expired.' });
     }
-    if (tier.used_by) {
-      return res.status(409).json({ error: 'TOKEN_ALREADY_USED', message: 'This token has already been used.' });
+    const { count: actCount, error: cntErr } = await supabaseAdmin
+      .from('agencies')
+      .select('*', { count: 'exact', head: true })
+      .eq('token_id', tier.id);
+    throwIfSupabaseError(cntErr);
+    const linkMax = tier.max_link_uses == null ? null : Number(tier.max_link_uses);
+    const act = Number(actCount) || 0;
+    if (linkMax != null && act >= linkMax) {
+      return res.status(409).json({
+        error: 'TOKEN_EXHAUSTED',
+        message: `This agency link has already been used the maximum number of times (${linkMax}).`,
+      });
     }
 
     const ownerFirst = await profileAgencyOwnerFirstName(userId);
+    /** Always name the org from the signed-in user who activates (not admin preset on the token). */
     const agency_name = ownerFirst ? `Agency owner ${ownerFirst}` : null;
 
     const { data: agency, error: ae } = await supabaseAdmin
@@ -639,7 +744,11 @@ router.post('/join', requireAuth, async (req, res, next) => {
           removed_by: null,
         })
         .eq('id', existingRow.id);
-      throwIfSupabaseError(upErr);
+      if (upErr) {
+        const cap = agencyMemberSeatCapResponse(upErr);
+        if (cap) return res.status(cap.status).json(cap.json);
+        throwIfSupabaseError(upErr);
+      }
     } else {
       const { error: insErr } = await supabaseAdmin.from('agency_members').insert({
         agency_id,
@@ -656,6 +765,8 @@ router.post('/join', requireAuth, async (req, res, next) => {
             message: 'You already belong to this agency.',
           });
         }
+        const cap = agencyMemberSeatCapResponse(insErr);
+        if (cap) return res.status(cap.status).json(cap.json);
         throwIfSupabaseError(insErr);
       }
     }
@@ -940,6 +1051,166 @@ router.get('/members', requireAuth, isAgencyOwner, async (req, res, next) => {
       });
     }
     return res.json(out);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.patch('/members/:memberId', requireAuth, isAgencyOwner, async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED', message: 'Supabase not configured.' });
+    }
+    const agency = req.agency;
+    const memberId = String(req.params.memberId || '').trim();
+    if (!memberId) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing member id.' });
+    }
+    if (memberId === agency.owner_id) {
+      return res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'Cannot change membership for the agency owner.',
+      });
+    }
+    if (typeof req.body?.is_active !== 'boolean') {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Body must include is_active (boolean).' });
+    }
+    const wantActive = req.body.is_active;
+
+    const { data: row, error: fe } = await supabaseAdmin
+      .from('agency_members')
+      .select('id, is_active, assigned_plan, joined_at')
+      .eq('agency_id', agency.id)
+      .eq('member_id', memberId)
+      .maybeSingle();
+    throwIfSupabaseError(fe);
+    if (!row) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Member not found in this agency.' });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    if (!wantActive) {
+      if (!row.is_active) {
+        return res.status(409).json({ error: 'ALREADY_INACTIVE', message: 'Member is already inactive.' });
+      }
+      const { error: ue } = await supabaseAdmin
+        .from('agency_members')
+        .update({
+          is_active: false,
+          removed_at: nowIso,
+          removed_by: req.user.id,
+        })
+        .eq('id', row.id);
+      throwIfSupabaseError(ue);
+
+      const personal = normalizePlanId('personal');
+      const { error: pe } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          agency_id: null,
+          plan: personal,
+          agency_joined_at: null,
+          plan_updated_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq('id', memberId);
+      throwIfSupabaseError(pe);
+      return res.json({ member_id: memberId, is_active: false });
+    }
+
+    if (row.is_active) {
+      return res.json({ member_id: memberId, is_active: true });
+    }
+
+    const { data: agencyRow, error: age } = await supabaseAdmin
+      .from('agencies')
+      .select('id, max_seats, seats_used, is_active')
+      .eq('id', agency.id)
+      .maybeSingle();
+    throwIfSupabaseError(age);
+    if (!agencyRow?.is_active) {
+      return res.status(409).json({ error: 'AGENCY_INACTIVE', message: 'This agency is not active.' });
+    }
+    if (Number(agencyRow.seats_used) >= Number(agencyRow.max_seats)) {
+      return res.status(409).json({ error: 'AGENCY_FULL', message: 'This agency has no open seats.' });
+    }
+
+    const assigned_plan = normalizePlanId(row.assigned_plan);
+    const profileJoinedAt = row.joined_at || nowIso;
+    const { error: upMem } = await supabaseAdmin
+      .from('agency_members')
+      .update({
+        is_active: true,
+        removed_at: null,
+        removed_by: null,
+      })
+      .eq('id', row.id);
+    if (upMem) {
+      const cap = agencyMemberSeatCapResponse(upMem);
+      if (cap) return res.status(cap.status).json(cap.json);
+      throwIfSupabaseError(upMem);
+    }
+
+    const { error: pe } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        agency_id: agency.id,
+        plan: assigned_plan,
+        agency_joined_at: profileJoinedAt,
+        plan_updated_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq('id', memberId);
+    throwIfSupabaseError(pe);
+
+    return res.json({ member_id: memberId, is_active: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/members/:memberId/password', requireAuth, isAgencyOwner, async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED', message: 'Supabase not configured.' });
+    }
+    const agency = req.agency;
+    const memberId = String(req.params.memberId || '').trim();
+    const password = String(req.body?.password || '');
+    if (!memberId) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing member id.' });
+    }
+    if (memberId === agency.owner_id) {
+      return res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'Use account settings to change your own password.',
+      });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Password must be at least 8 characters.' });
+    }
+
+    const { data: row, error: fe } = await supabaseAdmin
+      .from('agency_members')
+      .select('id')
+      .eq('agency_id', agency.id)
+      .eq('member_id', memberId)
+      .maybeSingle();
+    throwIfSupabaseError(fe);
+    if (!row) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Member not found in this agency.' });
+    }
+
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(memberId, { password });
+    if (authErr) {
+      console.error('[agency/members/password]', authErr);
+      return res.status(400).json({
+        error: 'AUTH_ERROR',
+        message: authErr.message || 'Could not update password.',
+      });
+    }
+    return res.status(204).send();
   } catch (e) {
     next(e);
   }

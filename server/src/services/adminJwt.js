@@ -11,8 +11,20 @@ export function getAdminJwtSecret() {
   return DEFAULT_DEV_SECRET;
 }
 
-export function signAdminToken() {
-  return jwt.sign({ typ: 'admin', sub: 'panel' }, getAdminJwtSecret(), { expiresIn: '7d' });
+/**
+ * @param {{ id: string, username: string, display_name: string }} user
+ */
+export function signAdminToken(user) {
+  return jwt.sign(
+    {
+      typ: 'admin',
+      sub: user.id,
+      username: user.username,
+      display_name: user.display_name,
+    },
+    getAdminJwtSecret(),
+    { expiresIn: '7d' }
+  );
 }
 
 export function verifyAdminToken(token) {

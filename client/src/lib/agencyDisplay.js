@@ -13,3 +13,17 @@ export function displayAgencyTitle(agencyPayload, profile) {
   const first = ownerFirstFromProfile(profile);
   return first ? `Agency owner ${first}` : 'Your agency';
 }
+
+/**
+ * Second line under the sidebar label "Agency owner" — no duplicate "Agency owner …" prefix.
+ * Uses saved org name when set; otherwise the owner's display name (or a short fallback).
+ */
+export function displayAgencyNavSubtitle(agencyPayload, profile) {
+  const org = String(agencyPayload?.agency_name ?? '').trim();
+  if (org) return org;
+  const full = String(profile?.full_name ?? '').trim();
+  if (full) return full;
+  const first = ownerFirstFromProfile(profile);
+  if (first) return first;
+  return 'Your agency';
+}

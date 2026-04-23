@@ -56,6 +56,7 @@ export default function App() {
           <Route path="dashboard" element={<EB><AdminDashboardPage /></EB>} />
           <Route path="registration-links" element={<EB><AdminRegistrationLinksPage /></EB>} />
           <Route path="agency" element={<EB><AdminAgencyPage /></EB>} />
+          <Route path="console-users" element={<Navigate to="/admin/agency" replace />} />
           <Route path="account" element={<EB><AdminAccountPage /></EB>} />
         </Route>
       </Route>

@@ -11,6 +11,7 @@ import { FiFlag } from 'react-icons/fi';
 import { Button } from '../ui/Button.jsx';
 import { EditorPreview } from './EditorPreview.jsx';
 import { useI18n } from '../../hooks/useI18n.js';
+import { BrandLockup } from '../BrandLockup.jsx';
 
 export function EditorLayout({
   editorBasePath,
@@ -41,10 +42,10 @@ export function EditorLayout({
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold text-white shadow-sm"
             style={{ background: 'linear-gradient(145deg, #3d7dff, #2563eb)' }}
           >
-            SB
+            SS
           </span>
           <span className="truncate text-[15px] sm:text-base">
-            Signature<span className="text-[#2563eb]">Builder</span>
+            <BrandLockup accentClassName="text-[#2563eb]" />
           </span>
         </Link>
         <Button

@@ -1,3 +1,5 @@
+import { BRAND_NAME } from '../constants/brand.js';
+
 /**
  * Long-form install copy (Emailee-style). {{BRAND}} is replaced at render time.
  */
@@ -150,7 +152,7 @@ Congratulations! You have now successfully configured a generated email signatur
  * @param {string} clientId — gmail | outlook | yahoo | apple | spark
  * @param {string} [brand]
  */
-export function formatInstallGuide(clientId, brand = 'SignatureBuilder') {
+export function formatInstallGuide(clientId, brand = BRAND_NAME) {
   const raw = INSTALL_GUIDES[clientId] || '';
   return raw.replace(/\{\{BRAND\}\}/g, brand);
 }
