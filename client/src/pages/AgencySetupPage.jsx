@@ -81,7 +81,7 @@ export function AgencySetupPage() {
       } else if (code === 'ALREADY_IN_AGENCY') {
         showToast(
           msg ||
-            'You are still on another team. Open Account settings → Your team → Leave this team, then try this link again.',
+            'You are still on another team. Open Account settings, use Leave this team (next to Log out), then try this link again.',
           'error'
         );
       } else if (code === 'TOKEN_NOT_FOUND' || status === 404) {
@@ -192,11 +192,11 @@ export function AgencySetupPage() {
                 <p className="mt-1 text-xs leading-relaxed text-amber-900/95">
                   This link sets up a new organization <strong className="font-semibold">you</strong> will own. First
                   leave your current team: open{' '}
-                  <Link to="/settings#agency" className="font-semibold text-amber-950 underline hover:no-underline">
+                  <Link to="/settings" className="font-semibold text-amber-950 underline hover:no-underline">
                     Account settings
-                  </Link>
-                  , scroll to <strong className="font-semibold">Your team</strong>, tap{' '}
-                  <strong className="font-semibold">Leave this team</strong>, confirm, then return here.
+                  </Link>{' '}
+                  and tap <strong className="font-semibold">Leave this team</strong> (next to{' '}
+                  <strong className="font-semibold">Log out</strong>), confirm, then return here.
                 </p>
               </div>
             ) : null}

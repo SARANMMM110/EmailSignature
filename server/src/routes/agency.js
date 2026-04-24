@@ -1336,6 +1336,88 @@ router.get('/members', requireAuth, isAgencyOwner, async (req, res, next) => {
   }
 });
 
+/** Update member login email and/or profile display name (no email confirmation flow). */
+router.patch('/members/:memberId/details', requireAuth, isAgencyOwner, async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED', message: 'Supabase not configured.' });
+    }
+    const agency = req.agency;
+    const memberId = String(req.params.memberId || '').trim();
+    if (!memberId) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Missing member id.' });
+    }
+    if (memberId === agency.owner_id) {
+      return res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'Cannot edit the agency owner here.',
+      });
+    }
+
+    const { data: row, error: fe } = await supabaseAdmin
+      .from('agency_members')
+      .select('id')
+      .eq('agency_id', agency.id)
+      .eq('member_id', memberId)
+      .maybeSingle();
+    throwIfSupabaseError(fe);
+    if (!row) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Member not found in this agency.' });
+    }
+
+    const emailRaw = req.body?.email;
+    const full_nameRaw = req.body?.full_name;
+    const hasEmail = emailRaw !== undefined && emailRaw !== null;
+    const hasFullName = Object.prototype.hasOwnProperty.call(req.body || {}, 'full_name');
+
+    if (!hasEmail && !hasFullName) {
+      return res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'Provide email and/or full_name to update.',
+      });
+    }
+
+    if (hasEmail) {
+      const email = String(emailRaw || '').trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid email is required.' });
+      }
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(memberId, {
+        email,
+        email_confirm: true,
+      });
+      if (authErr) {
+        const msg = String(authErr.message || '');
+        if (/already|registered|exists/i.test(msg) || authErr.status === 422) {
+          return res.status(409).json({
+            error: 'DUPLICATE',
+            message: 'Another account already uses this email.',
+          });
+        }
+        console.error('[agency/members/details] auth', authErr);
+        return res.status(400).json({
+          error: 'AUTH_ERROR',
+          message: msg || 'Could not update email.',
+        });
+      }
+    }
+
+    if (hasFullName) {
+      const full_name = String(full_nameRaw ?? '').trim() || null;
+      const nowIso = new Date().toISOString();
+      const { error: pe } = await supabaseAdmin
+        .from('profiles')
+        .update({ full_name, updated_at: nowIso })
+        .eq('id', memberId);
+      throwIfSupabaseError(pe);
+    }
+
+    return res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.patch('/members/:memberId', requireAuth, isAgencyOwner, async (req, res, next) => {
   try {
     if (!supabaseAdmin) {
@@ -1520,8 +1602,11 @@ router.delete('/members/:memberId', requireAuth, isAgencyOwner, async (req, res,
     if (!row) {
       return res.status(404).json({ error: 'NOT_FOUND', message: 'Member not found in this agency.' });
     }
+
     if (!row.is_active) {
-      return res.status(409).json({ error: 'ALREADY_REMOVED', message: 'Member is already inactive.' });
+      const { error: de } = await supabaseAdmin.from('agency_members').delete().eq('id', row.id);
+      throwIfSupabaseError(de);
+      return res.status(204).send();
     }
 
     const nowIso = new Date().toISOString();

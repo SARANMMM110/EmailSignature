@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   HiOutlineBriefcase,
-  HiOutlineBuildingOffice2,
   HiOutlineEnvelope,
   HiOutlineKey,
   HiOutlineMapPin,
@@ -17,7 +16,7 @@ import { PhotoCropModal } from '../components/ui/PhotoCropModal.jsx';
 import { Toast } from '../components/ui/Toast.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
-import { agencyAPI, palettesAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
+import { agencyAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
 import { getPlan } from '../data/plans.js';
 import { effectiveTier1PlanId } from '../lib/effectiveTier1Plan.js';
 import { usePlanGate } from '../hooks/usePlanGate.js';
@@ -132,7 +131,7 @@ export function SettingsPage() {
   const { t } = useI18n();
   const gate = usePlanGate();
   const pendingRegPlanId = useRegistrationRefPreviewStore((s) => s.planId);
-  const { user, profile, updateProfile, logout, changePassword, isAgencyMember, agencyInfo } = useAuth();
+  const { user, profile, updateProfile, logout, changePassword, isAgencyMember } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
@@ -148,7 +147,6 @@ export function SettingsPage() {
   const [avatarCropObjectUrl, setAvatarCropObjectUrl] = useState(null);
   const [avatarUploadBusy, setAvatarUploadBusy] = useState(false);
   const [sigCount, setSigCount] = useState(null);
-  const [paletteCount, setPaletteCount] = useState(null);
 
   const [passwordCurrent, setPasswordCurrent] = useState('');
   const [passwordNew, setPasswordNew] = useState('');
@@ -183,14 +181,12 @@ export function SettingsPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const [sRes, pRes] = await Promise.all([signaturesAPI.getAll(), palettesAPI.getUser()]);
+        const sRes = await signaturesAPI.getAll();
         if (cancelled) return;
         setSigCount((sRes.data?.signatures || []).length);
-        setPaletteCount((pRes.data?.palettes || []).length);
       } catch {
         if (!cancelled) {
           setSigCount(null);
-          setPaletteCount(null);
         }
       }
     })();
@@ -450,6 +446,17 @@ export function SettingsPage() {
               >
                 {t('settings.save')}
               </Button>
+              {isAgencyMember ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="!min-h-[42px] w-full !rounded-xl !px-5 !text-sm !font-semibold sm:w-auto"
+                  disabled={leaveAgencyBusy}
+                  onClick={() => setLeaveAgencyModalOpen(true)}
+                >
+                  {t('settings.agencyLeaveButton')}
+                </Button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => logout()}
@@ -515,30 +522,6 @@ export function SettingsPage() {
                       />
                     </div>
                   </div>
-                  {gate.can('custom_palette_creation') &&
-                  paletteCount != null &&
-                  gate.planId !== 'ultimate' &&
-                  gate.limit('max_saved_custom_palettes') > 0 ? (
-                    <div>
-                      <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
-                        <span>Custom palettes</span>
-                        <span>
-                          {paletteCount} / {gate.limitText('max_saved_custom_palettes')}
-                        </span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-full rounded-full bg-emerald-500 transition-all"
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              (paletteCount / Math.max(1, Number(gate.limit('max_saved_custom_palettes')) || 1)) * 100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
                   <Link
                     to="/pricing"
                     className="inline-flex text-sm font-semibold text-[var(--sb-color-accent)] hover:underline"
@@ -588,65 +571,6 @@ export function SettingsPage() {
                 </div>
               </div>
             </SectionCard>
-
-            {isAgencyMember ? (
-              <SectionCard
-                id="agency"
-                icon={HiOutlineBuildingOffice2}
-                title={t('settings.agencySectionTitle')}
-                description={t('settings.agencySectionDesc')}
-              >
-                <dl className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                      {t('settings.agencyOrgLabel')}
-                    </dt>
-                    <dd className="mt-1 text-sm font-semibold text-slate-900">
-                      {agencyInfo?.agency_name?.trim() || '—'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                      {t('settings.agencyTeamPlanRowLabel')}
-                    </dt>
-                    <dd className="mt-1 text-sm font-semibold text-slate-900">
-                      {agencyInfo?.max_seats != null && agencyInfo.max_seats !== ''
-                        ? t('settings.agencyTeamSeats', { n: agencyInfo.max_seats })
-                        : '—'}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                      {t('settings.agencyYourPlanLabel')}
-                    </dt>
-                    <dd className="mt-1">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-                          isPaidPlan
-                            ? 'bg-[var(--sb-color-accent)] text-white shadow-md shadow-blue-500/25'
-                            : 'border border-slate-200 bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        {planLabel}
-                      </span>
-                    </dd>
-                  </div>
-                </dl>
-                <p className="mt-5 text-sm leading-relaxed text-slate-600">{t('settings.agencyAdminNote')}</p>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">{t('settings.agencyLeaveIntro')}</p>
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="danger"
-                    disabled={leaveAgencyBusy}
-                    onClick={() => setLeaveAgencyModalOpen(true)}
-                    className="!rounded-xl !px-4 !py-2.5 !text-sm !font-semibold"
-                  >
-                    {t('settings.agencyLeaveButton')}
-                  </Button>
-                </div>
-              </SectionCard>
-            ) : null}
 
             {/* Contact */}
             <SectionCard

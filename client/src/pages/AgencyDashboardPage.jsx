@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiCopy, FiKey, FiLogOut, FiSettings, FiTrash2, FiUserPlus } from 'react-icons/fi';
+import { FiCopy, FiEdit2, FiKey, FiLogOut, FiSettings, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -119,6 +119,12 @@ export function AgencyDashboardPage() {
   const [confirmMemberPassword, setConfirmMemberPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordFormError, setPasswordFormError] = useState('');
+
+  const [editMember, setEditMember] = useState(null);
+  const [editMemberEmail, setEditMemberEmail] = useState('');
+  const [editMemberName, setEditMemberName] = useState('');
+  const [editMemberError, setEditMemberError] = useState('');
+  const [editMemberSaving, setEditMemberSaving] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -313,6 +319,54 @@ export function AgencyDashboardPage() {
       setPasswordFormError(err.response?.data?.message || err.message || 'Could not update password.');
     } finally {
       setPasswordSaving(false);
+    }
+  };
+
+  const openEditMember = (m) => {
+    setEditMemberError('');
+    setEditMember(m);
+    setEditMemberEmail(String(m.email || '').trim());
+    setEditMemberName(String(m.full_name || '').trim());
+  };
+
+  const submitEditMember = async (e) => {
+    e.preventDefault();
+    setEditMemberError('');
+    if (!editMember) return;
+    const email = editMemberEmail.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setEditMemberError('Valid email is required.');
+      return;
+    }
+    setEditMemberSaving(true);
+    try {
+      await agencyAPI.updateMemberDetails(editMember.member_id, {
+        email,
+        full_name: editMemberName.trim(),
+      });
+      showToast('Member updated', 'success');
+      setEditMember(null);
+      await load();
+    } catch (err) {
+      setEditMemberError(err.response?.data?.message || err.message || 'Could not update member.');
+    } finally {
+      setEditMemberSaving(false);
+    }
+  };
+
+  const removeMemberFromAgency = async (m) => {
+    const active = m.is_active !== false;
+    const label = String(m.full_name || m.email || 'this member').trim();
+    const msg = active
+      ? `Remove ${label} from your agency? They lose team access and their plan reverts to ${PLANS.personal.name}. Their account is not deleted — they can still sign in.`
+      : `Remove ${label} from this list?`;
+    if (!window.confirm(msg)) return;
+    try {
+      await agencyAPI.removeMember(m.member_id);
+      showToast(active ? 'Member removed from agency' : 'Member removed', 'success');
+      await load();
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Could not remove member.', 'error');
     }
   };
 
@@ -577,14 +631,32 @@ export function AgencyDashboardPage() {
                                   </button>
                                 </td>
                                 <td className="px-4 py-3.5 pr-5 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => openPasswordModal(m)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
-                                  >
-                                    <FiKey className="h-3.5 w-3.5" aria-hidden />
-                                    Change password
-                                  </button>
+                                  <div className="flex flex-wrap items-center justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditMember(m)}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+                                    >
+                                      <FiEdit2 className="h-3.5 w-3.5" aria-hidden />
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => openPasswordModal(m)}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+                                    >
+                                      <FiKey className="h-3.5 w-3.5" aria-hidden />
+                                      Change password
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void removeMemberFromAgency(m)}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:border-red-300 hover:bg-red-50"
+                                    >
+                                      <FiTrash2 className="h-3.5 w-3.5" aria-hidden />
+                                      Delete
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -745,6 +817,49 @@ export function AgencyDashboardPage() {
               Your local date and time. Leave empty for no expiration. The server stores it as UTC (ISO).
             </p>
           </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(editMember)}
+        onClose={() => !editMemberSaving && setEditMember(null)}
+        title={editMember ? `Edit member — ${editMember.full_name || editMember.email || 'Member'}` : 'Edit member'}
+        size="md"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" disabled={editMemberSaving} onClick={() => setEditMember(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="agency-edit-member-form" disabled={editMemberSaving}>
+              {editMemberSaving ? 'Saving…' : 'Save changes'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="agency-edit-member-form" onSubmit={submitEditMember} className="space-y-4">
+          {editMemberError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{editMemberError}</p>
+          ) : null}
+          <p className="text-sm leading-relaxed text-slate-600">
+            Updates their sign-in email and the name shown in your member list. Email is confirmed automatically so
+            they are not asked to verify a link.
+          </p>
+          <Input
+            label="Email"
+            type="email"
+            autoComplete="off"
+            value={editMemberEmail}
+            onChange={(e) => setEditMemberEmail(e.target.value)}
+            required
+          />
+          <Input
+            label="Display name"
+            type="text"
+            autoComplete="off"
+            value={editMemberName}
+            onChange={(e) => setEditMemberName(e.target.value)}
+            placeholder="Name on profile"
+          />
         </form>
       </Modal>
 
