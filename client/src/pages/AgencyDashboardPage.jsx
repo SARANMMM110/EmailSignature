@@ -656,7 +656,7 @@ export function AgencyDashboardPage() {
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{addMemberFormError}</p>
           ) : null}
           <p className="text-sm leading-relaxed text-slate-600">
-            Creates a new sign-in account with email confirmed. They are assigned the{' '}
+            Creates a new sign-in account they can use right away. They are assigned the{' '}
             <strong className="font-semibold text-slate-900">{PLANS.advanced.name}</strong> plan and appear in Agency members
             right away (uses one seat).
           </p>

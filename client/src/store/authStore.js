@@ -337,7 +337,7 @@ export const useAuthStore = create((set, get) => ({
 
   signupWithEmail: async (email, password, fullName, meta = {}) => {
     if (!supabase) {
-      return { error: new Error('Supabase is not configured.'), needsEmailConfirmation: false };
+      return { error: new Error('Supabase is not configured.') };
     }
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const agencyJoinToken = String(meta.agencyJoinToken || '').trim();
@@ -353,14 +353,19 @@ export const useAuthStore = create((set, get) => ({
         data: { full_name: fullName },
       },
     });
-    if (!error && data.session) {
-      get().setSession(data.session);
-      await get().fetchProfile();
+    if (error) {
+      return { error };
     }
-    return {
-      error,
-      needsEmailConfirmation: !error && !data.session,
-    };
+    if (!data.session) {
+      return {
+        error: new Error(
+          'No session after sign-up. Try Sign in with the same email and password, or turn off “Confirm email” in Supabase → Authentication → Providers → Email so new accounts can sign in immediately.'
+        ),
+      };
+    }
+    get().setSession(data.session);
+    await get().fetchProfile();
+    return { error: null };
   },
 
   logout: async () => {

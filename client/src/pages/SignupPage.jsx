@@ -28,7 +28,6 @@ export function SignupPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const [inviteInfo, setInviteInfo] = useState(null);
   const [agencyPreview, setAgencyPreview] = useState(null);
   const [agencyPreviewLoading, setAgencyPreviewLoading] = useState(false);
@@ -134,7 +133,7 @@ export function SignupPage() {
     }
     setSubmitting(true);
     try {
-      const { error: err, needsEmailConfirmation } = await signupWithEmail(
+      const { error: err } = await signupWithEmail(
         email,
         password,
         fullName,
@@ -142,10 +141,6 @@ export function SignupPage() {
       );
       if (err) {
         setError(err.message || 'Sign up failed');
-        return;
-      }
-      if (needsEmailConfirmation) {
-        setEmailSent(true);
         return;
       }
       /* Post-signup navigation (dashboard vs /join for agency invite) is handled in useEffect when session updates. */
@@ -158,34 +153,6 @@ export function SignupPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (emailSent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-12">
-        <div className="mx-auto w-full max-w-[420px] text-center">
-          <Link to="/" className="inline-block text-2xl font-bold tracking-tight text-slate-900">
-            <BrandLockup />
-          </Link>
-          <div className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">
-              ✉️
-            </div>
-            <h1 className="text-lg font-semibold text-slate-900">Check your email</h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              We sent a confirmation link to <strong className="text-slate-800">{email}</strong>. Open it to
-              confirm your account, then you can sign in.
-            </p>
-            <Link
-              to={loginHref}
-              className="mt-8 inline-block text-sm font-semibold text-blue-600 hover:underline"
-            >
-              Back to sign in
-            </Link>
-          </div>
-        </div>
       </div>
     );
   }
