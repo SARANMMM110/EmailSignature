@@ -1,16 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { GoogleIcon } from '../components/icons/GoogleIcon.jsx';
-import { getPublicRegistrationLinkPreview } from '../lib/api.js';
-import { REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { getAgencyJoinPreview, getPublicRegistrationLinkPreview } from '../lib/api.js';
+import { clearStoredRegistrationRef, REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { readAgencyJoinLinkToken, writeAgencyJoinLinkToken } from '../lib/agencyJoinLink.js';
 import { BrandLockup } from '../components/BrandLockup.jsx';
 import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
+import { PLANS, normalizePlanId } from '../data/plans.js';
 
 export function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refParam = searchParams.get('ref')?.trim() || '';
+  const agencyLinkFromUrl = searchParams.get('agency_link')?.trim() || '';
+  const agencyInviteToken = agencyLinkFromUrl || readAgencyJoinLinkToken();
+  const loginHref = agencyInviteToken
+    ? `/login?from=agency-join&agency_link=${encodeURIComponent(agencyInviteToken)}`
+    : refParam
+      ? `/login?returning=1&ref=${encodeURIComponent(refParam)}`
+      : '/login';
   const { session, loading, loginWithGoogle, signupWithEmail } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,6 +30,15 @@ export function SignupPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [inviteInfo, setInviteInfo] = useState(null);
+  const [agencyPreview, setAgencyPreview] = useState(null);
+  const [agencyPreviewLoading, setAgencyPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (agencyLinkFromUrl) {
+      writeAgencyJoinLinkToken(agencyLinkFromUrl);
+      clearStoredRegistrationRef();
+    }
+  }, [agencyLinkFromUrl]);
 
   useEffect(() => {
     if (refParam) {
@@ -47,16 +65,56 @@ export function SignupPage() {
   }, [refParam]);
 
   useEffect(() => {
+    if (!agencyInviteToken) {
+      setAgencyPreview(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setAgencyPreviewLoading(true);
+    getAgencyJoinPreview(agencyInviteToken)
+      .then((data) => {
+        if (!cancelled) setAgencyPreview(data);
+      })
+      .finally(() => {
+        if (!cancelled) setAgencyPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agencyInviteToken]);
+
+  const agencyPlanMeta = useMemo(() => {
+    const planId = agencyPreview?.assigned_plan ? normalizePlanId(agencyPreview.assigned_plan) : 'personal';
+    return PLANS[planId] || PLANS.personal;
+  }, [agencyPreview?.assigned_plan]);
+
+  useEffect(() => {
     if (!loading && session) {
+      const token = readAgencyJoinLinkToken() || agencyLinkFromUrl;
+      if (token) {
+        navigate(`/join?agency_link=${encodeURIComponent(token)}`, { replace: true });
+        return;
+      }
       navigate('/dashboard', { replace: true });
     }
-  }, [session, loading, navigate]);
+  }, [session, loading, navigate, agencyLinkFromUrl]);
 
   const handleGoogle = async () => {
     setError('');
     setGoogleLoading(true);
     try {
-      const { error: err } = await loginWithGoogle();
+      const r = searchParams.get('ref')?.trim();
+      if (r) {
+        sessionStorage.setItem(REGISTRATION_REF_STORAGE_KEY, r);
+        void useRegistrationRefPreviewStore.getState().syncFromStorage();
+      }
+      if (agencyInviteToken) {
+        writeAgencyJoinLinkToken(agencyInviteToken);
+      }
+      const googleRedirect = agencyInviteToken
+        ? `/join?agency_link=${encodeURIComponent(agencyInviteToken)}`
+        : '/dashboard';
+      const { error: err } = await loginWithGoogle(googleRedirect);
       if (err) setError(err.message || 'Google sign-up failed');
     } finally {
       setGoogleLoading(false);
@@ -76,7 +134,12 @@ export function SignupPage() {
     }
     setSubmitting(true);
     try {
-      const { error: err, needsEmailConfirmation } = await signupWithEmail(email, password, fullName);
+      const { error: err, needsEmailConfirmation } = await signupWithEmail(
+        email,
+        password,
+        fullName,
+        agencyInviteToken ? { agencyJoinToken: agencyInviteToken } : {}
+      );
       if (err) {
         setError(err.message || 'Sign up failed');
         return;
@@ -85,7 +148,7 @@ export function SignupPage() {
         setEmailSent(true);
         return;
       }
-      navigate('/dashboard', { replace: true });
+      /* Post-signup navigation (dashboard vs /join for agency invite) is handled in useEffect when session updates. */
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +179,7 @@ export function SignupPage() {
               confirm your account, then you can sign in.
             </p>
             <Link
-              to="/login"
+              to={loginHref}
               className="mt-8 inline-block text-sm font-semibold text-blue-600 hover:underline"
             >
               Back to sign in
@@ -142,6 +205,32 @@ export function SignupPage() {
             <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               You&apos;re signing up with an invite for the <strong>{inviteInfo.plan_name}</strong> plan. After you create your
               account, we&apos;ll apply that tier to your profile automatically.
+            </div>
+          ) : null}
+          {agencyInviteToken ? (
+            <div
+              className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
+                agencyPreviewLoading
+                  ? 'border-slate-200 bg-slate-50 text-slate-700'
+                  : agencyPreview?.is_valid
+                    ? 'border-amber-200 bg-amber-50 text-amber-950'
+                    : 'border-amber-200 bg-amber-50 text-amber-950'
+              }`}
+            >
+              {agencyPreviewLoading ? (
+                <p className="font-medium">Checking your team invitation…</p>
+              ) : agencyPreview?.is_valid ? (
+                <p>
+                  You&apos;re signing up to join <strong>{agencyPreview.agency_name?.trim() || 'your team'}</strong>. After
+                  your account is created, you&apos;ll receive the <strong>{agencyPlanMeta.name}</strong> plan from this
+                  registration link.
+                </p>
+              ) : (
+                <p>
+                  This team invite isn&apos;t valid anymore (expired, full, or inactive). You can still create an account —
+                  sign in afterward with a valid invite if you have one.
+                </p>
+              )}
             </div>
           ) : null}
           {inviteInfo && !inviteInfo.valid && refParam ? (
@@ -247,7 +336,7 @@ export function SignupPage() {
 
           <p className="mt-8 text-center text-sm text-slate-600">
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-blue-600 hover:underline">
+            <Link to={loginHref} className="font-semibold text-blue-600 hover:underline">
               Sign in
             </Link>
           </p>

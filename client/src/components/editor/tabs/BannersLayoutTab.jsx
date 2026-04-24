@@ -12,7 +12,6 @@ import {
   EXPLORE_WORLD_BANNER_UUID,
   BOOST_IMPROVE_BANNER_UUID,
   ONLINE_LOAN_BANNER_UUID,
-  BUSINESS_CITY_BANNER_UUID,
   LEAVE_REVIEW_BANNER_UUID,
   SEO_WHITEPAPER_BANNER_UUID,
   GREEN_GRADIENT_CTA_BANNER_UUID,
@@ -29,7 +28,6 @@ import {
   exploreWorldBannerThumbnailSrcDoc,
   boostImproveBannerThumbnailSrcDoc,
   onlineLoanBannerThumbnailSrcDoc,
-  businessCityBannerThumbnailSrcDoc,
   leaveReviewBannerThumbnailSrcDoc,
   seoWhitepaperBannerThumbnailSrcDoc,
   greenGradientCtaBannerThumbnailSrcDoc,
@@ -220,19 +218,6 @@ function OnlineLoanBannerThumb({ thumbW, thumbH, scale }) {
   );
 }
 
-function BusinessCityBannerThumb({ thumbW, thumbH, scale }) {
-  const srcDoc = useMemo(() => businessCityBannerThumbnailSrcDoc(), []);
-  return (
-    <StaticBannerIframePreview
-      title="Business city banner preview"
-      srcDoc={srcDoc}
-      thumbW={thumbW}
-      thumbH={thumbH}
-      scale={scale}
-    />
-  );
-}
-
 function LeaveReviewBannerThumb({ thumbW, thumbH, scale }) {
   const srcDoc = useMemo(() => leaveReviewBannerThumbnailSrcDoc(), []);
   return (
@@ -297,9 +282,6 @@ function BannerThumbnail({ banner, design }) {
   }
   if (id === ONLINE_LOAN_BANNER_UUID.toLowerCase()) {
     return <OnlineLoanBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
-  }
-  if (id === BUSINESS_CITY_BANNER_UUID.toLowerCase()) {
-    return <BusinessCityBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
   }
   if (id === LEAVE_REVIEW_BANNER_UUID.toLowerCase()) {
     return <LeaveReviewBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
@@ -465,7 +447,7 @@ export function BannersLayoutTab({ onToast }) {
           <h3 className="mt-3 text-base font-bold text-slate-900">{`CTA Banners — ${PLANS.advanced.name} and ${PLANS.ultimate.name}`}</h3>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
             Add clickable call-to-action banners below your signature. This feature is included on {PLANS.advanced.name}{' '}
-            (5 templates) and {PLANS.ultimate.name} (10 templates).
+            (5 templates) and {PLANS.ultimate.name} (all templates).
           </p>
           <button
             type="button"
@@ -475,7 +457,7 @@ export function BannersLayoutTab({ onToast }) {
             {`Upgrade to ${PLANS.advanced.name} →`}
           </button>
           <p className="mt-3 text-xs text-slate-400">
-            {PLANS.advanced.name}: 5 banner templates · {PLANS.ultimate.name}: 10 banner templates
+            {PLANS.advanced.name}: 5 banner templates · {PLANS.ultimate.name}: all banner templates
           </p>
         </div>
       </div>

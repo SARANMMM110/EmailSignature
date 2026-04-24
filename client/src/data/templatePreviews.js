@@ -50,6 +50,35 @@ export const DEMO_SIGNATURE_DATA = {
 };
 
 /**
+ * Resolve demo / gallery palette colors for a layout slug (canonical for 10–20, else optional override, else brand defaults).
+ * @param {string} slug — normalized layout slug e.g. `template_1`
+ * @param {string[] | null | undefined} paletteColors
+ */
+export function resolveDemoPayloadColors(slug, paletteColors) {
+  const s = uuidToTemplateSlug(String(slug || '').trim());
+  const d = DEMO_SIGNATURE_DATA.design;
+  if (s === 'template_10') return [...TEMPLATE_10_CANONICAL_COLORS];
+  if (s === 'template_11') return [...TEMPLATE_11_CANONICAL_COLORS];
+  if (s === 'template_12') return [...TEMPLATE_12_CANONICAL_COLORS];
+  if (s === 'template_13') return [...TEMPLATE_13_CANONICAL_COLORS];
+  if (s === 'template_14') return [...TEMPLATE_14_CANONICAL_COLORS];
+  if (s === 'template_15') return [...TEMPLATE_15_CANONICAL_COLORS];
+  if (s === 'template_16') return [...TEMPLATE_16_CANONICAL_COLORS];
+  if (s === 'template_17') return [...TEMPLATE_17_CANONICAL_COLORS];
+  if (s === 'template_18') return [...TEMPLATE_18_CANONICAL_COLORS];
+  if (s === 'template_19') return [...TEMPLATE_19_CANONICAL_COLORS];
+  if (s === 'template_20') return [...TEMPLATE_20_CANONICAL_COLORS];
+  if (Array.isArray(paletteColors) && paletteColors.length >= 4) return paletteColors.slice(0, 4);
+  return [...d.colors];
+}
+
+/** Default 4-stop palette for the current layout (signature + CTA “original” colors after clearing a brand palette). */
+export function defaultPaletteColorsForLayoutSlug(templateSlug) {
+  const slug = uuidToTemplateSlug(String(templateSlug || '').trim());
+  return resolveDemoPayloadColors(slug, null);
+}
+
+/**
  * Body for POST /api/html/generate — matches server `contextFromEditorPayload` (camelCase form).
  * @param {string} templateSlug e.g. template_1, template_2, template_3
  * @param {string[] | null} [paletteColors] — optional 4 hex colors [primary, secondary, accent, text] for gallery previews
@@ -62,32 +91,7 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
   const ctx = accountContext && typeof accountContext === 'object' ? accountContext : {};
   const fromProfile = profileFormPartialForGenerate(ctx.profile, ctx.user);
   const slug = uuidToTemplateSlug(String(templateSlug || '').trim());
-  const colors =
-    slug === 'template_10'
-      ? [...TEMPLATE_10_CANONICAL_COLORS]
-      : slug === 'template_11'
-        ? [...TEMPLATE_11_CANONICAL_COLORS]
-        : slug === 'template_12'
-          ? [...TEMPLATE_12_CANONICAL_COLORS]
-          : slug === 'template_13'
-            ? [...TEMPLATE_13_CANONICAL_COLORS]
-            : slug === 'template_14'
-              ? [...TEMPLATE_14_CANONICAL_COLORS]
-              : slug === 'template_15'
-                ? [...TEMPLATE_15_CANONICAL_COLORS]
-                : slug === 'template_16'
-                  ? [...TEMPLATE_16_CANONICAL_COLORS]
-                  : slug === 'template_17'
-                    ? [...TEMPLATE_17_CANONICAL_COLORS]
-                    : slug === 'template_18'
-                      ? [...TEMPLATE_18_CANONICAL_COLORS]
-                      : slug === 'template_19'
-                        ? [...TEMPLATE_19_CANONICAL_COLORS]
-                        : slug === 'template_20'
-                          ? [...TEMPLATE_20_CANONICAL_COLORS]
-                          : Array.isArray(paletteColors) && paletteColors.length >= 4
-                        ? paletteColors.slice(0, 4)
-                        : d.colors;
+  const colors = resolveDemoPayloadColors(slug, paletteColors);
   const layout4NoCoreDemo = slug === 'template_4';
   const layout11Demo =
     slug === 'template_11'

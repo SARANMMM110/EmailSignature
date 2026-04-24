@@ -3,7 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { isAgencyOwner } from '../middleware/agencyAuth.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { throwIfSupabaseError } from '../lib/supabaseRestError.js';
-import { normalizePlanId } from '../data/plans.js';
+import { normalizePlanId, PLAN_IDS } from '../data/plans.js';
 
 function frontendBaseUrl() {
   const raw = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5173').trim();
@@ -715,18 +715,12 @@ router.post('/join', requireAuth, async (req, res, next) => {
       });
     }
 
-    const { data: activeMember } = await supabaseAdmin
+    const { data: activeAnywhere } = await supabaseAdmin
       .from('agency_members')
-      .select('id, agency_id')
+      .select('id, agency_id, link_id')
       .eq('member_id', userId)
       .eq('is_active', true)
       .maybeSingle();
-    if (activeMember) {
-      return res.status(409).json({
-        error: 'ALREADY_IN_AGENCY',
-        message: 'You already belong to an agency.',
-      });
-    }
 
     const { data: link, error: le } = await supabaseAdmin
       .from('agency_registration_links')
@@ -741,7 +735,26 @@ router.post('/join', requireAuth, async (req, res, next) => {
     if (link.expires_at && new Date(link.expires_at).getTime() <= Date.now()) {
       return res.status(410).json({ error: 'LINK_EXPIRED', message: 'This invite link has expired.' });
     }
-    if (link.used_count >= link.max_users) {
+
+    if (activeAnywhere && activeAnywhere.agency_id !== link.agency_id) {
+      return res.status(409).json({
+        error: 'ALREADY_IN_AGENCY',
+        message: 'You already belong to another agency. Leave it before joining this one.',
+      });
+    }
+
+    const isSameAgencyRefresh = Boolean(
+      activeAnywhere && activeAnywhere.agency_id === link.agency_id
+    );
+
+    if (!isSameAgencyRefresh && link.used_count >= link.max_users) {
+      return res.status(409).json({ error: 'LINK_FULL', message: 'This invite link is full.' });
+    }
+    if (
+      isSameAgencyRefresh &&
+      activeAnywhere.link_id !== link.id &&
+      link.used_count >= link.max_users
+    ) {
       return res.status(409).json({ error: 'LINK_FULL', message: 'This invite link is full.' });
     }
 
@@ -757,13 +770,45 @@ router.post('/join', requireAuth, async (req, res, next) => {
     if (!agencyRow?.is_active) {
       return res.status(404).json({ error: 'AGENCY_INACTIVE', message: 'This agency is not active.' });
     }
-    if (agencyRow.seats_used >= agencyRow.max_seats) {
+    if (!isSameAgencyRefresh && agencyRow.seats_used >= agencyRow.max_seats) {
       return res.status(409).json({ error: 'AGENCY_FULL', message: 'This agency has no open seats.' });
     }
 
     const assigned_plan = normalizePlanId(link.assigned_plan);
     const agency_id = link.agency_id;
     const link_id = link.id;
+
+    const nowIso = new Date().toISOString();
+
+    if (isSameAgencyRefresh) {
+      const { error: upSame } = await supabaseAdmin
+        .from('agency_members')
+        .update({
+          link_id,
+          assigned_plan,
+        })
+        .eq('id', activeAnywhere.id);
+      if (upSame) {
+        const cap = agencyMemberSeatCapResponse(upSame);
+        if (cap) return res.status(cap.status).json(cap.json);
+        throwIfSupabaseError(upSame);
+      }
+      const { error: pSame } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          plan: assigned_plan,
+          plan_updated_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq('id', userId);
+      throwIfSupabaseError(pSame);
+      return res.status(200).json({
+        agency_name: agencyRow.agency_name || null,
+        assigned_plan,
+        agency_id,
+        updated: true,
+      });
+    }
 
     const { data: existingRow } = await supabaseAdmin
       .from('agency_members')
@@ -779,7 +824,6 @@ router.post('/join', requireAuth, async (req, res, next) => {
       });
     }
 
-    const nowIso = new Date().toISOString();
     if (existingRow && !existingRow.is_active) {
       const { error: upErr } = await supabaseAdmin
         .from('agency_members')
@@ -841,6 +885,75 @@ router.post('/join', requireAuth, async (req, res, next) => {
   }
 });
 
+/** Active agency member removes themselves (not for agency owners). */
+router.post('/leave', requireAuth, async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED', message: 'Supabase not configured.' });
+    }
+    const userId = req.user.id;
+
+    const { data: prof, error: pe } = await supabaseAdmin
+      .from('profiles')
+      .select('is_agency_owner')
+      .eq('id', userId)
+      .maybeSingle();
+    throwIfSupabaseError(pe);
+    if (!prof) {
+      return res.status(404).json({ error: 'NO_PROFILE', message: 'Profile not found.' });
+    }
+    if (prof.is_agency_owner === true) {
+      return res.status(400).json({
+        error: 'CANNOT_LEAVE_AS_OWNER',
+        message:
+          'Agency owners cannot leave with this action. Manage or close the organization from the agency dashboard.',
+      });
+    }
+
+    const { data: row, error: fe } = await supabaseAdmin
+      .from('agency_members')
+      .select('id, is_active')
+      .eq('member_id', userId)
+      .eq('is_active', true)
+      .maybeSingle();
+    throwIfSupabaseError(fe);
+    if (!row?.id) {
+      return res.status(400).json({
+        error: 'NOT_A_MEMBER',
+        message: 'You are not an active member of an agency.',
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    const { error: ue } = await supabaseAdmin
+      .from('agency_members')
+      .update({
+        is_active: false,
+        removed_at: nowIso,
+        removed_by: userId,
+      })
+      .eq('id', row.id);
+    throwIfSupabaseError(ue);
+
+    const personal = normalizePlanId('personal');
+    const { error: pErr } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        agency_id: null,
+        plan: personal,
+        agency_joined_at: null,
+        plan_updated_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq('id', userId);
+    throwIfSupabaseError(pErr);
+
+    return res.status(200).json({ ok: true, plan_id: personal });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/me', requireAuth, isAgencyOwner, async (req, res, next) => {
   try {
     const agency = req.agency;
@@ -886,7 +999,7 @@ router.get('/me', requireAuth, isAgencyOwner, async (req, res, next) => {
         .eq('id', row.member_id)
         .maybeSingle();
       const email = await authEmailForUser(row.member_id);
-      const linkLabel = row.link_id ? linkLabelById[row.link_id] ?? null : null;
+      const linkLabel = row.link_id ? linkLabelById[row.link_id] ?? null : 'Direct add';
       members.push({
         member_id: row.member_id,
         full_name: profile?.full_name || null,
@@ -1060,6 +1173,123 @@ router.delete('/links/:id', requireAuth, isAgencyOwner, async (req, res, next) =
   }
 });
 
+/**
+ * Agency owner creates a new main-app account (Silver / advanced) and adds them as an active member
+ * without a registration link (`link_id` null).
+ */
+router.post('/members', requireAuth, isAgencyOwner, async (req, res, next) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: 'MISCONFIGURED', message: 'Supabase not configured.' });
+    }
+    const agency = req.agency;
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const username = String(req.body?.username || '').trim();
+    const password = String(req.body?.password || '');
+    if (!username || username.length < 2) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Username must be at least 2 characters.' });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Valid email is required.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'BAD_REQUEST', message: 'Password must be at least 8 characters.' });
+    }
+
+    const { data: agencyRow, error: age } = await supabaseAdmin
+      .from('agencies')
+      .select('id, max_seats, seats_used, is_active')
+      .eq('id', agency.id)
+      .maybeSingle();
+    throwIfSupabaseError(age);
+    if (!agencyRow?.is_active) {
+      return res.status(409).json({ error: 'AGENCY_INACTIVE', message: 'This agency is not active.' });
+    }
+    if (Number(agencyRow.seats_used) >= Number(agencyRow.max_seats)) {
+      return res.status(409).json({ error: 'AGENCY_FULL', message: 'This agency has no open seats.' });
+    }
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: username },
+    });
+
+    if (authError) {
+      const msg = String(authError.message || '');
+      if (/already|registered|exists/i.test(msg) || authError.status === 422) {
+        return res.status(409).json({ error: 'DUPLICATE', message: 'An account with this email already exists.' });
+      }
+      console.error('[agency/members POST] auth', authError);
+      return res.status(400).json({ error: 'AUTH_ERROR', message: msg || 'Could not create user.' });
+    }
+
+    const userId = authData.user?.id;
+    if (!userId) {
+      return res.status(500).json({ error: 'SERVER_ERROR', message: 'User id missing after create.' });
+    }
+
+    const assigned_plan = PLAN_IDS.ADVANCED;
+    const nowIso = new Date().toISOString();
+
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        plan: assigned_plan,
+        plan_updated_at: nowIso,
+        full_name: username,
+        agency_id: agency.id,
+        agency_joined_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq('id', userId);
+
+    if (profileError) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      console.error('[agency/members POST] profile', profileError);
+      return res.status(500).json({
+        error: 'PROFILE_ERROR',
+        message: 'User was created but the profile could not be updated.',
+      });
+    }
+
+    const { error: insErr } = await supabaseAdmin.from('agency_members').insert({
+      agency_id: agency.id,
+      member_id: userId,
+      link_id: null,
+      assigned_plan,
+      is_active: true,
+      joined_at: nowIso,
+    });
+
+    if (insErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      const cap = agencyMemberSeatCapResponse(insErr);
+      if (cap) return res.status(cap.status).json(cap.json);
+      if (insErr.code === '23505') {
+        return res.status(409).json({
+          error: 'ALREADY_IN_AGENCY',
+          message: 'Could not add this member to the agency.',
+        });
+      }
+      console.error('[agency/members POST] insert member', insErr);
+      return res.status(500).json({ error: 'SERVER_ERROR', message: insErr.message });
+    }
+
+    return res.status(201).json({
+      member: {
+        member_id: userId,
+        email: authData.user.email,
+        full_name: username,
+        assigned_plan,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/members', requireAuth, isAgencyOwner, async (req, res, next) => {
   try {
     const agency = req.agency;
@@ -1097,7 +1327,7 @@ router.get('/members', requireAuth, isAgencyOwner, async (req, res, next) => {
         assigned_plan: row.assigned_plan,
         joined_at: row.joined_at,
         is_active: row.is_active,
-        link_label: row.link_id ? linkLabelById[row.link_id] ?? null : null,
+        link_label: row.link_id ? linkLabelById[row.link_id] ?? null : 'Direct add',
       });
     }
     return res.json(out);

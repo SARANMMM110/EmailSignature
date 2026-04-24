@@ -100,11 +100,11 @@ export function PrimaryBannerFields({
                   />
                 </div>
               ) : isMailchimpBanner ? (
-                <div className="w-full max-w-full overflow-hidden rounded-lg bg-[#e8813a]" style={{ height: 52 }}>
+                <div className="w-full max-w-full overflow-hidden rounded-lg bg-[#1a1210]" style={{ height: 70 }}>
                   <img
                     src={bc.banner_image_url}
                     alt=""
-                    className="block h-[52px] w-full object-cover object-center"
+                    className="block h-[70px] w-full object-cover object-center object-bottom"
                   />
                 </div>
               ) : isBusinessCityBanner ? (
@@ -166,7 +166,7 @@ export function PrimaryBannerFields({
               rows={3}
               className={TEXTAREA_CLASS}
               value={bc.field_1 ?? ''}
-              placeholder={'Digital marketing\nexpert'}
+              placeholder={'Digital marketing expert'}
               onChange={(e) => mergeBannerCfg({ field_1: e.target.value })}
             />
           </div>
@@ -179,7 +179,7 @@ export function PrimaryBannerFields({
               rows={3}
               className={TEXTAREA_CLASS}
               value={bc.field_2 ?? ''}
-              placeholder={'Projecting your brand into\nthe distant.'}
+              placeholder={'Projecting your brand into the distant.'}
               onChange={(e) => mergeBannerCfg({ field_2: e.target.value })}
             />
           </div>

@@ -8,7 +8,7 @@ const router = Router();
 /**
  * Align profiles.plan with the tier on the registration link this user already redeemed.
  * Fixes drift (e.g. skipped redeem while agency owner, or stale UI) without consuming a new use.
- * Skips agency members — their tier comes from the org, not signup refs.
+ * Also updates active `agency_members.assigned_plan` when the user is an agency member so limits match the link.
  * (Switching to a new `?ref=` is handled by `redeem_registration_link`, which moves the redemption row.)
  */
 router.post('/sync-registration-plan', async (req, res) => {
@@ -31,8 +31,8 @@ router.post('/sync-registration-plan', async (req, res) => {
       return res.status(404).json({ ok: false, error: 'NO_PROFILE' });
     }
 
-    if (prof.agency_id && prof.is_agency_owner !== true) {
-      return res.json({ ok: false, skipped: true, reason: 'AGENCY_MEMBER' });
+    if (prof.is_agency_owner === true) {
+      return res.json({ ok: false, skipped: true, reason: 'AGENCY_OWNER' });
     }
 
     const { data: red, error: re } = await supabaseAdmin
@@ -67,6 +67,15 @@ router.post('/sync-registration-plan', async (req, res) => {
       .update({ plan: target, plan_updated_at: nowIso, updated_at: nowIso })
       .eq('id', userId);
     if (ue) throw ue;
+
+    if (prof.agency_id) {
+      const { error: ame } = await supabaseAdmin
+        .from('agency_members')
+        .update({ assigned_plan: target })
+        .eq('member_id', userId)
+        .eq('is_active', true);
+      if (ame) throw ame;
+    }
 
     return res.json({ ok: true, plan_id: target, updated: true });
   } catch (e) {

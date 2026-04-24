@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase.js';
 import { clearStoredRegistrationRef } from '../lib/registrationRef.js';
+import { clearAgencyJoinLinkToken } from '../lib/agencyJoinLink.js';
 import { normalizePlanId } from '../data/plans.js';
 
 const SIGN_OUT_NETWORK_MS = 12_000;
@@ -225,18 +226,30 @@ export const useAuthStore = create((set, get) => ({
       if (session?.user) {
         await get().fetchProfile();
       }
-      supabase.auth.onAuthStateChange(async (_event, session) => {
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        const prevUserId = get().session?.user?.id ?? null;
         get().setSession(session);
-        if (session?.user) {
-          await get().fetchProfile();
-        } else {
+        if (!session?.user) {
           set({
             profile: null,
             isAgencyOwner: false,
             isAgencyMember: false,
             agencyInfo: null,
           });
+          return;
         }
+        const nextUserId = session.user.id;
+        const sameUser = prevUserId != null && prevUserId === nextUserId;
+        /** Password change / token refresh / user patch — auth user changes but `profiles` row is unchanged; skip slow refetch. */
+        const skipProfileRefetch =
+          sameUser &&
+          (event === 'TOKEN_REFRESHED' ||
+            event === 'USER_UPDATED' ||
+            (event === 'SIGNED_IN' && prevUserId !== null));
+        if (skipProfileRefetch) {
+          return;
+        }
+        await get().fetchProfile();
       });
     } finally {
       set({ loading: false });
@@ -272,16 +285,71 @@ export const useAuthStore = create((set, get) => ({
     return { error };
   },
 
-  signupWithEmail: async (email, password, fullName) => {
+  /**
+   * Email/password accounts: verifies current password, then sets a new one.
+   * OAuth-only (no `email` identity): skips verification and sets password so email sign-in can be used too.
+   */
+  changePassword: async (currentPassword, newPassword) => {
+    if (!supabase) {
+      return { error: new Error('Supabase is not configured.') };
+    }
+    const user = get().user;
+    const email = user?.email;
+    if (!email) {
+      return { error: new Error('No email on this account.') };
+    }
+    const next = String(newPassword || '');
+    if (next.length < 8) {
+      return { error: new Error('New password must be at least 8 characters.') };
+    }
+    const identities = user?.identities || [];
+    const hasEmailIdentity = identities.some((i) => i.provider === 'email');
+
+    if (hasEmailIdentity) {
+      const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({
+        email,
+        password: String(currentPassword || ''),
+      });
+      if (signErr) {
+        const msg = String(signErr.message || '');
+        const friendly =
+          /invalid login|invalid credentials|wrong password/i.test(msg) ? 'Current password is incorrect.' : msg;
+        return { error: new Error(friendly || 'Could not verify current password.') };
+      }
+      if (signData?.session) {
+        get().setSession(signData.session);
+      }
+    }
+
+    const { error: upErr } = await supabase.auth.updateUser({ password: next });
+    if (upErr) {
+      return { error: new Error(upErr.message || 'Could not update password.') };
+    }
+
+    const {
+      data: { session: refreshed },
+    } = await supabase.auth.getSession();
+    if (refreshed) {
+      get().setSession(refreshed);
+    }
+    return { error: null };
+  },
+
+  signupWithEmail: async (email, password, fullName, meta = {}) => {
     if (!supabase) {
       return { error: new Error('Supabase is not configured.'), needsEmailConfirmation: false };
     }
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const agencyJoinToken = String(meta.agencyJoinToken || '').trim();
+    const emailRedirectTo =
+      agencyJoinToken !== ''
+        ? `${origin}/join?agency_link=${encodeURIComponent(agencyJoinToken)}`
+        : `${origin}/dashboard`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${origin}/dashboard`,
+        emailRedirectTo,
         data: { full_name: fullName },
       },
     });
@@ -300,6 +368,7 @@ export const useAuthStore = create((set, get) => ({
       await clearSupabaseSession();
     } finally {
       clearStoredRegistrationRef();
+      clearAgencyJoinLinkToken();
       get().setSession(null);
       set({
         profile: null,

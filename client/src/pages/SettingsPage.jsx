@@ -5,17 +5,19 @@ import {
   HiOutlineBriefcase,
   HiOutlineBuildingOffice2,
   HiOutlineEnvelope,
+  HiOutlineKey,
   HiOutlineMapPin,
   HiOutlinePhoto,
   HiOutlineSparkles,
 } from 'react-icons/hi2';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Button } from '../components/ui/Button.jsx';
+import { Modal } from '../components/ui/Modal.jsx';
 import { PhotoCropModal } from '../components/ui/PhotoCropModal.jsx';
 import { Toast } from '../components/ui/Toast.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
-import { palettesAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
+import { agencyAPI, palettesAPI, signaturesAPI, uploadAPI } from '../lib/api.js';
 import { getPlan } from '../data/plans.js';
 import { effectiveTier1PlanId } from '../lib/effectiveTier1Plan.js';
 import { usePlanGate } from '../hooks/usePlanGate.js';
@@ -130,7 +132,7 @@ export function SettingsPage() {
   const { t } = useI18n();
   const gate = usePlanGate();
   const pendingRegPlanId = useRegistrationRefPreviewStore((s) => s.planId);
-  const { user, profile, updateProfile, logout, isAgencyMember, agencyInfo } = useAuth();
+  const { user, profile, updateProfile, logout, changePassword, isAgencyMember, agencyInfo } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
@@ -147,6 +149,19 @@ export function SettingsPage() {
   const [avatarUploadBusy, setAvatarUploadBusy] = useState(false);
   const [sigCount, setSigCount] = useState(null);
   const [paletteCount, setPaletteCount] = useState(null);
+
+  const [passwordCurrent, setPasswordCurrent] = useState('');
+  const [passwordNew, setPasswordNew] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [passwordFormError, setPasswordFormError] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [leaveAgencyBusy, setLeaveAgencyBusy] = useState(false);
+  const [leaveAgencyModalOpen, setLeaveAgencyModalOpen] = useState(false);
+
+  const hasEmailPasswordIdentity = useMemo(
+    () => Array.isArray(user?.identities) && user.identities.some((i) => i.provider === 'email'),
+    [user?.identities]
+  );
 
   const serif = useMemo(() => ({ fontFamily: 'var(--sb-font-serif)' }), []);
 
@@ -353,6 +368,60 @@ export function SettingsPage() {
     }
   };
 
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordFormError('');
+    if (passwordNew !== passwordConfirm) {
+      setPasswordFormError(t('settings.passwordMismatch'));
+      return;
+    }
+    if (passwordNew.length < 8) {
+      setPasswordFormError(t('settings.passwordTooShort'));
+      return;
+    }
+    if (hasEmailPasswordIdentity && !passwordCurrent.trim()) {
+      setPasswordFormError(t('settings.passwordCurrentRequired'));
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const { error } = await changePassword(passwordCurrent, passwordNew);
+      if (error) {
+        setPasswordFormError(error.message || t('settings.passwordUpdateFailed'));
+        return;
+      }
+      setPasswordCurrent('');
+      setPasswordNew('');
+      setPasswordConfirm('');
+      setToast({ message: t('settings.passwordUpdated'), type: 'success' });
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const closeLeaveAgencyModal = useCallback(() => {
+    if (!leaveAgencyBusy) setLeaveAgencyModalOpen(false);
+  }, [leaveAgencyBusy]);
+
+  const confirmLeaveAgency = useCallback(async () => {
+    setLeaveAgencyBusy(true);
+    try {
+      await agencyAPI.leaveAgency();
+      setLeaveAgencyModalOpen(false);
+      await useAuthStore.getState().fetchProfile();
+      useEditorStore.getState().syncAccountProfileIntoSignature();
+      setToast({ message: t('settings.agencyLeaveDone'), type: 'success' });
+    } catch (e) {
+      const msg = e?.response?.data?.message;
+      setToast({
+        message: typeof msg === 'string' && msg.trim() ? msg.trim() : t('settings.agencyLeaveFailed'),
+        type: 'error',
+      });
+    } finally {
+      setLeaveAgencyBusy(false);
+    }
+  }, [t]);
+
   return (
     <div className="flex w-full items-start overflow-x-hidden bg-[var(--sb-color-bg)]">
       <Sidebar />
@@ -524,24 +593,32 @@ export function SettingsPage() {
               <SectionCard
                 id="agency"
                 icon={HiOutlineBuildingOffice2}
-                title="Agency"
-                description="Your workspace is linked to an organization through a team registration link."
+                title={t('settings.agencySectionTitle')}
+                description={t('settings.agencySectionDesc')}
               >
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Organization</dt>
+                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                      {t('settings.agencyOrgLabel')}
+                    </dt>
                     <dd className="mt-1 text-sm font-semibold text-slate-900">
                       {agencyInfo?.agency_name?.trim() || '—'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Agency tier</dt>
+                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                      {t('settings.agencyTeamPlanRowLabel')}
+                    </dt>
                     <dd className="mt-1 text-sm font-semibold text-slate-900">
-                      {agencyInfo?.agency_type ? `${agencyInfo.max_seats} seats (type ${agencyInfo.agency_type})` : '—'}
+                      {agencyInfo?.max_seats != null && agencyInfo.max_seats !== ''
+                        ? t('settings.agencyTeamSeats', { n: agencyInfo.max_seats })
+                        : '—'}
                     </dd>
                   </div>
                   <div className="sm:col-span-2">
-                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Your plan from the agency</dt>
+                    <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                      {t('settings.agencyYourPlanLabel')}
+                    </dt>
                     <dd className="mt-1">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
@@ -555,10 +632,19 @@ export function SettingsPage() {
                     </dd>
                   </div>
                 </dl>
-                <p className="mt-5 text-sm leading-relaxed text-slate-600">
-                  Feature limits follow the Tier 1 plan your agency owner assigned. To change or leave the organization,
-                  contact your agency administrator.
-                </p>
+                <p className="mt-5 text-sm leading-relaxed text-slate-600">{t('settings.agencyAdminNote')}</p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">{t('settings.agencyLeaveIntro')}</p>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="danger"
+                    disabled={leaveAgencyBusy}
+                    onClick={() => setLeaveAgencyModalOpen(true)}
+                    className="!rounded-xl !px-4 !py-2.5 !text-sm !font-semibold"
+                  >
+                    {t('settings.agencyLeaveButton')}
+                  </Button>
+                </div>
               </SectionCard>
             ) : null}
 
@@ -612,6 +698,61 @@ export function SettingsPage() {
               </div>
             </SectionCard>
 
+            <SectionCard id="password" icon={HiOutlineKey} title={t('settings.passwordTitle')}>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                {passwordFormError ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+                    {passwordFormError}
+                  </div>
+                ) : null}
+                {hasEmailPasswordIdentity ? (
+                  <div>
+                    <FieldLabel>{t('settings.currentPassword')}</FieldLabel>
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      autoComplete="current-password"
+                      value={passwordCurrent}
+                      onChange={(e) => setPasswordCurrent(e.target.value)}
+                      className={fieldClass}
+                      disabled={passwordSaving}
+                    />
+                  </div>
+                ) : null}
+                <div>
+                  <FieldLabel>{t('settings.newPassword')}</FieldLabel>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    autoComplete="new-password"
+                    value={passwordNew}
+                    onChange={(e) => setPasswordNew(e.target.value)}
+                    className={fieldClass}
+                    disabled={passwordSaving}
+                    minLength={8}
+                  />
+                </div>
+                <div>
+                  <FieldLabel>{t('settings.confirmPassword')}</FieldLabel>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    className={fieldClass}
+                    disabled={passwordSaving}
+                    minLength={8}
+                  />
+                </div>
+                <div className="pt-1">
+                  <Button type="submit" disabled={passwordSaving}>
+                    {passwordSaving ? t('settings.updatingPassword') : t('settings.updatePassword')}
+                  </Button>
+                </div>
+              </form>
+            </SectionCard>
+
             {/* Media */}
             <SectionCard
               icon={HiOutlinePhoto}
@@ -645,6 +786,25 @@ export function SettingsPage() {
           </div>
         </main>
       </div>
+
+      <Modal
+        open={leaveAgencyModalOpen}
+        onClose={closeLeaveAgencyModal}
+        title={t('settings.agencyLeaveModalTitle')}
+        size="sm"
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="secondary" disabled={leaveAgencyBusy} onClick={closeLeaveAgencyModal}>
+              {t('settings.agencyLeaveModalCancel')}
+            </Button>
+            <Button type="button" variant="danger" disabled={leaveAgencyBusy} onClick={confirmLeaveAgency}>
+              {leaveAgencyBusy ? t('settings.agencyLeaving') : t('settings.agencyLeaveModalConfirm')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm leading-relaxed text-slate-600">{t('settings.agencyLeaveModalBody')}</p>
+      </Modal>
 
       <PhotoCropModal
         open={avatarCropOpen}

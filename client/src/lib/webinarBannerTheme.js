@@ -76,6 +76,40 @@ function companyMutedColor(textHex, secondaryHex) {
   return '#6b7280';
 }
 
+/** WCAG 2.1 contrast ratio (1–21) for two sRGB hex colours. */
+function wcagContrastRatio(fgHex, bgHex) {
+  const L1 = relativeLuminance(fgHex);
+  const L2 = relativeLuminance(bgHex);
+  const hi = Math.max(L1, L2);
+  const lo = Math.min(L1, L2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * Adjust `textHex` toward black or white until contrast vs `surfaceHex` is at least `minRatio`.
+ * Mirrors server `enforceContrastOnSurface` in `htmlGenerator.js`.
+ */
+function enforceContrastOnSurface(textHex, surfaceHex, minRatio = 4.5) {
+  const surface = String(surfaceHex || '#ffffff').trim();
+  const start = String(textHex || '#0f172a').trim();
+  if (!hexToRgb(surface)) return start;
+  if (!hexToRgb(start)) return relativeLuminance(surface) > 0.45 ? '#0f172a' : '#ffffff';
+  if (wcagContrastRatio(start, surface) >= minRatio) return start;
+
+  const surfaceL = relativeLuminance(surface);
+  const toDark = surfaceL > 0.45;
+  let c = start;
+  for (let i = 0; i < 36; i++) {
+    c = toDark ? mixHexWithBlack(c, 0.1) : mixHexWithWhite(c, 0.1);
+    if (wcagContrastRatio(c, surface) >= minRatio) return c;
+  }
+  const fallbacks = toDark ? ['#0f172a', '#000000'] : ['#ffffff', '#f8fafc'];
+  for (const f of fallbacks) {
+    if (wcagContrastRatio(f, surface) >= minRatio) return f;
+  }
+  return toDark ? '#000000' : '#ffffff';
+}
+
 /**
  * @param {string} [railPx]
  */
@@ -88,12 +122,16 @@ export function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 
   const surface = mixHexPair(mixHexWithWhite(c4, 0.97), mixHexWithWhite(c3, 0.82), 0.58);
   const blobPeach = mixHexPair(mixHexWithWhite(c1, 0.38), mixHexWithWhite(c3, 0.5), 0.55);
   const blobOrange = c1;
-  const headline = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.04)], 0.48);
-  const subline = companyMutedColor(c4, c2);
+  const headlineRaw = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.04)], 0.48);
+  const sublineRaw = companyMutedColor(c4, c2);
+  const minCopy = 4.5;
+  const headline = enforceContrastOnSurface(headlineRaw, surface, minCopy);
+  const subline = enforceContrastOnSurface(sublineRaw, surface, minCopy);
+  const brand = enforceContrastOnSurface(c1, surface, minCopy);
   const blobsH = Math.max(84, Math.round((rail * 140) / 560));
   return {
     banner_surface_bg: surface,
-    banner_brand_color: c1,
+    banner_brand_color: brand,
     banner_headline_color: headline,
     banner_subline_color: subline,
     banner_cta_border: headline,

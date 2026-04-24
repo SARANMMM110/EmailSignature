@@ -88,7 +88,7 @@ export const PLANS = {
       max_active_signatures: Infinity,
       max_saved_custom_palettes: Infinity,
       layout_templates: Infinity,
-      cta_banner_templates: 10,
+      cta_banner_templates: Infinity,
       media_upload_limit_mb: 25,
     },
     features: {

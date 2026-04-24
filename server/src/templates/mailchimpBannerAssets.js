@@ -3,7 +3,10 @@
  * Inlined for email output — no remote images.
  */
 
-export const MAILCHIMP_SCENE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 415 90" preserveAspectRatio="xMidYMid slice" width="100%" height="52" style="display:block;width:100%;height:52px;max-height:56px;border:0;">
+/** Scene rail height (px) — must match `banner_6` row + `<img>` in `bannerTemplates.js` and editor previews. */
+export const MAILCHIMP_BANNER_SCENE_HEIGHT_PX = 70;
+
+export const MAILCHIMP_SCENE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 415 90" preserveAspectRatio="xMidYMax slice" width="100%" height="${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}" style="display:block;width:100%;height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;border:0;">
 <defs>
 <linearGradient id="mc-sky" x1="0" y1="0" x2="0.6" y2="1">
 <stop offset="0%" stop-color="#f9b56a"/><stop offset="50%" stop-color="#e8813a"/><stop offset="100%" stop-color="#c05020"/>

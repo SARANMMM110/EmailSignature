@@ -261,6 +261,7 @@ export const palettesAPI = {
   getSystem: () => api.get('palettes/system'),
   getUser: () => api.get('palettes/user'),
   create: (data) => api.post('palettes/user', data),
+  update: (id, data) => api.patch(`palettes/user/${id}`, data),
   delete: (id) => api.delete(`palettes/user/${id}`),
 };
 
@@ -316,6 +317,8 @@ export const agencyAPI = {
 
   /** Members */
   getMembers: () => api.get('agency/members'),
+  /** Create account (Silver) and add as member (no invite link). */
+  createMember: (data) => api.post('agency/members', data),
   patchMember: (memberId, body) =>
     api.patch(`agency/members/${encodeURIComponent(String(memberId).trim())}`, body),
   setMemberPassword: (memberId, password) =>
@@ -328,6 +331,9 @@ export const agencyAPI = {
     api.get('agency/join/preview', { params: { token: String(token || '').trim() } }),
   joinWithLink: (token) => api.post('agency/join', { link_token: token }),
   registerAsOwner: (token) => api.post('agency/register-with-token', { token }),
+
+  /** Member leaves their current agency (self-service). */
+  leaveAgency: () => api.post('agency/leave'),
 };
 
 /**

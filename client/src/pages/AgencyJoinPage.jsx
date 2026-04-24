@@ -4,6 +4,7 @@ import { FiCheckCircle } from 'react-icons/fi';
 import { useAuthStore } from '../store/authStore.js';
 import { consumeAgencyInviteLink, getAgencyJoinPreview } from '../lib/api.js';
 import { clearStoredRegistrationRef } from '../lib/registrationRef.js';
+import { clearAgencyJoinLinkToken, writeAgencyJoinLinkToken } from '../lib/agencyJoinLink.js';
 import { PLANS, normalizePlanId } from '../data/plans.js';
 import { Toast } from '../components/ui/Toast.jsx';
 import { useToast } from '../hooks/useToast.js';
@@ -25,7 +26,10 @@ export function AgencyJoinPage() {
   const autoJoinStarted = useRef(false);
 
   useEffect(() => {
-    if (linkToken) clearStoredRegistrationRef();
+    if (linkToken) {
+      clearStoredRegistrationRef();
+      writeAgencyJoinLinkToken(linkToken);
+    }
   }, [linkToken]);
 
   useEffect(() => {
@@ -64,11 +68,6 @@ export function AgencyJoinPage() {
       : null;
 
   const bannerValid = Boolean(preview?.is_valid) && !invalidMsg;
-  const planLine = bannerValid
-    ? `You'll be assigned the ${planMeta.name} plan.`
-    : previewLoading
-      ? 'Checking your invitation…'
-      : null;
   const joinLine = bannerValid ? `Joining: ${agencyDisplayName}` : null;
 
   const mapJoinError = useCallback(
@@ -105,6 +104,7 @@ export function AgencyJoinPage() {
       } else {
         showToast(`Welcome to ${name}! Your ${planName} plan is active.`, 'success');
       }
+      clearAgencyJoinLinkToken();
       queueMicrotask(() => {
         navigate('/dashboard', { replace: true });
       });
@@ -133,20 +133,15 @@ export function AgencyJoinPage() {
   }
 
   if (!session) {
-    const backSearch = linkToken ? `?agency_link=${encodeURIComponent(linkToken)}` : '';
-    const loginQs = new URLSearchParams();
     if (linkToken) {
-      loginQs.set('from', 'agency-join');
-      loginQs.set('agency_link', linkToken);
+      return (
+        <Navigate
+          to={{ pathname: '/signup', search: `?agency_link=${encodeURIComponent(linkToken)}` }}
+          replace
+        />
+      );
     }
-    const loginSearch = loginQs.toString() ? `?${loginQs.toString()}` : '';
-    return (
-      <Navigate
-        to={{ pathname: '/login', search: loginSearch }}
-        replace
-        state={{ from: { pathname: '/join', search: backSearch } }}
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
   if (!linkToken) {
@@ -180,8 +175,7 @@ export function AgencyJoinPage() {
               <p className="mt-1 text-sm font-medium leading-snug text-white/95">{invalidMsg}</p>
             ) : (
               <>
-                {planLine ? <p className="mt-1 text-sm font-medium leading-snug text-white/95">{planLine}</p> : null}
-                {joinLine ? <p className="mt-1 text-sm font-medium leading-snug text-white/90">{joinLine}</p> : null}
+                {joinLine ? <p className="mt-1 text-sm font-medium leading-snug text-white/95">{joinLine}</p> : null}
               </>
             )}
           </div>

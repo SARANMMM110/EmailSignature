@@ -7,8 +7,8 @@ import { webinarBannerStyleVars } from '../lib/webinarBannerTheme.js';
 
 const DEMO = {
   brand: 'Acme Studio',
-  headline: 'Digital marketing<br>expert',
-  subline: 'Projecting your brand into<br>the distant.',
+  headline: 'Digital marketing expert',
+  subline: 'Projecting your brand into the distant.',
   cta: 'Call to action',
   minHeight: 96,
 };
@@ -25,9 +25,11 @@ export function buildWebinarBannerInnerHtml(vars, copy = DEMO) {
   return `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="${BANNER_W}" style="width:${BANNER_W}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td style="padding:0;border-radius:16px;-webkit-border-radius:16px;overflow:hidden;mso-border-radius-alt:16px;position:relative;background-color:${vars.banner_surface_bg};min-height:${mh}px;">
-<svg xmlns="http://www.w3.org/2000/svg" width="${BANNER_W}" height="${bh}" viewBox="0 0 560 140" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="display:block;position:absolute;right:0;top:0;width:${BANNER_W}px;height:${bh}px;z-index:0;">
+<svg xmlns="http://www.w3.org/2000/svg" width="${BANNER_W}" height="${bh}" viewBox="-200 0 760 140" preserveAspectRatio="xMaxYMid meet" aria-hidden="true" style="display:block;position:absolute;right:0;top:0;left:auto;width:${BANNER_W}px;height:${bh}px;z-index:0;">
+<g transform="translate(28,0)">
 <path d="M 320 -10 C 310 10, 270 5, 275 35 C 280 60, 320 55, 315 80 C 308 110, 270 105, 280 125 C 290 145, 340 135, 360 110 C 380 85, 360 70, 375 50 C 392 28, 420 35, 415 10 C 410 -10, 330 -30, 320 -10 Z" fill="${vars.banner_blob_peach}" opacity="0.6"/>
 <path d="M 355 -20 C 340 5, 360 30, 390 25 C 420 20, 445 -5, 460 20 C 475 45, 450 70, 420 75 C 395 80, 375 65, 370 85 C 364 108, 390 125, 420 120 C 455 114, 480 90, 500 65 C 520 40, 510 5, 490 -15 C 468 -38, 375 -48, 355 -20 Z" fill="${vars.banner_blob_orange}" opacity="0.95"/>
+</g>
 </svg>
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;position:relative;z-index:1;">
 <tr>
@@ -37,7 +39,7 @@ export function buildWebinarBannerInnerHtml(vars, copy = DEMO) {
 <p style="margin:0;padding:0;color:${vars.banner_subline_color};font-size:11px;font-weight:400;line-height:1.45;mso-line-height-rule:exactly;">${s}</p>
 </td>
 <td valign="middle" align="right" width="1%" style="width:1%;white-space:nowrap;padding:14px 18px 14px 8px;vertical-align:middle;text-align:right;font-family:Arial, Helvetica, Roboto, system-ui, sans-serif;mso-line-height-rule:exactly;">
-<a href="https://" style="display:inline-block;border:2px solid ${vars.banner_cta_border};border-radius:50px;-webkit-border-radius:50px;padding:8px 18px;font-size:12px;font-weight:600;color:${vars.banner_cta_text};text-decoration:none;line-height:1.2;mso-line-height-rule:exactly;background-color:transparent;">${c}</a>
+<a href="https://" style="display:inline-block;border:2px solid ${vars.banner_cta_border};border-radius:50px;-webkit-border-radius:50px;padding:8px 18px;font-size:12px;font-weight:600;color:${vars.banner_cta_text};text-decoration:none;line-height:1.2;mso-line-height-rule:exactly;background-color:rgba(255,255,255,0.92);">${c}</a>
 </td>
 </tr>
 </table>

@@ -18,7 +18,6 @@ const BANNER_KEY_BY_SLUG = {
   'explore-world-banner': 'banner_7',
   'boost-improve-banner': 'banner_8',
   'online-loan-banner': 'banner_9',
-  'business-city-banner': 'banner_10',
   'leave-review-banner': 'banner_11',
   'seo-whitepaper-banner': 'banner_12',
   'green-gradient-cta-banner': 'banner_13',
@@ -84,12 +83,12 @@ async function seedBanners() {
                       ? 'Boost & improve'
                       : slug === 'online-loan-banner'
                         ? 'Online loan'
-                        : slug === 'business-city-banner'
-                          ? 'Business city'
-                          : slug === 'leave-review-banner'
-                            ? 'Leave a review'
-                            : slug === 'seo-whitepaper-banner'
-                              ? 'SEO whitepaper'
+                        : slug === 'leave-review-banner'
+                          ? 'Leave a review'
+                          : slug === 'seo-whitepaper-banner'
+                            ? 'SEO whitepaper'
+                            : slug === 'green-gradient-cta-banner'
+                              ? 'Green gradient CTA'
                               : 'Book a call';
     const { error } = await supabaseAdmin.from('banners').upsert(
       {
@@ -103,7 +102,6 @@ async function seedBanners() {
           slug === 'explore-world-banner' ||
           slug === 'boost-improve-banner' ||
           slug === 'online-loan-banner' ||
-          slug === 'business-city-banner' ||
           slug === 'leave-review-banner' ||
           slug === 'seo-whitepaper-banner' ||
           slug === 'green-gradient-cta-banner'

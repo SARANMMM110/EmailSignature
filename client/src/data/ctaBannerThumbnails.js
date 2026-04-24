@@ -88,14 +88,17 @@ export function mindscopeBannerThumbnailSrcDoc() {
   return wrapSrcDoc(inner);
 }
 
+/** Scene height (px) — keep in sync with server `MAILCHIMP_BANNER_SCENE_HEIGHT_PX` in `mailchimpBannerAssets.js`. */
+const MAILCHIMP_THUMB_SCENE_H = 70;
+
 /** Mailchimp-inspired strip — mirrors server `banner_6` (simplified for iframe scale). */
 export function mailchimpCampaignBannerThumbnailSrcDoc() {
   const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
 <tr><td style="padding:0;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;min-height:58px;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;min-height:${MAILCHIMP_THUMB_SCENE_H}px;">
 <tr>
-<td width="56%" valign="top" style="width:56%;vertical-align:top;padding:0;background:linear-gradient(180deg,#f9b56a 0%,#c05020 100%);line-height:0;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="100%" height="58" preserveAspectRatio="xMidYMid slice" style="display:block;height:58px;">
+<td width="56%" valign="top" style="width:56%;vertical-align:top;padding:0;background-color:#1a1210;line-height:0;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="100%" height="${MAILCHIMP_THUMB_SCENE_H}" preserveAspectRatio="xMidYMax slice" style="display:block;height:${MAILCHIMP_THUMB_SCENE_H}px;">
 <rect width="120" height="40" fill="#e8813a"/>
 <polygon points="30,40 60,8 90,40" fill="#d96030"/><polygon points="60,8 90,40 60,40" fill="#8c3410"/>
 <ellipse cx="22" cy="32" rx="10" ry="5" fill="#4a2608"/>
@@ -225,51 +228,6 @@ export function onlineLoanBannerThumbnailSrcDoc() {
 <table cellpadding="0" cellspacing="0" border="0" align="right" style="margin-top:4px;border-collapse:collapse;"><tr><td>
 <span style="display:inline-block;background:#1e3d2f;color:#fff;font-family:Arial,sans-serif;font-size:8px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;padding:4px 10px;border-radius:4px;">CHCI PŮJČIT</span>
 </td></tr></table>
-</td>
-</tr>
-</table>
-</td></tr>
-</table>`;
-  return wrapSrcDoc(inner);
-}
-
-/** Business / city skyline strip — mirrors server `banner_10` (simplified). */
-export function businessCityBannerThumbnailSrcDoc() {
-  const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
-<tr><td style="padding:0;background-color:#1a1a2e;border-radius:4px;overflow:hidden;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
-<tr>
-<td valign="middle" width="42%" style="width:42%;background-color:#ffffff;padding:8px 10px 8px 12px;vertical-align:middle;">
-<p style="margin:0;font-family:Arial,sans-serif;font-size:6px;font-weight:700;color:#1a1a2e;letter-spacing:0.12em;text-transform:uppercase;">BUSINESS</p>
-<p style="margin:1px 0 0;font-family:Arial,sans-serif;font-size:11px;font-weight:900;color:#d4a400;text-transform:uppercase;line-height:1;">BANNER</p>
-<p style="margin:0;font-family:Arial,sans-serif;font-size:11px;font-weight:900;color:#1a1a2e;text-transform:uppercase;line-height:1;">DESIGN</p>
-<p style="margin:4px 0 5px;line-height:0;font-size:0;">&nbsp;</p>
-<span style="display:inline-block;background-color:#1a1a2e;color:#fff;font-family:Arial,sans-serif;font-size:6px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px;">LEARN MORE</span>
-</td>
-<td valign="bottom" width="58%" style="width:58%;padding:0;line-height:0;vertical-align:bottom;background:linear-gradient(160deg,#5a6e80 0%,#6b7f8e 55%,#4a5a68 100%);">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
-<td valign="bottom" style="padding:0 0 2px 4px;line-height:0;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" width="200" height="56" preserveAspectRatio="xMaxYMax meet" style="display:block;">
-<rect x="20" y="28" width="14" height="28" fill="#2a3540" opacity="0.85"/>
-<rect x="38" y="18" width="18" height="38" fill="#1a2530"/>
-<rect x="60" y="24" width="16" height="32" fill="#2a3848"/>
-<rect x="82" y="8" width="22" height="48" fill="#1a2530"/>
-<rect x="108" y="20" width="20" height="36" fill="#2a3848"/>
-<rect x="132" y="14" width="24" height="42" fill="#1a2530"/>
-<rect x="160" y="22" width="18" height="34" fill="#2a3848"/>
-<rect x="182" y="26" width="16" height="30" fill="#1a2530"/>
-</svg>
-</td>
-<td valign="top" align="right" style="padding:6px 8px 0 4px;vertical-align:top;">
-<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background-color:#1a1a2e;border-radius:3px;"><tr><td style="padding:4px 6px;text-align:center;">
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 22 22" style="display:block;margin:0 auto;">
-<polygon points="11,2 20,7 20,15 11,20 2,15 2,7" fill="none" stroke="#f0b400" stroke-width="1.5"/>
-<circle cx="11" cy="11" r="3" fill="#f0b400"/>
-</svg>
-<p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:5px;font-weight:700;color:#fff;letter-spacing:0.1em;text-transform:uppercase;">COMPANY</p>
-</td></tr></table>
-</td>
-</tr></table>
 </td>
 </tr>
 </table>

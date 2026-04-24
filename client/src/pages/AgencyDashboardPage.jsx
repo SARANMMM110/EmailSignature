@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiCopy, FiKey, FiLogOut, FiSettings, FiTrash2 } from 'react-icons/fi';
+import { FiCopy, FiKey, FiLogOut, FiSettings, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -11,10 +11,12 @@ import { agencyAPI } from '../lib/api.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useAuthStore } from '../store/authStore.js';
 import { displayAgencyTitle } from '../lib/agencyDisplay.js';
-import { BRAND_NAME } from '../constants/brand.js';
-import { PLANS } from '../data/plans.js';
+import { PLANS, PLAN_IDS } from '../data/plans.js';
 
 const ACCENT = '#7c3aed';
+
+/** Member invite links always assign this Tier 1 plan (Silver). */
+const AGENCY_MEMBER_INVITE_PLAN = PLAN_IDS.ADVANCED;
 
 function IconBuilding({ className = 'h-8 w-8' }) {
   return (
@@ -100,11 +102,17 @@ export function AgencyDashboardPage() {
   const [savingName, setSavingName] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createPlan, setCreatePlan] = useState('advanced');
   const [createLabel, setCreateLabel] = useState('');
   const [createMaxUsers, setCreateMaxUsers] = useState(10);
   const [createExpiresLocal, setCreateExpiresLocal] = useState('');
   const [creating, setCreating] = useState(false);
+
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [addMemberEmail, setAddMemberEmail] = useState('');
+  const [addMemberUsername, setAddMemberUsername] = useState('');
+  const [addMemberPassword, setAddMemberPassword] = useState('');
+  const [addMemberSubmitting, setAddMemberSubmitting] = useState(false);
+  const [addMemberFormError, setAddMemberFormError] = useState('');
 
   const [passwordMember, setPasswordMember] = useState(null);
   const [newMemberPassword, setNewMemberPassword] = useState('');
@@ -132,11 +140,18 @@ export function AgencyDashboardPage() {
 
   useEffect(() => {
     if (!createOpen) return;
-    setCreatePlan('advanced');
     setCreateLabel('');
     setCreateMaxUsers(10);
     setCreateExpiresLocal('');
   }, [createOpen]);
+
+  useEffect(() => {
+    if (!addMemberOpen) return;
+    setAddMemberEmail('');
+    setAddMemberUsername('');
+    setAddMemberPassword('');
+    setAddMemberFormError('');
+  }, [addMemberOpen]);
 
   const membersList = useMemo(() => data?.members || [], [data?.members]);
   const activeMemberCount = useMemo(
@@ -176,7 +191,7 @@ export function AgencyDashboardPage() {
     setCreating(true);
     try {
       const body = {
-        assigned_plan: createPlan,
+        assigned_plan: AGENCY_MEMBER_INVITE_PLAN,
         label: createLabel.trim() || null,
         max_users: Math.max(1, Math.floor(Number(createMaxUsers) || 1)),
         expires_at: expiresIso || undefined,
@@ -187,7 +202,6 @@ export function AgencyDashboardPage() {
       setCreateLabel('');
       setCreateMaxUsers(10);
       setCreateExpiresLocal('');
-      setCreatePlan('advanced');
       await load();
       try {
         await navigator.clipboard.writeText(url);
@@ -208,6 +222,26 @@ export function AgencyDashboardPage() {
       showToast('Link copied', 'success');
     } catch {
       showToast('Could not copy', 'error');
+    }
+  };
+
+  const submitAddMember = async (e) => {
+    e.preventDefault();
+    setAddMemberFormError('');
+    setAddMemberSubmitting(true);
+    try {
+      await agencyAPI.createMember({
+        email: addMemberEmail.trim(),
+        username: addMemberUsername.trim(),
+        password: addMemberPassword,
+      });
+      setAddMemberOpen(false);
+      showToast(`Member added with ${PLANS.advanced.name} plan`, 'success');
+      await load();
+    } catch (err) {
+      setAddMemberFormError(err.response?.data?.message || err.message || 'Could not add member.');
+    } finally {
+      setAddMemberSubmitting(false);
     }
   };
 
@@ -373,13 +407,17 @@ export function AgencyDashboardPage() {
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Member invite links</h2>
-                    <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600">
-                      Use <strong className="font-semibold text-slate-800">Generate invite link</strong> to choose a
-                      Tier&nbsp;1 plan ({PLANS.personal.name}, {PLANS.advanced.name}, or {PLANS.ultimate.name}) for that invite. Each URL is unique and only
-                      applies the plan you pick when you generate it — copy invite URLs from the table below.
-                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="inline-flex items-center gap-2 font-semibold"
+                      onClick={() => setAddMemberOpen(true)}
+                    >
+                      <FiUserPlus className="h-4 w-4 shrink-0" aria-hidden />
+                      Add user
+                    </Button>
                     <Button
                       type="button"
                       className="bg-gradient-to-r from-blue-600 to-indigo-600 font-semibold text-white shadow-md shadow-blue-600/25 hover:brightness-105"
@@ -405,7 +443,7 @@ export function AgencyDashboardPage() {
                           <tr>
                             <td colSpan={3} className="px-6 py-14 text-center text-sm font-medium text-slate-500">
                               No invite links yet — use <strong className="text-slate-700">Generate invite link</strong>{' '}
-                              above to pick a plan and create your first URL.
+                              above to create your first join URL.
                             </td>
                           </tr>
                         ) : (
@@ -458,14 +496,17 @@ export function AgencyDashboardPage() {
 
               <section className="mt-14">
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Agency members</h2>
-                <p className="mt-1 text-sm text-slate-600">People who joined through your invite links.</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  People who joined through your invite links, or accounts you added with <strong className="font-semibold text-slate-800">Add user</strong>.
+                </p>
                 <div className={`${cardClass} mt-4 overflow-hidden`}>
                   {membersList.length === 0 ? (
                     <div className="flex flex-col items-center bg-slate-50/30 px-6 py-16 text-center">
                       <div className="max-w-md rounded-2xl border border-dashed border-slate-200 bg-white px-8 py-10 shadow-sm">
                         <p className="text-sm font-semibold text-slate-800">No members yet</p>
                         <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                          Share an invite link from above to add members to your agency.
+                          Share an invite link from above, or use <strong className="text-slate-700">Add user</strong> to create a{' '}
+                          {PLANS.advanced.name} account and attach it to your agency.
                         </p>
                       </div>
                     </div>
@@ -595,6 +636,66 @@ export function AgencyDashboardPage() {
       </Modal>
 
       <Modal
+        open={addMemberOpen}
+        onClose={() => !addMemberSubmitting && setAddMemberOpen(false)}
+        title="Add agency member"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" disabled={addMemberSubmitting} onClick={() => setAddMemberOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="agency-add-member-form" disabled={addMemberSubmitting}>
+              {addMemberSubmitting ? 'Creating…' : 'Create user'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="agency-add-member-form" onSubmit={submitAddMember} className="space-y-4">
+          {addMemberFormError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{addMemberFormError}</p>
+          ) : null}
+          <p className="text-sm leading-relaxed text-slate-600">
+            Creates a new sign-in account with email confirmed. They are assigned the{' '}
+            <strong className="font-semibold text-slate-900">{PLANS.advanced.name}</strong> plan and appear in Agency members
+            right away (uses one seat).
+          </p>
+          <Input
+            label="Email"
+            type="email"
+            autoComplete="off"
+            value={addMemberEmail}
+            onChange={(e) => setAddMemberEmail(e.target.value)}
+            required
+          />
+          <div>
+            <Input
+              label="Username"
+              type="text"
+              autoComplete="off"
+              value={addMemberUsername}
+              onChange={(e) => setAddMemberUsername(e.target.value)}
+              required
+              minLength={2}
+            />
+            <p className="mt-1.5 text-xs text-slate-500">Stored as display name (profile full name).</p>
+          </div>
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              autoComplete="new-password"
+              value={addMemberPassword}
+              onChange={(e) => setAddMemberPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+            <p className="mt-1.5 text-xs text-slate-500">At least 8 characters. Share it with the member securely.</p>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
         open={createOpen}
         onClose={() => !creating && setCreateOpen(false)}
         title="Generate member invite link"
@@ -612,29 +713,17 @@ export function AgencyDashboardPage() {
       >
         <form id="agency-create-link-form" onSubmit={submitCreateLink} className="space-y-4">
           <p className="text-sm leading-relaxed text-slate-600">
-            Choose the {BRAND_NAME} tier for people who join through this URL. You can create multiple links with
-            different plans or seat limits.
+            Create a join URL for your team. You can add several links with different labels, use limits, or expiry
+            dates. Everyone who joins gets the <strong className="font-semibold text-slate-800">{PLANS.advanced.name}</strong>{' '}
+            plan.
           </p>
-          <div>
-            <label
-              htmlFor="agency-link-plan"
-              className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-            >
-              Plan for this invite
-            </label>
-            <select
-              id="agency-link-plan"
-              value={createPlan}
-              onChange={(e) => setCreatePlan(e.target.value)}
-              className="w-full rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="personal">{PLANS.personal.name}</option>
-              <option value="advanced">{PLANS.advanced.name}</option>
-              <option value="ultimate">{PLANS.ultimate.name}</option>
-            </select>
-            <p className="mt-1.5 text-xs text-slate-500">
-              Team members who join through this link receive this Tier 1 plan.
-            </p>
+          <div
+            className="pointer-events-none select-none rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3 opacity-[0.52] saturate-[0.65]"
+            title={`Member invite plan is fixed to ${PLANS.advanced.name}.`}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Plan for this invite</p>
+            <p className="mt-1.5 text-sm font-semibold text-slate-800">{PLANS.advanced.name}</p>
+            <p className="mt-1 text-xs text-slate-500">Fixed — member links always use this tier.</p>
           </div>
           <Input
             label="Label (optional)"

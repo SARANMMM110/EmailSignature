@@ -22,7 +22,9 @@ import { NotFoundPage } from './pages/NotFoundPage.jsx';
 import { AgencySetupPage } from './pages/AgencySetupPage.jsx';
 import { AgencyJoinPage } from './pages/AgencyJoinPage.jsx';
 import { AgencyDashboardPage } from './pages/AgencyDashboardPage.jsx';
-import { AdminAgencyPage } from './pages/admin/AdminAgencyPage.jsx';
+import { AdminAgencyLayout } from './pages/admin/AdminAgencyLayout.jsx';
+import { AdminAgencyTokensPage } from './pages/admin/AdminAgencyTokensPage.jsx';
+import { AdminAgencyAppUsersPage } from './pages/admin/AdminAgencyAppUsersPage.jsx';
 import { UpgradeModal } from './components/ui/UpgradeModal.jsx';
 
 function EB({ children }) {
@@ -55,8 +57,12 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<EB><AdminDashboardPage /></EB>} />
           <Route path="registration-links" element={<EB><AdminRegistrationLinksPage /></EB>} />
-          <Route path="agency" element={<EB><AdminAgencyPage /></EB>} />
-          <Route path="console-users" element={<Navigate to="/admin/agency" replace />} />
+          <Route path="agency" element={<EB><AdminAgencyLayout /></EB>}>
+            <Route index element={<Navigate to="tokens" replace />} />
+            <Route path="tokens" element={<EB><AdminAgencyTokensPage /></EB>} />
+            <Route path="users" element={<EB><AdminAgencyAppUsersPage /></EB>} />
+          </Route>
+          <Route path="console-users" element={<Navigate to="/admin/agency/users" replace />} />
           <Route path="account" element={<EB><AdminAccountPage /></EB>} />
         </Route>
       </Route>

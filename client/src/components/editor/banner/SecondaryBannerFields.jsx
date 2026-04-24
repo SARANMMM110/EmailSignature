@@ -139,7 +139,7 @@ export function SecondaryBannerFields({
           </span>
           <p className="text-[11px] leading-relaxed text-slate-500">
             {isSecondaryMailchimpResolved
-              ? 'Image fills the orange left band at a fixed 52px height (same strip size as the default art).'
+              ? 'Image fills the left scene rail at 70px height (same strip size as the default art).'
               : isSecondaryBusinessCityResolved
                 ? 'Top-right logo (replaces the yellow hex + COMPANY block). Fits the corner with compact sizing.'
                 : 'Small thumbnail to the left of the text on this strip (same resize rules as the primary slot).'}
@@ -158,13 +158,13 @@ export function SecondaryBannerFields({
             ) : String(bc.secondary_banner_image_url || '').trim() ? (
               isSecondaryMailchimpResolved ? (
                 <div
-                  className="w-full max-w-full overflow-hidden rounded-lg bg-[#e8813a]"
-                  style={{ height: 52 }}
+                  className="w-full max-w-full overflow-hidden rounded-lg bg-[#1a1210]"
+                  style={{ height: 70 }}
                 >
                   <img
                     src={bc.secondary_banner_image_url}
                     alt=""
-                    className="block h-[52px] w-full object-cover object-center"
+                    className="block h-[70px] w-full object-cover object-center object-bottom"
                   />
                 </div>
               ) : isSecondaryBusinessCityResolved ? (
@@ -500,7 +500,7 @@ export function SecondaryBannerFields({
               rows={3}
               className={TEXTAREA_CLASS}
               value={bc.secondary_field_1 ?? ''}
-              placeholder={'Digital marketing\nexpert'}
+              placeholder={'Digital marketing expert'}
               onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
             />
           </div>
@@ -513,7 +513,7 @@ export function SecondaryBannerFields({
               rows={3}
               className={TEXTAREA_CLASS}
               value={bc.secondary_field_2 ?? ''}
-              placeholder={'Projecting your brand into\nthe distant.'}
+              placeholder={'Projecting your brand into the distant.'}
               onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
             />
           </div>

@@ -36,7 +36,7 @@ import {
   GREEN_GRADIENT_CTA_BANNER_UUID,
 } from '../lib/templateIds.js';
 import { filterAndSortEditorBanners } from '../lib/editorBanners.js';
-import { DEMO_SIGNATURE_DATA } from '../data/templatePreviews.js';
+import { DEMO_SIGNATURE_DATA, defaultPaletteColorsForLayoutSlug } from '../data/templatePreviews.js';
 import {
   applyProfileOverDemoPlaceholders,
   mergeProfileIntoSignature,
@@ -1029,6 +1029,38 @@ export const useEditorStore = create((set, get) => ({
     get().scheduleAutosave();
   },
 
+  /** Restore layout default colors and turn off brand tint on CTA strips (see `htmlGenerator.ctaBannerTintStops`). */
+  resetPaletteToLayoutDefaults: () => {
+    const sig = get().signature;
+    if (!sig) return;
+    const slug = normalizeSignatureTemplateSlug(sig.design, sig.template_id);
+    const colors = defaultPaletteColorsForLayoutSlug(slug);
+    const [a, b, c, d] = colors;
+    runDebouncedPreview.cancel();
+    set({
+      signature: {
+        ...sig,
+        design: {
+          ...sig.design,
+          colors: [...colors],
+          apply_brand_palette_to_cta_banners: false,
+          palette: {
+            ...sig.design.palette,
+            primary: a,
+            secondary: b,
+            accent: c,
+            text: d,
+          },
+        },
+      },
+      isDirty: true,
+      saveStatus: 'idle',
+    });
+    get().refreshPreviewNow();
+    runDebouncedPreview();
+    get().scheduleAutosave();
+  },
+
   /** Always refetches — avoids stale catalog (e.g. new banner rows) and UUID casing mismatches in cached rows. */
   ensureBannersCache: async () => {
     try {
@@ -1104,8 +1136,8 @@ export const useEditorStore = create((set, get) => ({
                             : b?.name || 'Learn more';
     const webinarFields = isWebinar
       ? {
-          field_1: 'Digital marketing\nexpert',
-          field_2: 'Projecting your brand into\nthe distant.',
+          field_1: 'Digital marketing expert',
+          field_2: 'Projecting your brand into the distant.',
           field_3: 'Call to action',
           field_4: '80',
           field_5: '',
@@ -1290,8 +1322,8 @@ export const useEditorStore = create((set, get) => ({
     }
     const webinarSecondary = isWebinar
       ? {
-          secondary_field_1: 'Digital marketing\nexpert',
-          secondary_field_2: 'Projecting your brand into\nthe distant.',
+          secondary_field_1: 'Digital marketing expert',
+          secondary_field_2: 'Projecting your brand into the distant.',
           secondary_field_3: 'Call to action',
           secondary_field_4: '80',
           secondary_field_5: '',

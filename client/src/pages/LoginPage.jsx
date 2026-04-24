@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { FiCheckCircle } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth.js';
 import { GoogleIcon } from '../components/icons/GoogleIcon.jsx';
 import { consumeAgencyInviteLink, getAgencyJoinPreview, getAgencySetupPreview } from '../lib/api.js';
 import { clearStoredRegistrationRef, REGISTRATION_REF_STORAGE_KEY } from '../lib/registrationRef.js';
+import { clearAgencyJoinLinkToken, readAgencyJoinLinkToken, writeAgencyJoinLinkToken } from '../lib/agencyJoinLink.js';
 import { useRegistrationRefPreviewStore } from '../store/registrationRefPreviewStore.js';
-import { PLANS, normalizePlanId } from '../data/plans.js';
 import { BrandLockup } from '../components/BrandLockup.jsx';
 
 function parseAgencyInvites(location, searchParams) {
@@ -42,6 +42,11 @@ function parseAgencyInvites(location, searchParams) {
     }
   }
 
+  if (!joinLink) {
+    const stored = readAgencyJoinLinkToken();
+    if (stored) joinLink = stored;
+  }
+
   return { setupToken, joinLink };
 }
 
@@ -60,12 +65,6 @@ function resolveReturnPath(location, searchParams) {
     return `${from.pathname}${search}`;
   }
   return '/dashboard';
-}
-
-function agencyTierLabel(agencyType) {
-  const t = String(agencyType || '').trim();
-  if (t === '100' || t === '250' || t === '500') return `Agency ${t}`;
-  return t ? `Agency ${t}` : 'Agency';
 }
 
 export function LoginPage() {
@@ -163,6 +162,7 @@ export function LoginPage() {
       (async () => {
         try {
           await consumeAgencyInviteLink(joinLink);
+          clearAgencyJoinLinkToken();
           navigate('/dashboard', { replace: true });
         } catch {
           postLoginJoinRef.current = false;
@@ -185,7 +185,6 @@ export function LoginPage() {
 
   const inviteBanner = useMemo(() => {
     if (setupToken) {
-      const tier = agencyTierLabel(setupPreview?.agency_type);
       const valid = setupPreview?.is_valid && !setupPreview?.expired && !setupPreview?.already_used;
       const invalidMsg = setupPreview?.already_used
         ? 'This agency purchase link has reached its activation limit. Ask your administrator for a new tier link if you need another organization.'
@@ -199,19 +198,13 @@ export function LoginPage() {
         show: true,
         valid,
         invalidMsg: !invitePreviewLoading && setupPreview && !valid ? invalidMsg : null,
-        planLine: valid
-          ? `You'll be assigned the ${tier} plan (organization tier).`
-          : invitePreviewLoading
-            ? 'Checking your invitation…'
-            : null,
+        planLine: !valid && invitePreviewLoading ? 'Checking your invitation…' : null,
         joinLine: valid
           ? 'After you sign in, use Activate Agency Account on the next page — nothing happens until you confirm.'
           : null,
       };
     }
     if (joinLink) {
-      const planId = joinPreview?.assigned_plan ? normalizePlanId(joinPreview.assigned_plan) : 'personal';
-      const planName = PLANS[planId]?.name || PLANS.personal.name;
       const agencyName = joinPreview?.agency_name?.trim() || 'the team you were invited to';
       const valid = joinPreview?.is_valid;
       const invalidMsg =
@@ -229,11 +222,7 @@ export function LoginPage() {
         show: true,
         valid,
         invalidMsg,
-        planLine: valid
-          ? `You'll be assigned the ${planName} plan.`
-          : invitePreviewLoading
-            ? 'Checking your invitation…'
-            : null,
+        planLine: !valid && invitePreviewLoading ? 'Checking your invitation…' : null,
         joinLine: valid
           ? `Joining: ${agencyName}. After you sign in, your invitation applies automatically and your plan appears in the sidebar.`
           : null,
@@ -252,11 +241,7 @@ export function LoginPage() {
         show: true,
         valid,
         invalidMsg,
-        planLine: valid
-          ? `After you sign in, your account will be set to the ${regRefPlanName || regRefPlanId} plan from this invite.`
-          : regRefLoading
-            ? 'Checking your invite link…'
-            : null,
+        planLine: !valid && regRefLoading ? 'Checking your invite link…' : null,
         joinLine: valid ? 'Your plan in the app will match this invite as soon as sign-in completes.' : null,
       };
     }
@@ -281,6 +266,9 @@ export function LoginPage() {
       if (r) {
         sessionStorage.setItem(REGISTRATION_REF_STORAGE_KEY, r);
         void useRegistrationRefPreviewStore.getState().syncFromStorage();
+      }
+      if (joinLink) {
+        writeAgencyJoinLinkToken(joinLink);
       }
       const { error: err } = await loginWithGoogle(returnPath);
       if (err) setError(err.message || 'Google sign-in failed');
@@ -311,6 +299,12 @@ export function LoginPage() {
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
       </div>
     );
+  }
+
+  /** New users with a plan invite should register first; `returning=1` skips this (link from Sign up page). */
+  const returningFromSignup = searchParams.get('returning') === '1';
+  if (!session && refParam && !returningFromSignup && !joinLink && !setupToken) {
+    return <Navigate to={`/signup?ref=${encodeURIComponent(refParam)}`} replace />;
   }
 
   return (
@@ -424,7 +418,16 @@ export function LoginPage() {
 
           <p className="mt-8 text-center text-sm text-slate-600">
             Don&apos;t have an account?{' '}
-            <Link to="/signup" className="font-semibold text-blue-600 hover:underline">
+            <Link
+              to={(() => {
+                const q = new URLSearchParams();
+                if (joinLink) q.set('agency_link', joinLink);
+                if (refParam) q.set('ref', refParam);
+                const s = q.toString();
+                return s ? `/signup?${s}` : '/signup';
+              })()}
+              className="font-semibold text-blue-600 hover:underline"
+            >
               Sign up
             </Link>
           </p>

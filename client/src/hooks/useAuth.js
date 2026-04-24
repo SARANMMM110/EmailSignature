@@ -17,6 +17,7 @@ export function useAuth() {
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
   const loginWithEmail = useAuthStore((s) => s.loginWithEmail);
   const signupWithEmail = useAuthStore((s) => s.signupWithEmail);
+  const changePassword = useAuthStore((s) => s.changePassword);
   const storeLogout = useAuthStore((s) => s.logout);
   const updateProfile = useAuthStore((s) => s.updateProfile);
 
@@ -39,6 +40,7 @@ export function useAuth() {
     loginWithGoogle,
     loginWithEmail,
     signupWithEmail,
+    changePassword,
     logout,
     signOut: logout,
     updateProfile,

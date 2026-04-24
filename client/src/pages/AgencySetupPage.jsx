@@ -81,7 +81,7 @@ export function AgencySetupPage() {
       } else if (code === 'ALREADY_IN_AGENCY') {
         showToast(
           msg ||
-            'Leave your current agency in Account settings before you can activate a new agency from this link.',
+            'You are still on another team. Open Account settings → Your team → Leave this team, then try this link again.',
           'error'
         );
       } else if (code === 'TOKEN_NOT_FOUND' || status === 404) {
@@ -188,14 +188,15 @@ export function AgencySetupPage() {
             ) : null}
             {isAgencyMember && !done ? (
               <div className="mb-6 w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
-                <p className="font-semibold">You&apos;re already a member of another agency</p>
+                <p className="font-semibold">You are already on a team as a member</p>
                 <p className="mt-1 text-xs leading-relaxed text-amber-900/95">
-                  This link creates a new agency <strong className="font-semibold">you</strong> own. Leave your current
-                  team first in{' '}
-                  <Link to="/settings" className="font-semibold text-amber-950 underline hover:no-underline">
+                  This link sets up a new organization <strong className="font-semibold">you</strong> will own. First
+                  leave your current team: open{' '}
+                  <Link to="/settings#agency" className="font-semibold text-amber-950 underline hover:no-underline">
                     Account settings
                   </Link>
-                  , then return here to activate.
+                  , scroll to <strong className="font-semibold">Your team</strong>, tap{' '}
+                  <strong className="font-semibold">Leave this team</strong>, confirm, then return here.
                 </p>
               </div>
             ) : null}

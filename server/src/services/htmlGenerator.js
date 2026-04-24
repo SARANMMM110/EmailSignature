@@ -1,4 +1,4 @@
-﻿import Handlebars from 'handlebars';
+import Handlebars from 'handlebars';
 import juice from 'juice';
 import { minify } from 'html-minifier-terser';
 import {
@@ -22,6 +22,7 @@ import {
   splitSignaturePreviewSlots,
   intersperseBrBetweenBannerPartTables,
 } from '../lib/splitSignaturePreviewSlots.js';
+import { premiumCtaTokensForBanner } from './premiumCtaBannerStyleTokens.js';
 
 /** Rich layouts embed multiple SVG data-URIs — keep headroom so output is never sliced mid-signature. */
 const MAX_OUTPUT_BYTES = 48 * 1024;
@@ -263,6 +264,40 @@ function signatureCardSurface(textHex) {
   return '#ffffff';
 }
 
+/** WCAG 2.1 contrast ratio (1–21) for two sRGB hex colours. */
+function wcagContrastRatio(fgHex, bgHex) {
+  const L1 = relativeLuminance(fgHex);
+  const L2 = relativeLuminance(bgHex);
+  const hi = Math.max(L1, L2);
+  const lo = Math.min(L1, L2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * Adjust `textHex` toward black (on light surfaces) or white (on dark surfaces) until contrast vs
+ * `surfaceHex` is at least `minRatio` — keeps webinar / pill CTA copy readable for any palette.
+ */
+function enforceContrastOnSurface(textHex, surfaceHex, minRatio = 4.5) {
+  const surface = String(surfaceHex || '#ffffff').trim();
+  const start = String(textHex || '#0f172a').trim();
+  if (!hexToRgb(surface)) return start;
+  if (!hexToRgb(start)) return relativeLuminance(surface) > 0.45 ? '#0f172a' : '#ffffff';
+  if (wcagContrastRatio(start, surface) >= minRatio) return start;
+
+  const surfaceL = relativeLuminance(surface);
+  const toDark = surfaceL > 0.45;
+  let c = start;
+  for (let i = 0; i < 36; i++) {
+    c = toDark ? mixHexWithBlack(c, 0.1) : mixHexWithWhite(c, 0.1);
+    if (wcagContrastRatio(c, surface) >= minRatio) return c;
+  }
+  const fallbacks = toDark ? ['#0f172a', '#000000'] : ['#ffffff', '#f8fafc'];
+  for (const f of fallbacks) {
+    if (wcagContrastRatio(f, surface) >= minRatio) return f;
+  }
+  return toDark ? '#000000' : '#ffffff';
+}
+
 function bannerHeadlineOnDark(c4) {
   const c = String(c4 || '').trim();
   if (c && relativeLuminance(c) > 0.82) return c;
@@ -310,17 +345,22 @@ function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 470) {
   const surface = mixHexPair(mixHexWithWhite(c4, 0.97), mixHexWithWhite(c3, 0.82), 0.58);
   const blobPeach = mixHexPair(mixHexWithWhite(c1, 0.38), mixHexWithWhite(c3, 0.5), 0.55);
   const blobOrange = c1;
-  const headline = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.04)], 0.48);
-  const subline = companyMutedColor(c4, c2);
+  const headlineRaw = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.04)], 0.48);
+  const sublineRaw = companyMutedColor(c4, c2);
+  const minCopy = 4.5;
+  const headline = enforceContrastOnSurface(headlineRaw, surface, minCopy);
+  const subline = enforceContrastOnSurface(sublineRaw, surface, minCopy);
+  const brand = enforceContrastOnSurface(c1, surface, minCopy);
   const blobSvg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="560" height="140" viewBox="0 0 560 140" fill="none">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="560" height="140" viewBox="-200 0 760 140" preserveAspectRatio="xMaxYMid meet" fill="none">` +
+    `<g transform="translate(28,0)">` +
     `<path d="M 320 -10 C 310 10, 270 5, 275 35 C 280 60, 320 55, 315 80 C 308 110, 270 105, 280 125 C 290 145, 340 135, 360 110 C 380 85, 360 70, 375 50 C 392 28, 420 35, 415 10 C 410 -10, 330 -30, 320 -10 Z" fill="${blobPeach}" opacity="0.6"/>` +
     `<path d="M 355 -20 C 340 5, 360 30, 390 25 C 420 20, 445 -5, 460 20 C 475 45, 450 70, 420 75 C 395 80, 375 65, 370 85 C 364 108, 390 125, 420 120 C 455 114, 480 90, 500 65 C 520 40, 510 5, 490 -15 C 468 -38, 375 -48, 355 -20 Z" fill="${blobOrange}" opacity="0.95"/>` +
-    `</svg>`;
+    `</g></svg>`;
   const blobsH = Math.max(84, Math.round((rail * 140) / 560));
   return {
     banner_surface_bg: surface,
-    banner_brand_color: c1,
+    banner_brand_color: brand,
     banner_headline_color: headline,
     banner_subline_color: subline,
     banner_cta_border: headline,
@@ -2537,8 +2577,8 @@ export function rowToGeneratePayload(row) {
 }
 
 const WEBINAR_BANNER_DEFAULTS = {
-  field_1: 'Digital marketing\nexpert',
-  field_2: 'Projecting your brand into\nthe distant.',
+  field_1: 'Digital marketing expert',
+  field_2: 'Projecting your brand into the distant.',
   field_3: 'Call to action',
   field_4: '80',
   field_5: '',
@@ -2914,6 +2954,18 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     hbIn.banner_b13_fs_arrow = Math.max(14, Math.round(18 * sc13));
     hbIn.banner_b13_decor_w = Math.max(72, Math.min(140, Math.round(120 * sc13)));
   }
+
+  Object.assign(
+    hbIn,
+    premiumCtaTokensForBanner(
+      key,
+      context.apply_brand_palette_to_cta_banners === true,
+      context.color_1,
+      context.color_2,
+      context.color_3,
+      context.color_4
+    )
+  );
   return compiled(hbIn);
 }
 

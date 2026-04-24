@@ -35,7 +35,7 @@ const ADVANCED_BULLETS = [
 const ULTIMATE_BULLETS = [
   'Unlimited active signatures & saved palettes',
   '20+ layout templates',
-  '10 CTA banner styles',
+  'All CTA banner styles',
   '25MB media uploads',
   `Everything in ${PLANS.advanced.name}, plus unlimited scale`,
 ];

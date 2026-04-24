@@ -206,7 +206,6 @@ export const BANNER_SLUG_TO_UUID = {
   'explore-world-banner': EXPLORE_WORLD_BANNER_UUID,
   'boost-improve-banner': BOOST_IMPROVE_BANNER_UUID,
   'online-loan-banner': ONLINE_LOAN_BANNER_UUID,
-  'business-city-banner': BUSINESS_CITY_BANNER_UUID,
   'leave-review-banner': LEAVE_REVIEW_BANNER_UUID,
   'seo-whitepaper-banner': SEO_WHITEPAPER_BANNER_UUID,
   'green-gradient-cta-banner': GREEN_GRADIENT_CTA_BANNER_UUID,

@@ -128,7 +128,7 @@ export const PLANS = {
       max_active_signatures: Infinity,
       max_saved_custom_palettes: Infinity,
       layout_templates: Infinity,
-      cta_banner_templates: 10,
+      cta_banner_templates: Infinity,
       media_upload_limit_mb: 25,
     },
 
@@ -258,7 +258,7 @@ export const COMPARISON_TABLE = [
     category: 'Banners (CTA)',
     color: '#fed7aa',
     rows: [
-      { feature: 'CTA Banner Styles', personal: 'No', advanced: '5', ultimate: '10' },
+      { feature: 'CTA Banner Styles', personal: 'No', advanced: '5', ultimate: 'All' },
       { feature: 'Custom Banner Upload', personal: 'No', advanced: 'Yes', ultimate: 'Yes' },
     ],
   },

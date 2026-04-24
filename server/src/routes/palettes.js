@@ -83,6 +83,46 @@ router.post(
   }
 );
 
+router.patch(
+  '/user/:id',
+  requireAuth,
+  requireFeature('custom_palette_creation'),
+  param('id').isUUID(),
+  body('name').optional().trim().notEmpty(),
+  body('colors').optional().isArray({ min: 4, max: 4 }),
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+      }
+      const nameIn = req.body.name != null ? String(req.body.name).trim() : '';
+      const colorsIn = req.body.colors;
+      if (!nameIn && !Array.isArray(colorsIn)) {
+        return res.status(400).json({ message: 'Provide name and/or colors to update' });
+      }
+      if (Array.isArray(colorsIn) && !validateFourHexColors(colorsIn)) {
+        return res.status(400).json({ message: 'Each color must be a valid #RGB or #RRGGBB hex' });
+      }
+      const patch = {};
+      if (nameIn) patch.name = nameIn;
+      if (Array.isArray(colorsIn)) patch.colors = colorsIn.map((c) => String(c).trim());
+      const { data, error } = await supabaseAdmin
+        .from('user_palettes')
+        .update(patch)
+        .eq('id', req.params.id)
+        .eq('user_id', req.user.id)
+        .select('*')
+        .single();
+      throwIfSupabaseError(error);
+      if (!data) return res.status(404).json({ message: 'Palette not found' });
+      res.json({ palette: data });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
 router.delete(
   '/user/:id',
   requireAuth,

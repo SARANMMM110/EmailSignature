@@ -20,7 +20,9 @@ export function ProtectedRoute() {
   }
 
   if (!session) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const search = location.search && location.search.startsWith('?') ? location.search : '';
+    const loginTo = search ? `/login${search}` : '/login';
+    return <Navigate to={loginTo} state={{ from: location }} replace />;
   }
 
   return <Outlet />;
