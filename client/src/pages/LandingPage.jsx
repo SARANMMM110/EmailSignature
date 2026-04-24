@@ -371,16 +371,7 @@ export function LandingPage() {
               >
                 Get started — it&apos;s free →
               </Link>
-              <button
-                type="button"
-                className="inline-flex h-[52px] w-full min-w-[200px] items-center justify-center rounded-xl border border-[var(--border-sm)] bg-white px-8 text-base font-semibold text-[var(--gray-950)] transition hover:bg-[var(--gray-50)] sm:w-auto"
-              >
-                ▶ Watch 90 sec demo
-              </button>
             </div>
-            <p className="mt-6 text-center text-xs text-[var(--gray-400)]">
-              ✓ Plans from $7/mo · ✓ Cancel anytime · ✓ Setup in minutes
-            </p>
 
             {/* Hero visual */}
             <div className="relative mx-auto mt-14 max-w-[880px]">

@@ -170,8 +170,7 @@ export function SignupPage() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50">
           {inviteInfo?.valid ? (
             <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              You&apos;re signing up with an invite for the <strong>{inviteInfo.plan_name}</strong> plan. After you create your
-              account, we&apos;ll apply that tier to your profile automatically.
+              You&apos;re signing up with an invite for the <strong>{inviteInfo.plan_name}</strong> plan.
             </div>
           ) : null}
           {agencyInviteToken ? (
@@ -188,9 +187,7 @@ export function SignupPage() {
                 <p className="font-medium">Checking your team invitation…</p>
               ) : agencyPreview?.is_valid ? (
                 <p>
-                  You&apos;re signing up to join <strong>{agencyPreview.agency_name?.trim() || 'your team'}</strong>. After
-                  your account is created, you&apos;ll receive the <strong>{agencyPlanMeta.name}</strong> plan from this
-                  registration link.
+                  You&apos;re signing up to join <strong>{agencyPreview.agency_name?.trim() || 'your team'}</strong>.
                 </p>
               ) : (
                 <p>

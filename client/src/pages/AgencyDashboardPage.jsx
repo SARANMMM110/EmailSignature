@@ -656,9 +656,7 @@ export function AgencyDashboardPage() {
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{addMemberFormError}</p>
           ) : null}
           <p className="text-sm leading-relaxed text-slate-600">
-            Creates a new sign-in account they can use right away. They are assigned the{' '}
-            <strong className="font-semibold text-slate-900">{PLANS.advanced.name}</strong> plan and appear in Agency members
-            right away (uses one seat).
+            Creates a new account.
           </p>
           <Input
             label="Email"
@@ -713,18 +711,8 @@ export function AgencyDashboardPage() {
       >
         <form id="agency-create-link-form" onSubmit={submitCreateLink} className="space-y-4">
           <p className="text-sm leading-relaxed text-slate-600">
-            Create a join URL for your team. You can add several links with different labels, use limits, or expiry
-            dates. Everyone who joins gets the <strong className="font-semibold text-slate-800">{PLANS.advanced.name}</strong>{' '}
-            plan.
+            Create a join URL for your team. 
           </p>
-          <div
-            className="pointer-events-none select-none rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-3 opacity-[0.52] saturate-[0.65]"
-            title={`Member invite plan is fixed to ${PLANS.advanced.name}.`}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Plan for this invite</p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">{PLANS.advanced.name}</p>
-            <p className="mt-1 text-xs text-slate-500">Fixed — member links always use this tier.</p>
-          </div>
           <Input
             label="Label (optional)"
             value={createLabel}

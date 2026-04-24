@@ -335,36 +335,54 @@ export const useAuthStore = create((set, get) => ({
     return { error: null };
   },
 
-  signupWithEmail: async (email, password, fullName, meta = {}) => {
+  signupWithEmail: async (email, password, fullName, _meta = {}) => {
     if (!supabase) {
       return { error: new Error('Supabase is not configured.') };
     }
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const agencyJoinToken = String(meta.agencyJoinToken || '').trim();
-    const emailRedirectTo =
-      agencyJoinToken !== ''
-        ? `${origin}/join?agency_link=${encodeURIComponent(agencyJoinToken)}`
-        : `${origin}/dashboard`;
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo,
-        data: { full_name: fullName },
-      },
+    const emailTrim = String(email || '').trim();
+    const passwordStr = String(password || '');
+    const nameTrim = String(fullName || '').trim();
+
+    let origin = '';
+    try {
+      const { getApiOrigin } = await import('../lib/api.js');
+      origin = getApiOrigin();
+    } catch {
+      origin = typeof window !== 'undefined' ? window.location.origin : '';
+    }
+    const registerUrl = `${String(origin).replace(/\/+$/, '')}/api/auth/register-email`;
+
+    let res;
+    try {
+      res = await fetch(registerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailTrim,
+          password: passwordStr,
+          full_name: nameTrim,
+        }),
+      });
+    } catch (e) {
+      return { error: new Error(e?.message || 'Network error during sign-up.') };
+    }
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { error: new Error(body.message || body.error || 'Sign up failed') };
+    }
+
+    const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({
+      email: emailTrim,
+      password: passwordStr,
     });
-    if (error) {
-      return { error };
+    if (signErr) {
+      return { error: signErr };
     }
-    if (!data.session) {
-      return {
-        error: new Error(
-          'No session after sign-up. Try Sign in with the same email and password, or turn off “Confirm email” in Supabase → Authentication → Providers → Email so new accounts can sign in immediately.'
-        ),
-      };
+    if (signData?.session) {
+      get().setSession(signData.session);
+      await get().fetchProfile();
     }
-    get().setSession(data.session);
-    await get().fetchProfile();
     return { error: null };
   },
 
