@@ -24,7 +24,6 @@ import { AgencyJoinPage } from './pages/AgencyJoinPage.jsx';
 import { AgencyDashboardPage } from './pages/AgencyDashboardPage.jsx';
 import { AdminAgencyLayout } from './pages/admin/AdminAgencyLayout.jsx';
 import { AdminAgencyTokensPage } from './pages/admin/AdminAgencyTokensPage.jsx';
-import { AdminAgencyAppUsersPage } from './pages/admin/AdminAgencyAppUsersPage.jsx';
 import { UpgradeModal } from './components/ui/UpgradeModal.jsx';
 
 function EB({ children }) {
@@ -60,9 +59,9 @@ export default function App() {
           <Route path="agency" element={<EB><AdminAgencyLayout /></EB>}>
             <Route index element={<Navigate to="tokens" replace />} />
             <Route path="tokens" element={<EB><AdminAgencyTokensPage /></EB>} />
-            <Route path="users" element={<EB><AdminAgencyAppUsersPage /></EB>} />
+            <Route path="users" element={<Navigate to="/admin/agency/tokens" replace />} />
           </Route>
-          <Route path="console-users" element={<Navigate to="/admin/agency/users" replace />} />
+          <Route path="console-users" element={<Navigate to="/admin/agency/tokens" replace />} />
           <Route path="account" element={<EB><AdminAccountPage /></EB>} />
         </Route>
       </Route>
