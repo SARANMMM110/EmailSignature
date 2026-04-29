@@ -14,7 +14,10 @@ import {
   editorSplitCtaIframeHeightCeilingPx,
   wrapSignatureHtmlForIframe,
 } from '../../data/templatePreviews.js';
-import { splitSignatureAndBannerHtml } from '../../lib/splitSignatureBannerHtml.js';
+import {
+  bannerSlotVisualFingerprint,
+  splitSignatureAndBannerHtml,
+} from '../../lib/splitSignatureBannerHtml.js';
 import {
   BLANK_IMAGE_BANNER_UUID,
   bundleRailPxForSignature,
@@ -111,14 +114,34 @@ export function EditorPreview({
   }, [generatedHTML, previewSlotBundle]);
 
   const hasSplitBanner = Boolean(bannerHtml);
-  const bannerPreviewSlots = useMemo(() => {
+  /**
+   * Split HTML often lists the same strip twice (slot 1 + slot 2) with different `data-sig-*` shells.
+   * Dedupe by {@link bannerSlotVisualFingerprint}, not raw string equality.
+   */
+  const bannerPreviewSlotEntries = useMemo(() => {
     if (!bannerHtml?.trim()) return [];
     const slots =
       Array.isArray(bannerSlotHtmls) && bannerSlotHtmls.length > 0
         ? bannerSlotHtmls
         : [bannerHtml];
-    return slots.filter((s) => String(s || '').trim());
+    const trimmed = slots.map((s) => String(s || '').trim()).filter(Boolean);
+    const seen = new Set();
+    const out = [];
+    for (let slotIndex = 0; slotIndex < trimmed.length; slotIndex++) {
+      const html = trimmed[slotIndex];
+      const fp = bannerSlotVisualFingerprint(html);
+      const key = fp || html;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ html, sourceSlotIndex: slotIndex });
+    }
+    return out;
   }, [bannerHtml, bannerSlotHtmls]);
+
+  const bannerPreviewSlots = useMemo(
+    () => bannerPreviewSlotEntries.map((e) => e.html),
+    [bannerPreviewSlotEntries]
+  );
 
   const useStackedCtaFrames = Boolean(
     hasSplitBanner && signatureHtml && bannerPreviewSlots.length > 0
@@ -167,10 +190,11 @@ export function EditorPreview({
 
   const ctaSlotFrames = useMemo(
     () =>
-      bannerPreviewSlots.map((slotHtml) => ({
-        srcDoc: wrapSignatureHtmlForIframe(String(slotHtml || '').trim(), bareWrapOptions),
+      bannerPreviewSlotEntries.map(({ html, sourceSlotIndex }) => ({
+        srcDoc: wrapSignatureHtmlForIframe(String(html || '').trim(), bareWrapOptions),
+        sourceSlotIndex,
       })),
-    [bannerPreviewSlots, bareWrapOptions]
+    [bannerPreviewSlotEntries, bareWrapOptions]
   );
 
   const removeCtaAtSlot = useCallback(
@@ -205,7 +229,8 @@ export function EditorPreview({
     layoutSlug === 'template_17' ||
     layoutSlug === 'template_18' ||
     layoutSlug === 'template_19' ||
-    layoutSlug === 'template_20'
+    layoutSlug === 'template_20' ||
+    layoutSlug === 'template_21'
       ? '#ffffff'
       : 'linear-gradient(180deg, #fafbfc 0%, #f5f6f8 40%, #eef0f3 100%)';
 
@@ -263,7 +288,7 @@ export function EditorPreview({
                 {previewHeaderActions}
               </div>
               {useStackedCtaFrames ? (
-                <div className="flex w-full min-w-0 justify-center">
+                <div className="flex w-full min-w-0 justify-center rounded-xl">
                   <PreviewIframeBlock
                     srcDoc={signatureOnlySrcDoc}
                     frameKey={signatureOnlyFrameKey}
@@ -272,7 +297,7 @@ export function EditorPreview({
                   />
                 </div>
               ) : (
-                <div className="flex min-h-[240px] w-full min-w-0 justify-center">
+                <div className="flex min-h-[240px] w-full min-w-0 justify-center rounded-xl">
                   <PreviewIframeBlock
                     srcDoc={combinedSrcDoc}
                     frameKey={combinedFrameKey}
@@ -287,29 +312,31 @@ export function EditorPreview({
 
             {/* Banner 1 / Banner 2 — each: title row + edit/delete + iframe (mock layout) */}
             {useStackedCtaFrames
-              ? ctaSlotFrames.map((frame, i) => {
-                  const slotIsBlank = i === 0 ? slot0IsBlankStrip : slot1IsBlankStrip;
+              ? ctaSlotFrames.map((frame) => {
+                  const { sourceSlotIndex } = frame;
+                  const slotIsBlank =
+                    sourceSlotIndex === 0 ? slot0IsBlankStrip : slot1IsBlankStrip;
                   const fixedBlankH = slotIsBlank ? blankStripPreviewIframeH : null;
                   return (
                   <section
-                    key={`cta-section-${i}-${hashSrcDoc(frame.srcDoc)}`}
+                    key={`cta-section-${sourceSlotIndex}-${hashSrcDoc(frame.srcDoc)}`}
                     className={`relative z-10 flex w-full min-w-0 flex-col ${sectionInnerGap}`}
                   >
                     <div className={sectionHeaderClass}>
                       <div className="min-w-0 flex-1 pt-0.5">
-                        <h2 className={titleClass}>{t('editor.bannerSlot', { n: i + 1 })}</h2>
+                        <h2 className={titleClass}>{t('editor.bannerSlot', { n: sourceSlotIndex + 1 })}</h2>
                       </div>
                       <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
                         <PreviewIconButton
-                          title={t('editor.editBannerSlot', { n: i + 1 })}
+                          title={t('editor.editBannerSlot', { n: sourceSlotIndex + 1 })}
                           onClick={(e) => {
                             e.stopPropagation();
-                            goMyInfoBanner(i);
+                            goMyInfoBanner(sourceSlotIndex);
                           }}
                         >
                           <HiOutlinePencilSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
                         </PreviewIconButton>
-                        <PreviewDeleteButton title={t('editor.removeCta')} onClick={() => removeCtaAtSlot(i)} />
+                        <PreviewDeleteButton title={t('editor.removeCta')} onClick={() => removeCtaAtSlot(sourceSlotIndex)} />
                       </div>
                     </div>
                     <div className="w-full min-w-0">
@@ -321,7 +348,7 @@ export function EditorPreview({
                         measureFloor={fixedBlankH ?? 40}
                         measureCeiling={fixedBlankH ?? splitCtaIframeHeightCeiling}
                         ctaPreviewClickScope={CTA_PREVIEW_CLICK_SCOPE.BANNER_ONLY}
-                        onCtaPreviewNavigate={() => goMyInfoBanner(i)}
+                        onCtaPreviewNavigate={() => goMyInfoBanner(sourceSlotIndex)}
                       />
                     </div>
                   </section>

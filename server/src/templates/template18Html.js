@@ -31,7 +31,7 @@ export const TEMPLATE_18_MARKUP = `<!-- T18: ${T18_W}px × ${T18_H}px — Zubril
 <tr>
 <td width="${T18_CONTENT}" valign="top" style="width:${T18_CONTENT}px;max-width:${T18_CONTENT}px;padding:22px 12px 22px 24px;vertical-align:top;background-color:transparent;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
-<tr><td style="padding:0 0 8px 0;font-size:18px;font-weight:700;line-height:1.1;letter-spacing:-0.02em;color:{{t18_brand}};mso-line-height-rule:exactly;">{{t18_brand_line}}</td></tr>
+{{#if t18_brand_line}}<tr><td style="padding:0 0 8px 0;font-size:18px;font-weight:700;line-height:1.1;letter-spacing:-0.02em;color:{{t18_brand}};mso-line-height-rule:exactly;">{{t18_brand_line}}</td></tr>{{/if}}
 {{#if title}}<tr><td style="padding:0 0 22px 0;font-size:21px;font-weight:400;line-height:1.12;letter-spacing:-0.02em;color:{{t18_role}};mso-line-height-rule:exactly;">{{title}}</td></tr>{{/if}}
 <tr><td style="padding:0;vertical-align:top;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
@@ -56,7 +56,7 @@ export const TEMPLATE_18_MARKUP = `<!-- T18: ${T18_W}px × ${T18_H}px — Zubril
 </table>
 </td>
 <td width="${T18_PHOTO}" valign="bottom" align="right" height="${T18_H}" style="width:${T18_PHOTO}px;max-width:${T18_PHOTO}px;height:${T18_H}px;padding:0;vertical-align:bottom;text-align:right;line-height:0;font-size:0;background-color:transparent;">
-{{#if photo_url}}<img src="{{{photo_url}}}" alt="" width="${T18_PHOTO}" height="${T18_H}" style="display:block;width:${T18_PHOTO}px;height:${T18_H}px;border:0;object-fit:cover;object-position:50% 100%;">{{else}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${T18_PHOTO}" height="${T18_H}" style="width:${T18_PHOTO}px;height:${T18_H}px;border-collapse:collapse;"><tr><td width="${T18_PHOTO}" height="${T18_H}" align="center" valign="bottom" bgcolor="{{t18_photo_placeholder_bg}}" style="width:${T18_PHOTO}px;height:${T18_H}px;background-color:{{t18_photo_placeholder_bg}};font-size:28px;font-weight:700;letter-spacing:0.04em;color:{{t18_photo_placeholder_color}};mso-line-height-rule:exactly;padding:0 0 14px 0;vertical-align:bottom;">{{name_initials}}</td></tr></table>{{/if}}
+{{#if photo_url}}<img src="{{{photo_url}}}" alt="" width="${T18_PHOTO}" height="${T18_H}" style="display:block;width:${T18_PHOTO}px;height:${T18_H}px;border:0;object-fit:cover;object-position:50% 100%;">{{else}}{{#if show_photo}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${T18_PHOTO}" height="${T18_H}" style="width:${T18_PHOTO}px;height:${T18_H}px;border-collapse:collapse;"><tr><td width="${T18_PHOTO}" height="${T18_H}" align="center" valign="bottom" bgcolor="{{t18_photo_placeholder_bg}}" style="width:${T18_PHOTO}px;height:${T18_H}px;background-color:{{t18_photo_placeholder_bg}};font-size:28px;font-weight:700;letter-spacing:0.04em;color:{{t18_photo_placeholder_color}};mso-line-height-rule:exactly;padding:0 0 14px 0;vertical-align:bottom;">{{name_initials}}</td></tr></table>{{/if}}{{/if}}
 </td>
 </tr>
 </table>

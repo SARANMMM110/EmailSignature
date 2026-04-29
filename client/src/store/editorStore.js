@@ -13,9 +13,6 @@ import {
   isBlankImageBannerPreset,
   isDownloadBannerPreset,
   isNeedCallBannerPreset,
-  isMindscopeBannerPreset,
-  isMailchimpBannerPreset,
-  isExploreWorldBannerPreset,
   isBoostImproveBannerPreset,
   isOnlineLoanBannerPreset,
   isBusinessCityBannerPreset,
@@ -25,21 +22,19 @@ import {
   isBookCallBannerPreset,
   WEBINAR_BANNER_UUID,
   BLANK_IMAGE_BANNER_UUID,
-  MINDSCOPE_BANNER_UUID,
-  MAILCHIMP_BANNER_UUID,
-  EXPLORE_WORLD_BANNER_UUID,
   BOOST_IMPROVE_BANNER_UUID,
   ONLINE_LOAN_BANNER_UUID,
   BUSINESS_CITY_BANNER_UUID,
   LEAVE_REVIEW_BANNER_UUID,
   SEO_WHITEPAPER_BANNER_UUID,
   GREEN_GRADIENT_CTA_BANNER_UUID,
+  SUBSCRIBER_JOURNEY_BANNER_UUID,
 } from '../lib/templateIds.js';
 import { filterAndSortEditorBanners } from '../lib/editorBanners.js';
 import { DEMO_SIGNATURE_DATA, defaultPaletteColorsForLayoutSlug } from '../data/templatePreviews.js';
+import { normalizedEngineColorStops } from '../lib/enginePaletteDefaults.js';
 import {
   applyProfileOverDemoPlaceholders,
-  mergeProfileIntoSignature,
   pickDraftPayload,
   profileHasPrefillableContent,
   starterFieldsWithProfile,
@@ -53,10 +48,14 @@ const BANNER_UUID_TO_PRESET = {
   'b0000002-0000-4000-8000-000000000002': 'download',
   'b0000003-0000-4000-8000-000000000003': 'webinar',
   'b0000004-0000-4000-8000-000000000004': 'need-call',
+  [String(SUBSCRIBER_JOURNEY_BANNER_UUID).toLowerCase()]: 'subscriber-journey',
   'b0000005-0000-4000-8000-000000000005': 'blank-image',
-  [String(MINDSCOPE_BANNER_UUID).toLowerCase()]: 'mindscope-ats',
-  [String(MAILCHIMP_BANNER_UUID).toLowerCase()]: 'mailchimp-campaign',
-  [String(EXPLORE_WORLD_BANNER_UUID).toLowerCase()]: 'explore-world-banner',
+  /** Retired Mindscope ATS strip — same UUID; editor + HTML use Book a call (`banner_2`). */
+  'b0000006-0000-4000-8000-000000000006': 'book-call',
+  /** Retired “Campaign strip” — same UUID; editor + HTML use Need a call (`banner_4`). */
+  'b0000007-0000-4000-8000-000000000007': 'need-call',
+  /** Retired “Explore your world” — same UUID; editor + HTML use Book a call (`banner_2`). */
+  'b0000008-0000-4000-8000-000000000008': 'book-call',
   [String(BOOST_IMPROVE_BANNER_UUID).toLowerCase()]: 'boost-improve-banner',
   [String(ONLINE_LOAN_BANNER_UUID).toLowerCase()]: 'online-loan-banner',
   [String(BUSINESS_CITY_BANNER_UUID).toLowerCase()]: 'business-city-banner',
@@ -72,16 +71,13 @@ function bannerPresetFromRow(b) {
   if (id.includes('download')) return 'download';
   if (id.includes('webinar')) return 'webinar';
   if (id.includes('need')) return 'need-call';
+  if (id === String(SUBSCRIBER_JOURNEY_BANNER_UUID).toLowerCase() || id.includes('subscriber-journey'))
+    return 'subscriber-journey';
   if (id === String(BLANK_IMAGE_BANNER_UUID).toLowerCase()) return 'blank-image';
-  if (id === String(MINDSCOPE_BANNER_UUID).toLowerCase() || id.includes('mindscope')) return 'mindscope-ats';
-  if (id === String(MAILCHIMP_BANNER_UUID).toLowerCase() || id.includes('mailchimp')) return 'mailchimp-campaign';
-  if (
-    id === String(EXPLORE_WORLD_BANNER_UUID).toLowerCase() ||
-    id.includes('explore-world') ||
-    id.includes('explore-your-world')
-  ) {
-    return 'explore-world-banner';
-  }
+  if (id === 'b0000006-0000-4000-8000-000000000006' || id.includes('mindscope')) return 'book-call';
+  if (id === 'b0000007-0000-4000-8000-000000000007' || id.includes('mailchimp')) return 'need-call';
+  if (id === 'b0000008-0000-4000-8000-000000000008' || id.includes('explore-world') || id.includes('explore-your-world'))
+    return 'book-call';
   if (
     id === String(BOOST_IMPROVE_BANNER_UUID).toLowerCase() ||
     id.includes('boost-improve')
@@ -122,16 +118,13 @@ function bannerPresetFromBannerId(bannerId) {
   if (id.includes('download')) return 'download';
   if (id.includes('webinar')) return 'webinar';
   if (id.includes('need')) return 'need-call';
+  if (id === String(SUBSCRIBER_JOURNEY_BANNER_UUID).toLowerCase() || id.includes('subscriber-journey'))
+    return 'subscriber-journey';
   if (id === String(BLANK_IMAGE_BANNER_UUID).toLowerCase()) return 'blank-image';
-  if (id === String(MINDSCOPE_BANNER_UUID).toLowerCase() || id.includes('mindscope')) return 'mindscope-ats';
-  if (id === String(MAILCHIMP_BANNER_UUID).toLowerCase() || id.includes('mailchimp')) return 'mailchimp-campaign';
-  if (
-    id === String(EXPLORE_WORLD_BANNER_UUID).toLowerCase() ||
-    id.includes('explore-world') ||
-    id.includes('explore-your-world')
-  ) {
-    return 'explore-world-banner';
-  }
+  if (id === 'b0000006-0000-4000-8000-000000000006' || id.includes('mindscope')) return 'book-call';
+  if (id === 'b0000007-0000-4000-8000-000000000007' || id.includes('mailchimp')) return 'need-call';
+  if (id === 'b0000008-0000-4000-8000-000000000008' || id.includes('explore-world') || id.includes('explore-your-world'))
+    return 'book-call';
   if (
     id === String(BOOST_IMPROVE_BANNER_UUID).toLowerCase() ||
     id.includes('boost-improve')
@@ -170,14 +163,13 @@ function pickSecondaryBannerConfig(bc) {
 /** When removing the main CTA but a stacked second exists, promote second → primary. */
 function mapSecondaryToPrimaryBannerConfig(prev) {
   if (!prev || typeof prev !== 'object') return {};
+  const tun = {};
+  const out = (base) => ({ ...base, ...tun });
   const secPreset = prev.secondary_preset_id || 'book-call';
   const secBannerId = prev.secondary_banner_id;
   const isWeb = isWebinarBannerPreset(secPreset, secBannerId);
   const isDownload = isDownloadBannerPreset(secPreset, secBannerId);
   const isNeed = isNeedCallBannerPreset(secPreset, secBannerId);
-  const isMindscope = isMindscopeBannerPreset(secPreset, secBannerId);
-  const isMailchimp = isMailchimpBannerPreset(secPreset, secBannerId);
-  const isExploreWorld = isExploreWorldBannerPreset(secPreset, secBannerId);
   const isBoostImprove = isBoostImproveBannerPreset(secPreset, secBannerId);
   const isOnlineLoan = isOnlineLoanBannerPreset(secPreset, secBannerId);
   const isBusinessCity = isBusinessCityBannerPreset(secPreset, secBannerId);
@@ -188,9 +180,6 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
     !isWeb &&
     !isDownload &&
     !isNeed &&
-    !isMindscope &&
-    !isMailchimp &&
-    !isExploreWorld &&
     !isBoostImprove &&
     !isOnlineLoan &&
     !isBusinessCity &&
@@ -202,16 +191,16 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
   const link = prev.secondary_link_url || prev.secondary_href || 'https://';
 
   if (isBlank) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: prev.secondary_link_url || prev.secondary_href || '',
       href: '',
       text: '',
       banner_image_url: prev.secondary_banner_image_url ?? '',
-    };
+    });
   }
   if (isWeb) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
@@ -222,49 +211,10 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       field_4: prev.secondary_field_4 ?? '',
       field_5: prev.secondary_field_5 ?? '',
       banner_image_url: prev.secondary_banner_image_url ?? prev.banner_image_url ?? '',
-    };
-  }
-  if (isMindscope) {
-    return {
-      preset_id: secPreset,
-      link_url: link,
-      href: '',
-      text: String(prev.secondary_text ?? ''),
-      field_1: prev.secondary_field_1 ?? '',
-      field_2: prev.secondary_field_2 ?? '',
-      field_3: prev.secondary_field_3 ?? '',
-      field_4: prev.secondary_field_4 ?? '',
-      field_5: prev.secondary_field_5 ?? '',
-      banner_image_url: prev.secondary_banner_image_url ?? '',
-    };
-  }
-  if (isMailchimp) {
-    return {
-      preset_id: secPreset,
-      link_url: link,
-      href: '',
-      text: String(prev.secondary_text ?? ''),
-      field_1: prev.secondary_field_1 ?? '',
-    };
-  }
-  if (isExploreWorld) {
-    return {
-      preset_id: secPreset,
-      link_url: link,
-      href: '',
-      text: String(prev.secondary_text ?? ''),
-      field_1: prev.secondary_field_1 ?? '',
-      field_2: prev.secondary_field_2 ?? '',
-      field_3: prev.secondary_field_3 ?? '',
-      field_4: prev.secondary_field_4 ?? '',
-      field_5: prev.secondary_field_5 ?? '',
-      cta_strip_logo_url: prev.secondary_cta_strip_logo_url ?? '',
-      cta_strip_icon_url: prev.secondary_cta_strip_icon_url ?? '',
-      cta_strip_hero_url: prev.secondary_cta_strip_hero_url ?? '',
-    };
+    });
   }
   if (isBoostImprove) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
@@ -276,10 +226,10 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       cta_strip_logo_url: prev.secondary_cta_strip_logo_url ?? '',
       cta_strip_icon_url: prev.secondary_cta_strip_icon_url ?? '',
       cta_strip_hero_url: prev.secondary_cta_strip_hero_url ?? '',
-    };
+    });
   }
   if (isOnlineLoan) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
@@ -288,10 +238,10 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       field_2: prev.secondary_field_2 ?? '',
       field_3: prev.secondary_field_3 ?? '',
       banner_image_url: prev.secondary_banner_image_url ?? '',
-    };
+    });
   }
   if (isBusinessCity) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
@@ -301,63 +251,77 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       field_3: prev.secondary_field_3 ?? '',
       field_4: prev.secondary_field_4 ?? '',
       field_5: prev.secondary_field_5 ?? '',
-    };
+    });
   }
   if (isLeaveReview) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
       text: String(prev.secondary_text ?? ''),
       field_1: prev.secondary_field_1 ?? '',
       field_2: prev.secondary_field_2 ?? '',
-    };
+    });
   }
   if (isSeoWhitepaper) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
       text: String(prev.secondary_text ?? ''),
       field_1: prev.secondary_field_1 ?? '',
       field_2: prev.secondary_field_2 ?? '',
-    };
+    });
   }
   if (isGreenGradientCta) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
       text: String(prev.secondary_text ?? ''),
       field_1: prev.secondary_field_1 ?? '',
-    };
+    });
   }
   if (isBook) {
-    return {
+    const s2 = String(prev.secondary_field_2 ?? '').trim();
+    const imgUrl = String(prev.secondary_banner_image_url ?? '').trim();
+    const f2IsImageUrl = /^https?:\/\//i.test(s2);
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
-      text: prev.secondary_text ?? '',
-      field_2: prev.secondary_field_2 ?? '',
-    };
+      text: prev.secondary_text ?? 'BOOK NOW',
+      field_1: prev.secondary_field_1 ?? '',
+      field_2: f2IsImageUrl ? 'strategy call' : (s2 || 'strategy call'),
+      field_3: prev.secondary_field_3 ?? '',
+      field_4: prev.secondary_field_4 ?? '',
+      field_5: prev.secondary_field_5 ?? '',
+      banner_image_url: imgUrl || (f2IsImageUrl ? s2 : '') || prev.banner_image_url || '',
+    });
   }
   if (isDownload || isNeed) {
-    return {
+    return out({
       preset_id: secPreset,
       link_url: link,
       href: '',
       text: prev.secondary_text ?? '',
       field_1: prev.secondary_field_1 ?? '',
-    };
+      ...(isNeed
+        ? {
+            field_2: prev.secondary_field_2 ?? '',
+            field_3: prev.secondary_field_3 ?? '',
+          }
+        : {}),
+    });
   }
-  return {
+  return out({
     preset_id: secPreset,
     link_url: link,
     href: '',
     text: prev.secondary_text ?? '',
     field_2: prev.secondary_field_2 ?? '',
     banner_image_url: prev.secondary_banner_image_url ?? '',
-  };
+  });
 }
 
 /** Stale `fields._bundle.banner` otherwise wins in server `rowToGeneratePayload` / regenerate. */
@@ -412,6 +376,15 @@ function hasAnySocialContent(social) {
   return Object.values(social).some((v) => String(v || '').trim());
 }
 
+/** True when the row was just inserted and not yet updated by a save (avoids re-seeding demo after user clears all fields). */
+function isLikelyFreshSignatureInsert(sig) {
+  if (!sig) return false;
+  const c = sig.created_at ? Date.parse(sig.created_at) : NaN;
+  const u = sig.updated_at ? Date.parse(sig.updated_at) : NaN;
+  if (!Number.isFinite(c) || !Number.isFinite(u)) return false;
+  return Math.abs(u - c) <= 8000;
+}
+
 /** Starter copy + images when the API row is still pristine (new signature from template). */
 function withStarterContentIfEmpty(sig) {
   if (!sig) return null;
@@ -419,7 +392,9 @@ function withStarterContentIfEmpty(sig) {
   const apiSocial = sig.social_links || {};
   /** Empty row from POST /signatures — demo + palette defaults; personal fields from account profile. */
   const pristineFromApi =
-    !hasAnyPersonalFieldContent(apiFields) && !hasAnySocialContent(apiSocial);
+    !hasAnyPersonalFieldContent(apiFields) &&
+    !hasAnySocialContent(apiSocial) &&
+    isLikelyFreshSignatureInsert(sig);
   const { profile, user } = useAuthStore.getState();
 
   if (pristineFromApi) {
@@ -455,16 +430,19 @@ function withStarterContentIfEmpty(sig) {
     };
   }
 
-  return mergeProfileIntoSignature(sig, profile, user);
+  return sig;
 }
 
 export function clientSignatureFromApi(sig) {
   if (!sig) return null;
   const design = sig.design || {};
   const slug = normalizeSignatureTemplateSlug(design, sig.template_id);
+  const rawBc = sig.banner_config || {};
+  const banner_config = { ...rawBc };
   return {
     id: sig.id,
     label: sig.label || sig.name || 'My signature',
+    created_at: sig.created_at || null,
     updated_at: sig.updated_at || null,
     template_id: sig.template_id,
     banner_id: sig.banner_id ?? null,
@@ -473,10 +451,10 @@ export function clientSignatureFromApi(sig) {
       ...design,
       templateId: slug,
       palette: { ...(design.palette || {}) },
-      colors: Array.isArray(design.colors) ? [...design.colors] : undefined,
+      colors: normalizedEngineColorStops(design.colors, design.palette),
     },
     social_links: { ...(sig.social_links || {}) },
-    banner_config: { ...(sig.banner_config || {}) },
+    banner_config,
     show_badge: sig.show_badge !== false,
     signature_link: sig.signature_link || '',
     generated_html: sig.generated_html || sig.html || '',
@@ -525,13 +503,13 @@ export function signatureToEditorPayload(sig) {
   const f = sig.fields || {};
   const social = sig.social_links || {};
   const d = sig.design || {};
-  const colors = d.colors || [];
+  const colors = normalizedEngineColorStops(d.colors, d.palette);
   const pal = d.palette || {};
   const palette = {
-    primary: colors[0] || pal.primary || '#2563eb',
-    secondary: colors[1] || pal.secondary || '#1e40af',
-    accent: colors[2] || pal.accent || '#64748b',
-    text: colors[3] || pal.text || '#0f172a',
+    primary: colors[0] || pal.primary,
+    secondary: colors[1] || pal.secondary,
+    accent: colors[2] || pal.accent,
+    text: colors[3] || pal.text,
   };
   const bannerCfg = sig.banner_config || {};
   const banner = signaturePrimaryBannerIncludedInPreviewPayload(sig)
@@ -545,6 +523,7 @@ export function signatureToEditorPayload(sig) {
           field_3: bannerCfg.field_3,
           field_4: bannerCfg.field_4,
           field_5: bannerCfg.field_5,
+          field_6: bannerCfg.field_6,
           banner_image_url: bannerCfg.banner_image_url,
           image_url: bannerCfg.image_url,
           secondary_link_url: bannerCfg.secondary_link_url,
@@ -555,6 +534,7 @@ export function signatureToEditorPayload(sig) {
           secondary_field_3: bannerCfg.secondary_field_3,
           secondary_field_4: bannerCfg.secondary_field_4,
           secondary_field_5: bannerCfg.secondary_field_5,
+          secondary_field_6: bannerCfg.secondary_field_6,
           secondary_preset_id: bannerCfg.secondary_preset_id,
           secondary_banner_id: bannerCfg.secondary_banner_id,
           secondary_banner_image_url: bannerCfg.secondary_banner_image_url,
@@ -571,6 +551,9 @@ export function signatureToEditorPayload(sig) {
     templateId: d.templateId || uuidToTemplateSlug(sig.template_id),
     design: {
       font: d.font || 'Arial, Helvetica, sans-serif',
+      showLogo: d.showLogo !== false && d.show_logo !== false,
+      showPhoto: d.showPhoto !== false && d.show_photo !== false,
+      colors: normalizedEngineColorStops(d.colors, d.palette),
       ...(d.apply_brand_palette_to_cta_banners === true
         ? { apply_brand_palette_to_cta_banners: true }
         : {}),
@@ -800,6 +783,10 @@ export const useEditorStore = create((set, get) => ({
   showInstallModal: false,
   saveStatus: 'idle',
   bannersCache: null,
+  /** When set, signature preview shows a colored focus ring (palette tab legend / hover). */
+  paletteHighlightRole: null,
+
+  setPaletteHighlightRole: (role) => set({ paletteHighlightRole: role || null }),
 
   _applyPutResult: (row) => {
     const sig = clientSignatureFromApi(row);
@@ -835,13 +822,12 @@ export const useEditorStore = create((set, get) => ({
     }, 2500);
   },
 
-  /** When profile loads or updates, fill empty fields from account data and replace any demo placeholders. */
+  /** When profile loads or updates, replace demo placeholder fields with account data (never refill cleared empties). */
   syncAccountProfileIntoSignature: () => {
     const sig = get().signature;
     if (!sig) return;
     const { profile, user } = useAuthStore.getState();
-    const merged = mergeProfileIntoSignature(sig, profile, user);
-    const next = applyProfileOverDemoPlaceholders(merged, profile, user, DEMO_SIGNATURE_DATA.fields);
+    const next = applyProfileOverDemoPlaceholders(sig, profile, user, DEMO_SIGNATURE_DATA.fields);
     if (next === sig) return;
     set({ signature: next, isDirty: true, saveStatus: 'idle' });
     get().refreshPreviewNow();
@@ -859,6 +845,7 @@ export const useEditorStore = create((set, get) => ({
         generatedHTML: '',
         previewSlotBundle: null,
         previewError: null,
+        paletteHighlightRole: null,
         exportImageUrl: '',
         exportBannerImageUrl: '',
         exportBannerSlotImageUrls: [],
@@ -888,7 +875,9 @@ export const useEditorStore = create((set, get) => ({
         DEMO_SIGNATURE_DATA.fields
       );
       const seedFromProfilePrefill =
-        pristineFromApi && profileHasPrefillableContent(profile, user);
+        pristineFromApi &&
+        isLikelyFreshSignatureInsert(apiSig) &&
+        profileHasPrefillableContent(profile, user);
       if (seq !== loadSignatureSeq) return;
       set({
         signatureId: id,
@@ -1029,7 +1018,7 @@ export const useEditorStore = create((set, get) => ({
     get().scheduleAutosave();
   },
 
-  /** Restore layout default colors and turn off brand tint on CTA strips (see `htmlGenerator.ctaBannerTintStops`). */
+  /** Restore layout default colours; CTA strips use the same four stops as the signature (see `htmlGenerator.ctaBannerTintStops`). */
   resetPaletteToLayoutDefaults: () => {
     const sig = get().signature;
     if (!sig) return;
@@ -1043,7 +1032,7 @@ export const useEditorStore = create((set, get) => ({
         design: {
           ...sig.design,
           colors: [...colors],
-          apply_brand_palette_to_cta_banners: false,
+          apply_brand_palette_to_cta_banners: true,
           palette: {
             ...sig.design.palette,
             primary: a,
@@ -1098,9 +1087,6 @@ export const useEditorStore = create((set, get) => ({
     const pid = b ? bannerPresetFromRow(b) : bannerPresetFromBannerId(bannerId);
     const bidForFlags = b?.id ?? bannerId;
     const isWebinar = isWebinarBannerPreset(pid, bidForFlags);
-    const isMindscope = isMindscopeBannerPreset(pid, bidForFlags);
-    const isMailchimp = isMailchimpBannerPreset(pid, bidForFlags);
-    const isExploreWorld = isExploreWorldBannerPreset(pid, bidForFlags);
     const isBoostImprove = isBoostImproveBannerPreset(pid, bidForFlags);
     const isOnlineLoan = isOnlineLoanBannerPreset(pid, bidForFlags);
     const isBusinessCity = isBusinessCityBannerPreset(pid, bidForFlags);
@@ -1108,107 +1094,103 @@ export const useEditorStore = create((set, get) => ({
     const isSeoWhitepaper = isSeoWhitepaperBannerPreset(pid, bidForFlags);
     const isGreenGradientCta = isGreenGradientCtaBannerPreset(pid, bidForFlags);
     const isDownload = isDownloadBannerPreset(pid, bidForFlags);
+    const isNeedCall = isNeedCallBannerPreset(pid, bidForFlags);
     const isBlank = String(bidForFlags || '').toLowerCase() === String(BLANK_IMAGE_BANNER_UUID).toLowerCase();
+    const isBookCall = isBookCallBannerPreset(pid, bidForFlags);
     const text = isBlank
       ? ''
-      : isMindscope
-        ? 'Try For Free!'
-        : isMailchimp
-          ? 'Get Started'
-          : isExploreWorld
-            ? 'Learn More'
-            : isBoostImprove
-              ? 'Click Here'
+      : isDownload
+        ? 'Get it now'
+        : isNeedCall
+          ? 'Start free trial'
+          : isBoostImprove
+              ? 'Get the playbook'
               : isOnlineLoan
-                ? 'CHCI PŮJČIT'
+                ? 'Get pre-approved'
                 : isBusinessCity
-                  ? 'LEARN MORE'
+                  ? 'See pricing'
                   : isLeaveReview
                     ? ''
                     : isSeoWhitepaper
                       ? ''
                       : isGreenGradientCta
-                        ? 'Book a call'
+                        ? 'Book free strategy call'
                         : isWebinar
-                          ? 'Call to action'
-                          : isBookCallBannerPreset(pid, bidForFlags)
-                            ? 'Book a call today'
-                            : b?.name || 'Learn more';
+                          ? 'Book free strategy call'
+                          : isBookCall
+                            ? 'BOOK NOW'
+                            : b?.name || 'Book free strategy call';
     const webinarFields = isWebinar
       ? {
-          field_1: 'Digital marketing expert',
-          field_2: 'Projecting your brand into the distant.',
-          field_3: 'Call to action',
+          field_1: 'Book more clients without the hustle',
+          field_2: 'Free 15-minute fit call — we reply the same business day.',
+          field_3: 'Book free strategy call',
           field_4: '80',
           field_5: '',
         }
       : {};
-    const mindscopeFields = isMindscope
-      ? {
-          field_1: 'Applicant Tracking\nSystem & Recruiting CRM',
-          field_2: 'Make Hiring ',
-          field_3: 'Easy!',
-          field_4: 'No credit card required',
-          field_5: 'MINDSCOPE',
-        }
-      : {};
-    const mailchimpFields = isMailchimp
-      ? {
-          field_1: "The industry's leading email marketing solution.",
-        }
-      : {};
-    const exploreWorldFields = isExploreWorld
-      ? {
-          field_1: 'explore',
-          field_2: 'log',
-          field_3: 'Explore Your',
-          field_4: 'WORLD',
-          field_5: 'www.example.com',
-        }
-      : {};
     const boostImproveFields = isBoostImprove
       ? {
-          field_1: 'Mighty',
-          field_2: 'LOGO',
-          field_3: 'Boost and Improve',
-          field_4: 'Your Immune System',
+          field_2: 'BRAND',
+          field_3: 'Better|Solutions.\nStronger|Results.',
+          field_4: 'Smart solutions for every department.',
+          field_6:
+            'Explore smart solutions designed for impact. See how teams align strategy, execution, and measurement to ship outcomes faster.',
         }
       : {};
     const onlineLoanFields = isOnlineLoan
       ? {
-          field_1: 'Online půjčka pro',
-          field_2: 'každého',
-          field_3: 'REVOLIO',
+          field_1: 'Fast funding',
+          field_2: 'for your next move',
+          field_3: 'YOUR BRAND',
         }
       : {};
     const businessCityFields = isBusinessCity
       ? {
-          field_1: 'BUSINESS',
-          field_2: 'BANNER',
-          field_3: 'DESIGN',
+          field_1: 'LIMITED',
+          field_2: 'SPOTS',
+          field_3: 'THIS MONTH',
           field_4: '',
-          field_5: 'COMPANY',
+          field_5: 'YOUR BRAND',
         }
       : {};
     const leaveReviewFields = isLeaveReview
       ? {
-          field_1: 'Leave us a review',
-          field_2: 'on Trustpilot',
+          field_1: 'Loved working with us?',
+          field_2: 'Leave a quick Google review — it helps others find us.',
         }
       : {};
     const seoWhitepaperFields = isSeoWhitepaper
       ? {
-          field_1: 'SEO Whitepaper',
-          field_2: 'Free top 10 SEO tips PDF',
+          field_1: 'Free SEO checklist',
+          field_2: 'PDF: 10 fixes that lift rankings this week',
         }
       : {};
     const greenGradientCtaFields = isGreenGradientCta
       ? {
-          field_1: 'A better\nfuture awaits',
+          field_1: 'Ready to grow\nyour business?',
         }
       : {};
     /** Ensures `field_1` is persisted for resume/download strip (server + editor payload). */
-    const downloadFields = isDownload ? { field_1: 'Download my Resume' } : {};
+    const downloadFields = isDownload
+      ? { field_1: 'Download your free lead magnet (PDF)' }
+      : {};
+    const bookCallFields = isBookCall
+      ? {
+          field_1: 'Book your\nfree',
+          field_2: 'strategy call',
+          field_3: 'Get expert advice. Discover opportunities.\nGrow your business.',
+          field_4: '',
+          field_5: '',
+        }
+      : {};
+    const needCallStripFields = isNeedCall
+      ? {
+          field_1: 'Turn subscribers\ninto',
+          field_2: 'buyers.',
+          field_3: 'Email marketing that engages, nurtures, and converts.',
+        }
+      : {};
     const prev = sig.banner_config || {};
     const preserved = pickSecondaryBannerConfig(prev);
     set({
@@ -1223,8 +1205,6 @@ export const useEditorStore = create((set, get) => ({
             isBlank
               ? ''
               : isWebinar ||
-                  isMailchimp ||
-                  isExploreWorld ||
                   isBoostImprove ||
                   isBusinessCity ||
                   isLeaveReview ||
@@ -1235,9 +1215,6 @@ export const useEditorStore = create((set, get) => ({
                   ? ''
                   : prev.banner_image_url || '',
           ...webinarFields,
-          ...mindscopeFields,
-          ...mailchimpFields,
-          ...exploreWorldFields,
           ...boostImproveFields,
           ...onlineLoanFields,
           ...businessCityFields,
@@ -1245,6 +1222,8 @@ export const useEditorStore = create((set, get) => ({
           ...seoWhitepaperFields,
           ...greenGradientCtaFields,
           ...downloadFields,
+          ...bookCallFields,
+          ...needCallStripFields,
           ...preserved,
         },
       },
@@ -1280,9 +1259,6 @@ export const useEditorStore = create((set, get) => ({
     const pid = b ? bannerPresetFromRow(b) : bannerPresetFromBannerId(bannerId);
     const bidForFlags = b?.id ?? bannerId;
     const isWebinar = isWebinarBannerPreset(pid, bidForFlags);
-    const isMindscope = isMindscopeBannerPreset(pid, bidForFlags);
-    const isMailchimp = isMailchimpBannerPreset(pid, bidForFlags);
-    const isExploreWorld = isExploreWorldBannerPreset(pid, bidForFlags);
     const isBoostImprove = isBoostImproveBannerPreset(pid, bidForFlags);
     const isOnlineLoan = isOnlineLoanBannerPreset(pid, bidForFlags);
     const isBusinessCity = isBusinessCityBannerPreset(pid, bidForFlags);
@@ -1290,121 +1266,115 @@ export const useEditorStore = create((set, get) => ({
     const isSeoWhitepaper = isSeoWhitepaperBannerPreset(pid, bidForFlags);
     const isGreenGradientCta = isGreenGradientCtaBannerPreset(pid, bidForFlags);
     const isDownload = isDownloadBannerPreset(pid, bidForFlags);
+    const isNeedCall = isNeedCallBannerPreset(pid, bidForFlags);
     const isSecBlank = String(bidForFlags || '').toLowerCase() === String(BLANK_IMAGE_BANNER_UUID).toLowerCase();
+    const isBookCallSec = isBookCallBannerPreset(pid, bidForFlags);
     const secText = isSecBlank
       ? ''
-      : isMindscope
-        ? 'Try For Free!'
-        : isMailchimp
-          ? 'Get Started'
-          : isExploreWorld
-            ? 'Learn More'
-            : isBoostImprove
-              ? 'Click Here'
+      : isDownload
+        ? 'Get it now'
+        : isNeedCall
+          ? 'Start free trial'
+          : isBoostImprove
+              ? 'Get the playbook'
               : isOnlineLoan
-                ? 'CHCI PŮJČIT'
+                ? 'Get pre-approved'
                 : isBusinessCity
-                  ? 'LEARN MORE'
+                  ? 'See pricing'
                   : isLeaveReview
                     ? ''
                     : isSeoWhitepaper
                       ? ''
                       : isGreenGradientCta
-                        ? 'Book a call'
+                        ? 'Book free strategy call'
                         : isWebinar
-                          ? 'Call to action'
-                          : isBookCallBannerPreset(pid, bidForFlags)
-                            ? 'Book a call today'
-                            : b?.name || 'Learn more';
+                          ? 'Book free strategy call'
+                          : isBookCallSec
+                            ? 'BOOK NOW'
+                            : b?.name || 'Book free strategy call';
     const baseCfg = { ...prev };
     for (const k of Object.keys(baseCfg)) {
       if (k.startsWith('secondary_')) delete baseCfg[k];
     }
     const webinarSecondary = isWebinar
       ? {
-          secondary_field_1: 'Digital marketing expert',
-          secondary_field_2: 'Projecting your brand into the distant.',
-          secondary_field_3: 'Call to action',
+          secondary_field_1: 'Book more clients without the hustle',
+          secondary_field_2: 'Free 15-minute fit call — we reply the same business day.',
+          secondary_field_3: 'Book free strategy call',
           secondary_field_4: '80',
           secondary_field_5: '',
           secondary_banner_image_url: '',
         }
       : {};
-    const mindscopeSecondary = isMindscope
-      ? {
-          secondary_field_1: 'Applicant Tracking\nSystem & Recruiting CRM',
-          secondary_field_2: 'Make Hiring ',
-          secondary_field_3: 'Easy!',
-          secondary_field_4: 'No credit card required',
-          secondary_field_5: 'MINDSCOPE',
-          secondary_banner_image_url: '',
-        }
-      : {};
-    const mailchimpSecondary = isMailchimp
-      ? {
-          secondary_field_1: "The industry's leading email marketing solution.",
-          secondary_banner_image_url: '',
-        }
-      : {};
-    const exploreWorldSecondary = isExploreWorld
-      ? {
-          secondary_field_1: 'explore',
-          secondary_field_2: 'log',
-          secondary_field_3: 'Explore Your',
-          secondary_field_4: 'WORLD',
-          secondary_field_5: 'www.example.com',
-          secondary_banner_image_url: '',
-        }
-      : {};
     const boostImproveSecondary = isBoostImprove
       ? {
-          secondary_field_1: 'Mighty',
-          secondary_field_2: 'LOGO',
-          secondary_field_3: 'Boost and Improve',
-          secondary_field_4: 'Your Immune System',
+          secondary_field_2: 'BRAND',
+          secondary_field_3: 'Better|Solutions.\nStronger|Results.',
+          secondary_field_4: 'Smart solutions for every department.',
+          secondary_field_6:
+            'Explore smart solutions designed for impact. See how teams align strategy, execution, and measurement to ship outcomes faster.',
           secondary_banner_image_url: '',
         }
       : {};
     const onlineLoanSecondary = isOnlineLoan
       ? {
-          secondary_field_1: 'Online půjčka pro',
-          secondary_field_2: 'každého',
-          secondary_field_3: 'REVOLIO',
+          secondary_field_1: 'Fast funding',
+          secondary_field_2: 'for your next move',
+          secondary_field_3: 'YOUR BRAND',
           secondary_banner_image_url: '',
         }
       : {};
     const businessCitySecondary = isBusinessCity
       ? {
-          secondary_field_1: 'BUSINESS',
-          secondary_field_2: 'BANNER',
-          secondary_field_3: 'DESIGN',
+          secondary_field_1: 'LIMITED',
+          secondary_field_2: 'SPOTS',
+          secondary_field_3: 'THIS MONTH',
           secondary_field_4: '',
-          secondary_field_5: 'COMPANY',
+          secondary_field_5: 'YOUR BRAND',
           secondary_banner_image_url: '',
         }
       : {};
     const leaveReviewSecondary = isLeaveReview
       ? {
-          secondary_field_1: 'Leave us a review',
-          secondary_field_2: 'on Trustpilot',
+          secondary_field_1: 'Loved working with us?',
+          secondary_field_2: 'Leave a quick Google review — it helps others find us.',
           secondary_banner_image_url: '',
         }
       : {};
     const seoWhitepaperSecondary = isSeoWhitepaper
       ? {
-          secondary_field_1: 'SEO Whitepaper',
-          secondary_field_2: 'Free top 10 SEO tips PDF',
+          secondary_field_1: 'Free SEO checklist',
+          secondary_field_2: 'PDF: 10 fixes that lift rankings this week',
           secondary_banner_image_url: '',
         }
       : {};
     const greenGradientCtaSecondary = isGreenGradientCta
       ? {
-          secondary_field_1: 'A better\nfuture awaits',
+          secondary_field_1: 'Ready to grow\nyour business?',
           secondary_banner_image_url: '',
         }
       : {};
     const downloadSecondary = isDownload
-      ? { secondary_field_1: 'Download my Resume', secondary_banner_image_url: '' }
+      ? {
+          secondary_field_1: 'Download your free lead magnet (PDF)',
+          secondary_banner_image_url: '',
+        }
+      : {};
+    const bookCallSecondary = isBookCallSec
+      ? {
+          secondary_field_1: 'Book your\nfree',
+          secondary_field_2: 'strategy call',
+          secondary_field_3: 'Get expert advice. Discover opportunities.\nGrow your business.',
+          secondary_field_4: '',
+          secondary_field_5: '',
+        }
+      : {};
+    const needCallSecondary = isNeedCall
+      ? {
+          secondary_field_1: 'Turn subscribers\ninto',
+          secondary_field_2: 'buyers.',
+          secondary_field_3: 'Email marketing that engages, nurtures, and converts.',
+        }
       : {};
     const blankSecondary = isSecBlank ? { secondary_banner_image_url: '' } : {};
     set({
@@ -1418,9 +1388,6 @@ export const useEditorStore = create((set, get) => ({
           secondary_href: '',
           secondary_text: secText,
           ...webinarSecondary,
-          ...mindscopeSecondary,
-          ...mailchimpSecondary,
-          ...exploreWorldSecondary,
           ...boostImproveSecondary,
           ...onlineLoanSecondary,
           ...businessCitySecondary,
@@ -1428,6 +1395,8 @@ export const useEditorStore = create((set, get) => ({
           ...seoWhitepaperSecondary,
           ...greenGradientCtaSecondary,
           ...downloadSecondary,
+          ...bookCallSecondary,
+          ...needCallSecondary,
           ...blankSecondary,
         },
       },
@@ -1545,6 +1514,7 @@ export const useEditorStore = create((set, get) => ({
       generatedHTML: '',
       previewSlotBundle: null,
       previewError: null,
+      paletteHighlightRole: null,
       exportImageUrl: '',
       exportBannerImageUrl: '',
       exportBannerSlotImageUrls: [],

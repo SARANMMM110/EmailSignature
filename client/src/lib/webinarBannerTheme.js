@@ -2,6 +2,7 @@
  * Mirrors server `webinarBannerStyleVars` in `server/src/services/htmlGenerator.js`
  * so the Banners tab thumbnail matches generated `banner_1` HTML.
  */
+import { brandFieldMidFromStops } from './engineBrandSurfaces.js';
 
 function hexToRgb(hex) {
   if (!hex || typeof hex !== 'string') return null;
@@ -19,22 +20,6 @@ function relativeLuminance(hex) {
     return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
   });
   return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-}
-
-function pickDarkestReadable(candidates, maxLum = 0.5) {
-  let best = '#0f172a';
-  let bestL = 1;
-  for (const raw of candidates) {
-    const c = String(raw || '').trim();
-    if (!c) continue;
-    const L = relativeLuminance(c);
-    if (L <= maxLum && L < bestL) {
-      bestL = L;
-      best = c;
-    }
-  }
-  if (bestL < 1) return best;
-  return '#0f172a';
 }
 
 function mixHexWithWhite(hex, t) {
@@ -68,12 +53,15 @@ function mixHexPair(hexA, hexB, t) {
   return `#${[r, g, bl].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
 }
 
-function companyMutedColor(textHex, secondaryHex) {
-  const t = String(textHex || '').trim();
-  if (t && relativeLuminance(t) >= 0.18 && relativeLuminance(t) <= 0.55) return t;
-  const s = String(secondaryHex || '').trim();
-  if (s && relativeLuminance(s) >= 0.25 && relativeLuminance(s) <= 0.6) return mixHexWithWhite(s, 0.35);
-  return '#6b7280';
+function companyMutedColor(textHex, _secondaryHex, surfaceHex = '#ffffff') {
+  const t = String(textHex || '').trim() || '#0f172a';
+  const bg = String(surfaceHex || '#ffffff').trim();
+  const soft = mixHexPair(
+    t,
+    relativeLuminance(t) > 0.62 ? mixHexWithBlack(t, 0.22) : mixHexWithWhite(t, 0.2),
+    0.42
+  );
+  return paletteTextOnSurface(soft, bg, 3.1);
 }
 
 /** WCAG 2.1 contrast ratio (1–21) for two sRGB hex colours. */
@@ -110,34 +98,45 @@ function enforceContrastOnSurface(textHex, surfaceHex, minRatio = 4.5) {
   return toDark ? '#000000' : '#ffffff';
 }
 
+/** Mirrors server `paletteTextOnSurface` — honour light text on dark cards when contrast is OK. */
+function paletteTextOnSurface(textHex, surfaceHex, minRatio = 4.5) {
+  const t = String(textHex ?? '').trim();
+  const s = String(surfaceHex ?? '').trim();
+  if (hexToRgb(t) && hexToRgb(s) && wcagContrastRatio(t, s) >= minRatio) return t;
+  const fallback = relativeLuminance(s) > 0.45 ? '#0f172a' : '#ffffff';
+  return enforceContrastOnSurface(t || fallback, s, minRatio);
+}
+
 /**
  * @param {string} [railPx]
  */
-export function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 470) {
+export function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 470, theme = null) {
   const c1 = String(color1 || '#e8630a').trim();
   const c2 = String(color2 || c1).trim();
   const c3 = String(color3 || '#94a3b8').trim();
   const c4 = String(color4 || '#0f172a').trim();
   const rail = Math.max(320, Math.min(720, Number(railPx) || 470));
-  const surface = mixHexPair(mixHexWithWhite(c4, 0.97), mixHexWithWhite(c3, 0.82), 0.58);
-  const blobPeach = mixHexPair(mixHexWithWhite(c1, 0.38), mixHexWithWhite(c3, 0.5), 0.55);
-  const blobOrange = c1;
-  const headlineRaw = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.04)], 0.48);
-  const sublineRaw = companyMutedColor(c4, c2);
+  const surface = brandFieldMidFromStops(c1, c2, c4);
+  const blobSoft = mixHexPair(mixHexWithWhite(c2, 0.2), mixHexWithWhite(c3, 0.35), 0.55);
+  const blobBold = mixHexPair(c1, mixHexWithWhite(c1, 0.08), 0.62);
   const minCopy = 4.5;
-  const headline = enforceContrastOnSurface(headlineRaw, surface, minCopy);
-  const subline = enforceContrastOnSurface(sublineRaw, surface, minCopy);
-  const brand = enforceContrastOnSurface(c1, surface, minCopy);
+  const headline = paletteTextOnSurface(c4, surface, minCopy);
+  const subline = paletteTextOnSurface(companyMutedColor(c4, c2, surface), surface, minCopy);
+  const brand = paletteTextOnSurface(c3, surface, minCopy);
+  const pillBg = String(theme?.surface_light || '#fafafa').trim() || '#fafafa';
+  const ctaText = paletteTextOnSurface(c4, pillBg, 4.5);
+  const ctaBorder = paletteTextOnSurface(mixHexPair(c3, c1, 0.35), pillBg, 3);
   const blobsH = Math.max(84, Math.round((rail * 140) / 560));
   return {
     banner_surface_bg: surface,
     banner_brand_color: brand,
     banner_headline_color: headline,
     banner_subline_color: subline,
-    banner_cta_border: headline,
-    banner_cta_text: headline,
-    banner_blob_peach: blobPeach,
-    banner_blob_orange: blobOrange,
+    banner_cta_border: ctaBorder,
+    banner_cta_text: ctaText,
+    banner_cta_pill_bg: pillBg,
+    banner_blob_peach: blobSoft,
+    banner_blob_orange: blobBold,
     banner_b1_blobs_h: String(blobsH),
   };
 }

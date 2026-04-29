@@ -116,9 +116,10 @@ router.post('/logo', upload.single('image'), enforcePlanUploadBytes, async (req,
 
 /**
  * CTA / banner images.
- * Default: full strip 720×~93 JPEG (`cover`) for blank strip & wide banner backgrounds.
+ * Default (`strip`): preserve aspect — max 2000×2000 `inside`, JPEG (no server-side crop).
+ * Client applies `object-fit` / position in email HTML.
  * `?mode=mark`: logo / icon — fit inside 400×400 (`inside`, no strip crop).
- * `?mode=scene`: wide hero / illustration — fit inside 560×200 (`inside`).
+ * `?mode=scene`: wide hero / illustration — fit inside 800×280 (`inside`).
  */
 router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, async (req, res, next) => {
   try {
@@ -145,8 +146,8 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
     }
 
     if (mode === 'scene') {
-      const SCENE_W = 560;
-      const SCENE_H = 200;
+      const SCENE_W = 800;
+      const SCENE_H = 280;
       const buf = await sharp(req.file.buffer)
         .rotate()
         .resize(SCENE_W, SCENE_H, { fit: 'inside', withoutEnlargement: true })
@@ -159,14 +160,12 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
       return;
     }
 
-    /** Blank / CTA image canvas — matches engine blank strip ratio (`72/560` of width 720). */
-    const BANNER_MAX_W = 720;
-    const BANNER_MAX_H = Math.round((BANNER_MAX_W * 72) / 560);
-    /** Fill the strip (center crop); avoids letterboxed “postage stamp” in the banner preview. */
+    /** Full-width strip asset — cap size for storage; aspect preserved (`inside`, no crop). */
+    const STRIP_MAX = 2000;
     const buf = await sharp(req.file.buffer)
       .rotate()
-      .resize(BANNER_MAX_W, BANNER_MAX_H, { fit: 'cover', position: 'centre' })
-      .jpeg({ quality: 86, mozjpeg: true })
+      .resize(STRIP_MAX, STRIP_MAX, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 88, mozjpeg: true })
       .toBuffer();
     const name = `${randomUUID()}.jpg`;
     const path = `banners/${req.user.id}/${name}`;

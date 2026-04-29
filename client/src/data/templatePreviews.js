@@ -1,5 +1,6 @@
 /**
- * Brand default for new signatures, editor starter content, and `/html/generate` demo payloads.
+ * Brand default for new signatures, editor starter content, and gallery `/html/generate` payloads
+ * (`fillDemoPlaceholders: true`). Editor live preview omits that flag so cleared fields stay empty.
  * Keep in sync with `DEMO_FORM_DEFAULTS` in `server/src/services/htmlGenerator.js`.
  */
 import {
@@ -14,15 +15,17 @@ import {
   TEMPLATE_18_CANONICAL_COLORS,
   TEMPLATE_19_CANONICAL_COLORS,
   TEMPLATE_20_CANONICAL_COLORS,
+  TEMPLATE_21_CANONICAL_COLORS,
   uuidToTemplateSlug,
 } from '../lib/templateIds.js';
 import { profileFormPartialForGenerate } from '../lib/myInfoDraft.js';
+import { ENGINE_PALETTE_DEFAULT_ARRAY } from '../lib/enginePaletteDefaults.js';
 
 export const DEMO_SIGNATURE_DATA = {
   fields: {
     full_name: 'James Doe',
     job_title: 'Software Engineer',
-    company: 'Acme Studio',
+    company: '',
     phone: '+(91) 9865456739',
     email: 'james.doe@example.com',
     website: 'www.example.com',
@@ -33,7 +36,7 @@ export const DEMO_SIGNATURE_DATA = {
     logo_url: 'https://dummyimage.com/180x36/4752c4/ffffff.png&text=Logo',
   },
   design: {
-    colors: ['#5768f3', '#4752c4', '#b4b9ff', '#0f172a'],
+    colors: [...ENGINE_PALETTE_DEFAULT_ARRAY],
     font: "'Montserrat', 'Poppins', 'Roboto', -apple-system, Helvetica, Arial, sans-serif",
   },
   social_links: {
@@ -50,13 +53,17 @@ export const DEMO_SIGNATURE_DATA = {
 };
 
 /**
- * Resolve demo / gallery palette colors for a layout slug (canonical for 10–20, else optional override, else brand defaults).
+ * Resolve demo / gallery palette colors for a layout slug.
+ * When `paletteColors` has four stops (editor / gallery), they apply to every layout; otherwise layouts 10–21
+ * fall back to their reference canonicals so static thumbnails and landing demos match designed previews.
  * @param {string} slug — normalized layout slug e.g. `template_1`
  * @param {string[] | null | undefined} paletteColors
  */
 export function resolveDemoPayloadColors(slug, paletteColors) {
   const s = uuidToTemplateSlug(String(slug || '').trim());
-  const d = DEMO_SIGNATURE_DATA.design;
+  if (Array.isArray(paletteColors) && paletteColors.length >= 4) {
+    return paletteColors.slice(0, 4);
+  }
   if (s === 'template_10') return [...TEMPLATE_10_CANONICAL_COLORS];
   if (s === 'template_11') return [...TEMPLATE_11_CANONICAL_COLORS];
   if (s === 'template_12') return [...TEMPLATE_12_CANONICAL_COLORS];
@@ -68,11 +75,11 @@ export function resolveDemoPayloadColors(slug, paletteColors) {
   if (s === 'template_18') return [...TEMPLATE_18_CANONICAL_COLORS];
   if (s === 'template_19') return [...TEMPLATE_19_CANONICAL_COLORS];
   if (s === 'template_20') return [...TEMPLATE_20_CANONICAL_COLORS];
-  if (Array.isArray(paletteColors) && paletteColors.length >= 4) return paletteColors.slice(0, 4);
-  return [...d.colors];
+  if (s === 'template_21') return [...TEMPLATE_21_CANONICAL_COLORS];
+  return [...ENGINE_PALETTE_DEFAULT_ARRAY];
 }
 
-/** Default 4-stop palette for the current layout (signature + CTA “original” colors after clearing a brand palette). */
+/** Default 4-stop palette for the current layout (signature and CTA strips both read these stops). */
 export function defaultPaletteColorsForLayoutSlug(templateSlug) {
   const slug = uuidToTemplateSlug(String(templateSlug || '').trim());
   return resolveDemoPayloadColors(slug, null);
@@ -80,6 +87,7 @@ export function defaultPaletteColorsForLayoutSlug(templateSlug) {
 
 /**
  * Body for POST /api/html/generate — matches server `contextFromEditorPayload` (camelCase form).
+ * Sets `fillDemoPlaceholders: true` so gallery tiles show sample copy; the editor does not send this.
  * @param {string} templateSlug e.g. template_1, template_2, template_3
  * @param {string[] | null} [paletteColors] — optional 4 hex colors [primary, secondary, accent, text] for gallery previews
  * @param {{ profile?: object | null, user?: object | null } | null} [accountContext] — when logged in, gallery previews use profile fields over demo copy
@@ -92,13 +100,26 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
   const fromProfile = profileFormPartialForGenerate(ctx.profile, ctx.user);
   const slug = uuidToTemplateSlug(String(templateSlug || '').trim());
   const colors = resolveDemoPayloadColors(slug, paletteColors);
-  const layout4NoCoreDemo = slug === 'template_4';
   const layout11Demo =
     slug === 'template_11'
       ? {
           jobTitle: 'Graphic Designer\nCreative Director',
           tagline:
             'The European languages are members of the same family. Their separate existence is a myth.',
+        }
+      : {};
+  /** Studio strip (layout 7): name + socials + contacts — no job-title row in template. */
+  const layout7Demo =
+    slug === 'template_7'
+      ? {
+          fullName: 'Alex Morgan',
+          phone: '+1 234 567 890',
+          email: 'alex@example.com',
+          website: 'www.example.com',
+          address: '41 Studio Row,\nSan Francisco, CA 94105',
+          photoUrl: 'https://i.pravatar.cc/200?img=12',
+          logoUrl: 'https://placehold.co/120x28/4f46e5/ffffff/png?text=Brand',
+          linkedin: 'https://www.linkedin.com/in/example',
         }
       : {};
   const layout12Demo =
@@ -178,7 +199,7 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     slug === 'template_18'
       ? {
           fullName: 'Alex Morgan',
-          companyName: 'Acme Studio',
+          companyName: '',
           jobTitle: 'Software Engineer',
           phone: '+100123456789',
           email: 'yourname@email.com',
@@ -213,16 +234,29 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
           logoUrl: 'https://placehold.co/120x36/1e3a5f/ffffff/png?text=Brand',
         }
       : {};
+  const layout21Demo =
+    slug === 'template_21'
+      ? {
+          fullName: 'Hana Dulseta',
+          jobTitle: 'Fashion Designer',
+          phone: '+1 234 567 890',
+          email: 'hanadulseta@email.com',
+          website: 'https://example.com',
+          address: '123 Main Road Center, California USA',
+          photoUrl:
+            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=500&fit=crop&crop=faces&auto=format&q=80',
+        }
+      : {};
   const baseForm = {
     fullName: f.full_name,
     jobTitle: f.job_title,
-    companyName: layout4NoCoreDemo ? '' : f.company,
+    companyName: f.company,
     phone: f.phone,
     email: f.email,
     website: f.website,
     address: f.address || '',
     photoUrl: f.photo_url,
-    logoUrl: layout4NoCoreDemo ? '' : (f.logo_url || '').trim(),
+    logoUrl: (f.logo_url || '').trim(),
     linkedin: social.linkedin || '',
     twitter: social.twitter || '',
     instagram: social.instagram || '',
@@ -241,6 +275,17 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     const demoJob = layout11Demo.jobTitle;
     if (!String(form.jobTitle || '').trim()) form.jobTitle = demoJob;
     if (!String(form.tagline || '').trim()) form.tagline = layout11Demo.tagline;
+  }
+  if (slug === 'template_7') {
+    if (!String(form.fullName || '').trim()) form.fullName = layout7Demo.fullName;
+    form.tagline = '';
+    if (!String(form.phone || '').trim()) form.phone = layout7Demo.phone;
+    if (!String(form.email || '').trim()) form.email = layout7Demo.email;
+    if (!String(form.website || '').trim()) form.website = layout7Demo.website;
+    if (!String(form.address || '').trim()) form.address = layout7Demo.address;
+    if (!String(form.photoUrl || '').trim()) form.photoUrl = layout7Demo.photoUrl;
+    if (!String(form.logoUrl || '').trim()) form.logoUrl = layout7Demo.logoUrl;
+    if (!String(form.linkedin || '').trim()) form.linkedin = layout7Demo.linkedin;
   }
   if (slug === 'template_12') {
     if (!String(form.fullName || '').trim()) form.fullName = layout12Demo.fullName;
@@ -335,10 +380,19 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     if (!String(form.photoUrl || '').trim()) form.photoUrl = layout20Demo.photoUrl;
     if (!String(form.logoUrl || '').trim()) form.logoUrl = layout20Demo.logoUrl;
   }
-  if (layout4NoCoreDemo) {
+  if (slug === 'template_21') {
+    if (!String(form.fullName || '').trim()) form.fullName = layout21Demo.fullName;
+    if (!String(form.jobTitle || '').trim()) form.jobTitle = layout21Demo.jobTitle;
     form.companyName = '';
+    form.tagline = '';
+    if (!String(form.phone || '').trim()) form.phone = layout21Demo.phone;
+    if (!String(form.email || '').trim()) form.email = layout21Demo.email;
+    if (!String(form.website || '').trim()) form.website = layout21Demo.website;
+    if (!String(form.address || '').trim()) form.address = layout21Demo.address;
+    if (!String(form.photoUrl || '').trim()) form.photoUrl = layout21Demo.photoUrl;
     form.logoUrl = '';
   }
+  const designShowLogo = true;
   const designFont =
     slug === 'template_13' || slug === 'template_14'
       ? "'Archivo', Helvetica, Arial, sans-serif"
@@ -348,12 +402,15 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
           ? "'Poppins', 'Montserrat', 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
           : slug === 'template_17'
             ? "'Montserrat', 'Poppins', 'Roboto', Helvetica, Arial, sans-serif"
-            : slug === 'template_18' || slug === 'template_19' || slug === 'template_20'
+            : slug === 'template_18' ||
+                slug === 'template_19' ||
+                slug === 'template_20' ||
+                slug === 'template_21'
               ? "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
               : d.font;
   return {
     templateId: templateSlug,
-    design: { font: designFont },
+    design: { font: designFont, showLogo: designShowLogo, showPhoto: true },
     form,
     palette: {
       primary: colors[0],
@@ -361,6 +418,8 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
       accent: colors[2],
       text: colors[3],
     },
+    /** Ask server to fill empty slots with demo copy — editor omits this so cleared fields stay empty. */
+    fillDemoPlaceholders: true,
     // Omit banner — layout gallery preview should show only the signature block, not a CTA strip.
   };
 }
@@ -401,9 +460,13 @@ export function editorBlankBannerStripWidthPx(railPx) {
   return Number.isFinite(w) && w >= 1 ? w : 470;
 }
 
-/** Matches server `BLANK_BANNER_REF_*` / upload canvas 720×93. */
+/** Matches server `BLANK_BANNER_REF_*` / blank strip aspect (720×93). */
 const EDITOR_BLANK_BANNER_REF_W = 720;
 const EDITOR_BLANK_BANNER_REF_H = Math.round((EDITOR_BLANK_BANNER_REF_W * 72) / 560);
+
+/** Recommended pixel size shown in the editor (same aspect as the live strip). */
+export const BLANK_BANNER_RECOMMENDED_WIDTH_PX = EDITOR_BLANK_BANNER_REF_W;
+export const BLANK_BANNER_RECOMMENDED_HEIGHT_PX = EDITOR_BLANK_BANNER_REF_H;
 
 /** CSS `aspect-ratio` for My information / editor blank-strip previews (same ratio as upload). */
 export const EDITOR_BLANK_BANNER_ASPECT_RATIO = `${EDITOR_BLANK_BANNER_REF_W} / ${EDITOR_BLANK_BANNER_REF_H}`;

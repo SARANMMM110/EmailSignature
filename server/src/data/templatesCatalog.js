@@ -1,4 +1,5 @@
 import { TEMPLATE_META } from '../templates/signatureTemplates.js';
+import { TEMPLATE_PERSONA_TAGS } from './templatePersonas.js';
 
 const MAX_CATALOG = 500;
 
@@ -47,6 +48,7 @@ export function buildExpandedTemplatesCatalog(size) {
       tier: meta.tier || 'free',
       style: meta.style || 'design',
       style_tags: styleTags,
+      persona_tags: TEMPLATE_PERSONA_TAGS[id] || [],
       has_logo: meta.has_logo !== false,
       has_photo: meta.has_photo !== false,
       color_count: meta.color_count || 6,

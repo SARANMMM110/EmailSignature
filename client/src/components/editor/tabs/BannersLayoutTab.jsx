@@ -7,9 +7,6 @@ import {
   WEBINAR_BANNER_UUID,
   BANNER_SLUG_TO_UUID,
   BLANK_IMAGE_BANNER_UUID,
-  MINDSCOPE_BANNER_UUID,
-  MAILCHIMP_BANNER_UUID,
-  EXPLORE_WORLD_BANNER_UUID,
   BOOST_IMPROVE_BANNER_UUID,
   ONLINE_LOAN_BANNER_UUID,
   LEAVE_REVIEW_BANNER_UUID,
@@ -23,9 +20,6 @@ import {
   downloadBannerThumbnailSrcDoc,
   needCallBannerThumbnailSrcDoc,
   blankImageBannerThumbnailSrcDoc,
-  mindscopeBannerThumbnailSrcDoc,
-  mailchimpCampaignBannerThumbnailSrcDoc,
-  exploreWorldBannerThumbnailSrcDoc,
   boostImproveBannerThumbnailSrcDoc,
   onlineLoanBannerThumbnailSrcDoc,
   leaveReviewBannerThumbnailSrcDoc,
@@ -48,14 +42,9 @@ function normBannerId(x) {
   return String(x || '').trim().toLowerCase();
 }
 
-const WEBINAR_CTA_SHOWCASE_COLORS = ['#e8630a', '#e8630a', '#94a3b8', '#0f172a'];
-
 function WebinarBannerDesignPreview({ design, thumbW, thumbH, scale }) {
   const srcDoc = useMemo(() => {
-    const [c1, c2, c3, c4] =
-      design?.apply_brand_palette_to_cta_banners === true
-        ? resolvePaletteColorsFromDesign(design)
-        : WEBINAR_CTA_SHOWCASE_COLORS;
+    const [c1, c2, c3, c4] = resolvePaletteColorsFromDesign(design);
     return webinarBannerThumbnailSrcDoc(c1, c2, c3, c4);
   }, [design]);
   return (
@@ -153,45 +142,6 @@ function BlankImageBannerThumb({ thumbW, thumbH, scale }) {
   );
 }
 
-function MindscopeBannerThumb({ thumbW, thumbH, scale }) {
-  const srcDoc = useMemo(() => mindscopeBannerThumbnailSrcDoc(), []);
-  return (
-    <StaticBannerIframePreview
-      title="Mindscope-style banner preview"
-      srcDoc={srcDoc}
-      thumbW={thumbW}
-      thumbH={thumbH}
-      scale={scale}
-    />
-  );
-}
-
-function MailchimpCampaignBannerThumb({ thumbW, thumbH, scale }) {
-  const srcDoc = useMemo(() => mailchimpCampaignBannerThumbnailSrcDoc(), []);
-  return (
-    <StaticBannerIframePreview
-      title="Campaign strip banner preview"
-      srcDoc={srcDoc}
-      thumbW={thumbW}
-      thumbH={thumbH}
-      scale={scale}
-    />
-  );
-}
-
-function ExploreWorldBannerThumb({ thumbW, thumbH, scale }) {
-  const srcDoc = useMemo(() => exploreWorldBannerThumbnailSrcDoc(), []);
-  return (
-    <StaticBannerIframePreview
-      title="Explore your world banner preview"
-      srcDoc={srcDoc}
-      thumbW={thumbW}
-      thumbH={thumbH}
-      scale={scale}
-    />
-  );
-}
-
 function BoostImproveBannerThumb({ thumbW, thumbH, scale }) {
   const srcDoc = useMemo(() => boostImproveBannerThumbnailSrcDoc(), []);
   return (
@@ -268,15 +218,6 @@ function BannerThumbnail({ banner, design }) {
   if (id === BANNER_SLUG_TO_UUID['book-call'].toLowerCase()) {
     return <BookCallBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
   }
-  if (id === MINDSCOPE_BANNER_UUID.toLowerCase()) {
-    return <MindscopeBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
-  }
-  if (id === MAILCHIMP_BANNER_UUID.toLowerCase()) {
-    return <MailchimpCampaignBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
-  }
-  if (id === EXPLORE_WORLD_BANNER_UUID.toLowerCase()) {
-    return <ExploreWorldBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
-  }
   if (id === BOOST_IMPROVE_BANNER_UUID.toLowerCase()) {
     return <BoostImproveBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
   }
@@ -295,7 +236,10 @@ function BannerThumbnail({ banner, design }) {
   if (id === BANNER_SLUG_TO_UUID.download.toLowerCase()) {
     return <DownloadBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
   }
-  if (id === BANNER_SLUG_TO_UUID['need-call'].toLowerCase()) {
+  if (
+    id === BANNER_SLUG_TO_UUID['need-call'].toLowerCase() ||
+    id === BANNER_SLUG_TO_UUID['subscriber-journey'].toLowerCase()
+  ) {
     return <NeedCallBannerThumb thumbW={thumbW} thumbH={thumbH} scale={scale} />;
   }
   if (id === BLANK_IMAGE_BANNER_UUID.toLowerCase()) {

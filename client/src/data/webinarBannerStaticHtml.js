@@ -4,12 +4,13 @@
  * colors come from `webinarBannerStyleVars` (same rules as `htmlGenerator.js`).
  */
 import { webinarBannerStyleVars } from '../lib/webinarBannerTheme.js';
+import { buildEmailTheme } from '../lib/emailTheme.js';
 
 const DEMO = {
   brand: 'Acme Studio',
-  headline: 'Digital marketing expert',
-  subline: 'Projecting your brand into the distant.',
-  cta: 'Call to action',
+  headline: 'Book more clients without the hustle',
+  subline: 'Free 15-minute fit call — we reply the same business day.',
+  cta: 'Book free strategy call',
   minHeight: 96,
 };
 
@@ -39,7 +40,7 @@ export function buildWebinarBannerInnerHtml(vars, copy = DEMO) {
 <p style="margin:0;padding:0;color:${vars.banner_subline_color};font-size:11px;font-weight:400;line-height:1.45;mso-line-height-rule:exactly;">${s}</p>
 </td>
 <td valign="middle" align="right" width="1%" style="width:1%;white-space:nowrap;padding:14px 18px 14px 8px;vertical-align:middle;text-align:right;font-family:Arial, Helvetica, Roboto, system-ui, sans-serif;mso-line-height-rule:exactly;">
-<a href="https://" style="display:inline-block;border:2px solid ${vars.banner_cta_border};border-radius:50px;-webkit-border-radius:50px;padding:8px 18px;font-size:12px;font-weight:600;color:${vars.banner_cta_text};text-decoration:none;line-height:1.2;mso-line-height-rule:exactly;background-color:rgba(255,255,255,0.92);">${c}</a>
+<a href="https://" style="display:inline-block;border:2px solid ${vars.banner_cta_border};border-radius:50px;-webkit-border-radius:50px;padding:8px 18px;font-size:12px;font-weight:800;color:${vars.banner_cta_text};text-decoration:none;line-height:1.2;mso-line-height-rule:exactly;background-color:${vars.banner_cta_pill_bg};box-shadow:0 1px 2px rgba(15,23,42,0.08);">${c}</a>
 </td>
 </tr>
 </table>
@@ -50,7 +51,8 @@ export function buildWebinarBannerInnerHtml(vars, copy = DEMO) {
 
 /** Full minimal document for iframe srcDoc (no remote resources). */
 export function webinarBannerThumbnailSrcDoc(color1, color2, color3, color4, copy) {
-  const vars = webinarBannerStyleVars(color1, color2, color3, color4, BANNER_W);
+  const theme = buildEmailTheme({ primary: color1, secondary: color2, accent: color3, text: color4 });
+  const vars = webinarBannerStyleVars(color1, color2, color3, color4, BANNER_W, theme);
   const inner = buildWebinarBannerInnerHtml(vars, copy);
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;background:transparent;}</style></head><body>${inner}</body></html>`;
 }

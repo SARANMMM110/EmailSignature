@@ -1,6 +1,6 @@
 /**
  * Static HTML for Banners tab iframe thumbnails (no API / remote images).
- * Book-a-call matches server `banner_2` gradient + layout (see `bannerTemplates.js`).
+ * Book-a-call matches server `banner_2` reference layout (see `bannerTemplates.js`).
  */
 
 function wrapSrcDoc(inner) {
@@ -9,14 +9,26 @@ function wrapSrcDoc(inner) {
 
 export function bookCallBannerThumbnailSrcDoc() {
   const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
-<tr><td style="padding:0;border-radius:14px;overflow:hidden;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;background-color:#74b695;background-image:linear-gradient(90deg,#a8d8c0 0%,#74b695 100%);">
+<tr><td style="padding:0;border-radius:12px;overflow:hidden;min-height:77px;background-color:#1636b9;background-image:linear-gradient(135deg,#4f6cf7 0%,#1636b9 100%);box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+<a href="https://" style="display:block;text-decoration:none;color:inherit;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;min-height:77px;">
 <tr>
-<td valign="middle" style="padding:14px 8px 14px 18px;font-family:Montserrat,Arial,sans-serif;font-size:14px;font-weight:500;color:#1a1a1a;line-height:1.2;">Book a call today</td>
-<td valign="middle" width="32" style="width:32px;text-align:center;font-family:Montserrat,Arial,sans-serif;font-size:20px;color:#0d2d1e;line-height:1;">&#8594;</td>
-<td valign="middle" align="right" style="padding:10px 14px 10px 6px;line-height:0;"><span style="display:inline-block;width:76px;height:50px;border-radius:10px;background:#2d4a3a;opacity:0.9;"></span></td>
+<td width="40%" valign="middle" style="width:40%;vertical-align:middle;padding:6px 4px 6px 10px;font-family:Arial,sans-serif;">
+<table cellpadding="0" cellspacing="3" border="0" style="margin:0 0 2px 0;border-collapse:separate;"><tr>
+<td style="width:3px;height:3px;border-radius:50%;background:rgba(130,208,255,0.55);">&nbsp;</td><td style="width:3px;height:3px;border-radius:50%;background:rgba(130,208,255,0.55);">&nbsp;</td><td style="width:3px;height:3px;border-radius:50%;background:rgba(130,208,255,0.55);">&nbsp;</td><td style="width:3px;height:3px;border-radius:50%;background:rgba(130,208,255,0.55);">&nbsp;</td>
+</tr></table>
+<p style="margin:0;padding:0;font-size:13px;font-weight:800;line-height:1.1;color:#ffffff;">Book your<br>free <span style="color:#ffd556;">strategy call</span></p>
+<p style="margin:1px 0 0 0;padding:0;font-size:7px;line-height:1.2;color:rgba(255,255,255,0.88);">Get expert advice…</p>
+</td>
+<td width="24%" valign="middle" align="center" style="width:24%;vertical-align:middle;text-align:center;padding:4px 2px;">
+<span style="display:inline-block;background:#ffd556;border-radius:6px;padding:3px 6px;font-size:7px;font-weight:800;color:#0c1d62;">BOOK NOW &#8594;</span>
+</td>
+<td width="36%" valign="middle" style="width:36%;vertical-align:middle;padding:4px 8px 4px 0;text-align:right;line-height:0;">
+<span style="display:inline-block;border:1px solid rgba(91,164,255,0.85);border-radius:8px;padding:1px;"><span style="display:inline-block;width:88px;height:38px;border-radius:6px;background:#1e3a8a;opacity:0.95;"></span></span>
+</td>
 </tr>
 </table>
+</a>
 </td></tr>
 </table>`;
   return wrapSrcDoc(inner);
@@ -27,8 +39,8 @@ export function downloadBannerThumbnailSrcDoc() {
 <tr><td style="background-color:#2563eb;padding:10px 14px;border-radius:10px;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
 <tr>
-<td style="color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:700;">Download my Resume</td>
-<td align="right"><span style="display:inline-block;background-color:#ffffff;color:#2563eb;font-family:Arial,sans-serif;font-size:11px;font-weight:700;padding:5px 12px;border-radius:18px;">Download</span></td>
+<td style="color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:700;">Download your free lead magnet (PDF)</td>
+<td align="right"><span style="display:inline-block;background-color:#ffffff;color:#2563eb;font-family:Arial,sans-serif;font-size:11px;font-weight:800;padding:6px 14px;border-radius:18px;">Get it now</span></td>
 </tr>
 </table>
 </td></tr>
@@ -37,12 +49,25 @@ export function downloadBannerThumbnailSrcDoc() {
 }
 
 export function needCallBannerThumbnailSrcDoc() {
+  const stripH = 86;
   const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
-<tr><td style="background-color:#1e3a5f;padding:12px 14px;border-radius:7px;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
+<tr><td style="padding:0;border-radius:8px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.08);">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;min-height:${stripH}px;">
 <tr>
-<td style="color:#ffffff;font-family:Arial,sans-serif;font-size:12px;font-weight:700;">Need a call?</td>
-<td align="right"><span style="display:inline-block;background-color:#3d4cff;color:#ffffff;font-family:Arial,sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:5px;border:1px solid #8fa4ff;">Pick a slot now</span></td>
+<td width="52%" valign="top" style="width:52%;vertical-align:top;background:linear-gradient(135deg,#fbfcff 0%,#e8ecff 100%);padding:0;line-height:0;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="100%" height="${stripH}" preserveAspectRatio="xMidYMid slice" style="display:block;height:${stripH}px;">
+<g fill="#cbd5e9" opacity="0.9"><circle cx="10" cy="8" r="1.6"/><circle cx="17" cy="8" r="1.6"/><circle cx="24" cy="8" r="1.6"/><circle cx="10" cy="14" r="1.6"/><circle cx="17" cy="14" r="1.6"/><circle cx="24" cy="14" r="1.6"/></g>
+<path d="M16 26 Q48 20 78 23 T104 19" fill="none" stroke="#1e40af" stroke-width="1.4" stroke-dasharray="3 2.5" opacity="0.75"/>
+<ellipse cx="42" cy="42" rx="36" ry="14" fill="#a5b4fc" opacity="0.22"/>
+<circle cx="92" cy="18" r="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="0.8"/>
+<circle cx="92" cy="18" r="6" fill="none" stroke="#3b82f6" stroke-width="1.4"/>
+</svg>
+</td>
+<td width="48%" valign="middle" style="width:48%;background:linear-gradient(160deg,#0f172a 0%,#0a1120 55%,#070d18 100%);padding:10px 12px;vertical-align:middle;">
+<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;line-height:1.1;color:#ffffff;">Turn subscribers<br>into <span style="color:#3b82f6">buyers.</span></p>
+<p style="margin:4px 0 0;font-family:Arial,sans-serif;font-size:7px;font-weight:400;line-height:1.25;color:#cbd5e1;">Email marketing that engages…</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;margin-top:6px;border-collapse:collapse;"><tr><td align="right" style="padding:0;"><span style="display:inline-block;border-radius:9999px;background:linear-gradient(90deg,#2563eb,#9333ea);padding:4px 10px;font-family:Arial,sans-serif;font-size:7px;font-weight:700;color:#ffffff;">Start free trial &#8594;</span></td></tr></table>
+</td>
 </tr>
 </table>
 </td></tr>
@@ -57,144 +82,36 @@ export function blankImageBannerThumbnailSrcDoc() {
   return wrapSrcDoc(inner);
 }
 
-/** Mindscope-style strip — mirrors server `banner_5` (simplified for iframe scale). */
-export function mindscopeBannerThumbnailSrcDoc() {
-  const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
-<tr><td style="padding:0;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;min-height:88px;background-color:#0f2d6b;background-image:linear-gradient(110deg,#0a1628 0%,#0d2145 40%,#0f2d6b 70%,#1a3a80 100%);">
-<tr>
-<td valign="middle" align="center" width="18%" style="width:18%;background-color:#0a1628;background-image:radial-gradient(circle,rgba(255,255,255,0.07) 1px,transparent 1px);background-size:12px 12px;border-right:1px solid rgba(255,255,255,0.1);padding:6px 4px;">
-<p style="margin:0;font-family:Arial,sans-serif;font-weight:800;font-size:8px;color:#fff;letter-spacing:0.06em;text-transform:uppercase;line-height:1.1;text-align:center;">MINDSCOPE</p>
-</td>
-<td valign="middle" style="padding:8px 10px;font-family:Arial,sans-serif;">
-<p style="margin:0 0 3px;font-size:10px;font-weight:700;color:#fff;line-height:1.2;">ATS &amp; Recruiting CRM</p>
-<p style="margin:0;font-size:11px;font-weight:800;color:#fff;line-height:1.15;">Make Hiring <span style="color:#f9e000;">Easy!</span></p>
-</td>
-<td valign="middle" align="center" style="white-space:nowrap;padding:0 8px 0 4px;">
-<span style="display:inline-block;border:2px solid #2ecc71;border-radius:4px;padding:4px 10px;font-family:Arial,sans-serif;font-weight:700;font-size:10px;color:#2ecc71;">Try For Free!</span>
-</td>
-<td valign="bottom" width="14%" style="width:14%;background-image:linear-gradient(160deg,#1a3a80 0%,#2a5298 100%);padding:0 4px 4px 0;">
-<table cellpadding="0" cellspacing="0" border="0" align="right" style="width:40px;background:#fff;border-radius:2px;padding:3px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.25);">
-<tr><td style="height:2px;background:#dde3ee;font-size:0;line-height:0;">&nbsp;</td></tr>
-<tr><td style="padding-top:2px;height:2px;width:70%;background:#dde3ee;font-size:0;line-height:0;">&nbsp;</td></tr>
-<tr><td style="padding-top:2px;height:2px;background:#dde3ee;font-size:0;line-height:0;">&nbsp;</td></tr>
-<tr><td style="padding-top:4px;height:4px;background:#2ecc71;font-size:0;line-height:0;">&nbsp;</td></tr>
-</table>
-</td>
-</tr>
-</table>
-</td></tr>
-</table>`;
-  return wrapSrcDoc(inner);
-}
-
-/** Scene height (px) — keep in sync with server `MAILCHIMP_BANNER_SCENE_HEIGHT_PX` in `mailchimpBannerAssets.js`. */
-const MAILCHIMP_THUMB_SCENE_H = 70;
-
-/** Mailchimp-inspired strip — mirrors server `banner_6` (simplified for iframe scale). */
-export function mailchimpCampaignBannerThumbnailSrcDoc() {
-  const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
-<tr><td style="padding:0;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;min-height:${MAILCHIMP_THUMB_SCENE_H}px;">
-<tr>
-<td width="56%" valign="top" style="width:56%;vertical-align:top;padding:0;background-color:#1a1210;line-height:0;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="100%" height="${MAILCHIMP_THUMB_SCENE_H}" preserveAspectRatio="xMidYMax slice" style="display:block;height:${MAILCHIMP_THUMB_SCENE_H}px;">
-<rect width="120" height="40" fill="#e8813a"/>
-<polygon points="30,40 60,8 90,40" fill="#d96030"/><polygon points="60,8 90,40 60,40" fill="#8c3410"/>
-<ellipse cx="22" cy="32" rx="10" ry="5" fill="#4a2608"/>
-</svg>
-</td>
-<td width="44%" valign="middle" style="width:44%;background-color:#1c1c1c;padding:8px 10px;vertical-align:middle;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;"><tr>
-<td valign="middle" style="font-family:Arial,sans-serif;font-size:9px;font-weight:600;color:#ffffff;line-height:1.25;padding-right:6px;">Leading email marketing solution.</td>
-<td valign="middle" align="right" style="white-space:nowrap;"><span style="display:inline-block;background:#ffe01b;border-radius:2px;padding:4px 8px;font-family:Arial,sans-serif;font-size:8px;font-weight:700;color:#1c1c1c;">Get Started</span></td>
-<td valign="middle" width="28" style="width:28px;padding-left:4px;line-height:0;"><span style="display:inline-block;width:22px;height:24px;border-radius:50%;background:#ffe01b;"></span></td>
-</tr></table>
-</td>
-</tr>
-</table>
-</td></tr>
-</table>`;
-  return wrapSrcDoc(inner);
-}
-
-/** “Explore your world” strip — mirrors server `banner_7` (simplified). */
-export function exploreWorldBannerThumbnailSrcDoc() {
-  const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
-<tr><td style="padding:0;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border:2px solid #e8d94a;background-color:#1a2355;">
-<tr>
-<td width="18%" valign="middle" style="width:18%;background-color:#111b42;border-right:2px solid #e8d94a;padding:6px 8px;">
-<p style="margin:0;font-family:Arial,sans-serif;font-size:7px;color:#fff;letter-spacing:0.06em;text-transform:lowercase;">explore</p>
-<p style="margin:0;font-family:Arial,sans-serif;font-size:16px;font-weight:900;color:#fff;line-height:1;">log</p>
-<p style="margin:3px 0 0;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 16" width="72" height="12" style="display:block;opacity:0.85;"><circle cx="7" cy="8" r="2" fill="#e8d94a" opacity="0.4"/><circle cx="22" cy="8" r="2" fill="#e8d94a" opacity="0.55"/><circle cx="40" cy="8" r="2" fill="#e8d94a" opacity="0.35"/><circle cx="81" cy="8" r="4" fill="none" stroke="#e8d94a" stroke-width="1.2"/></svg></p>
-</td>
-<td valign="middle" style="padding:6px 10px;background-color:#1a2355;">
-<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;"><tr>
-<td valign="middle" width="22" style="width:22px;padding:0 6px 0 0;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 46" width="22" height="40" style="display:block;"><path d="M14 40 Q9 30 10 20 Q11 12 14 8" fill="none" stroke="#9aacd8" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.6"/><path d="M14 7 L21 11 L18 12 L21 16 L18 17 L15 14 L14 15 L13 14 L10 17 L7 16 L10 12 L8 11 Z" fill="#e8d94a"/></svg></td>
-<td valign="middle">
-<p style="margin:0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#fff;">Explore Your</p>
-<p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:18px;font-weight:900;color:#e8d94a;line-height:1;">WORLD</p>
-</td>
-</tr></table>
-</td>
-<td valign="middle" align="center" style="padding:6px 8px;">
-<span style="display:inline-block;background:#e8d94a;border-radius:2px;padding:4px 10px;font-family:Arial,sans-serif;font-size:9px;font-weight:800;color:#1a2355;">Learn More</span>
-<p style="margin:3px 0 0;font-family:Arial,sans-serif;font-size:7px;color:#c8d8ff;">www.example.com</p>
-</td>
-<td width="14%" valign="bottom" style="width:14%;vertical-align:bottom;line-height:0;text-align:right;padding:0 4px 0 0;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 120" width="44" height="58" style="display:block;"><ellipse cx="46" cy="36" rx="14" ry="15" fill="#f5c5a0"/><ellipse cx="46" cy="22" rx="20" ry="6" fill="#c8a020"/></svg>
-</td>
-</tr>
-</table>
-</td></tr>
-</table>`;
-  return wrapSrcDoc(inner);
-}
-
-/** Wellness “Boost and Improve” strip — mirrors server `banner_8` (simplified). */
+/** Corporate navy + gold strip — mirrors server `banner_8` (simplified). */
 export function boostImproveBannerThumbnailSrcDoc() {
   const inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="470" style="width:470px;max-width:100%;border-collapse:collapse;">
 <tr><td style="padding:0;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid rgba(11,29,54,0.2);">
 <tr>
-<td valign="middle" align="center" width="62" style="width:62px;background-color:#1e2d1e;padding:5px 4px;">
-<svg width="26" height="26" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
-<path d="M16 2 C16 2 28 8 28 20 C28 28 22 30 16 30 C10 30 4 28 4 20 C4 8 16 2 16 2Z" fill="#7ab82a"/>
-<line x1="16" y1="30" x2="16" y2="14" stroke="#aad060" stroke-width="1.5" stroke-linecap="round"/>
-</svg>
-<p style="margin:1px 0 0;font-family:Montserrat,Arial,sans-serif;font-size:6px;font-weight:600;color:#aac88a;letter-spacing:0.08em;text-transform:uppercase;line-height:1;">Mighty</p>
-<p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:10px;font-weight:800;color:#ffffff;letter-spacing:0.04em;text-transform:uppercase;line-height:1;">LOGO</p>
+<td valign="middle" align="center" width="98" style="width:98px;background-color:#0B1D36;background-image:repeating-linear-gradient(152deg,rgba(255,255,255,0.06) 0px,rgba(255,255,255,0.06) 1px,transparent 1px,transparent 7px);border-right:3px solid #F4B93A;padding:8px 6px;">
+<svg width="22" height="24" viewBox="0 0 48 52" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 4px;"><path d="M24 4 L44 44 H4 Z" fill="#F4B93A" stroke="#E8A820" stroke-width="1"/></svg>
+<p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:8px;font-weight:800;color:#F4B93A;letter-spacing:0.05em;text-transform:uppercase;">BRAND</p>
 </td>
-<td valign="bottom" width="244" style="width:244px;padding:0;line-height:0;background:linear-gradient(105deg,#e8f0d8 0%,#d4e8b0 45%,#b8d888 100%);overflow:hidden;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 244 72" width="244" height="72" preserveAspectRatio="xMidYMax meet" style="display:block;">
-<defs><linearGradient id="b8thumbG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#e8f2d5"/><stop offset="100%" stop-color="#c0dc90"/></linearGradient></defs>
-<rect width="244" height="72" fill="url(#b8thumbG)"/>
-<rect x="0" y="58" width="244" height="14" fill="#b0cc80" opacity="0.5"/>
-<path d="M18 16 L22 62 L44 62 L48 16 Z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.75)" stroke-width="0.6"/>
-<path d="M22 38 L23 62 L41 62 L42 38 Z" fill="#70c020" opacity="0.75"/>
-<path d="M58 24 L62 62 L80 62 L84 24 Z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.75)" stroke-width="0.6"/>
-<path d="M62 45 L63 62 L79 62 L80 45 Z" fill="#b0d8f0" opacity="0.75"/>
-<path d="M92 14 L96 62 L120 62 L124 14 Z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.75)" stroke-width="0.6"/>
-<path d="M96 34 L98 62 L118 62 L120 34 Z" fill="#70c020" opacity="0.72"/>
-<ellipse cx="158" cy="58" rx="16" ry="11" fill="#f5e040"/>
-<ellipse cx="195" cy="54" rx="14" ry="10" fill="#e8c060"/>
-</svg>
+<td valign="middle" width="218" style="width:218px;background-color:#ffffff;background-image:radial-gradient(circle at 1px 1px,rgba(11,29,54,0.07) 1px,transparent 0),linear-gradient(118deg,#ffffff 0%,#eef2f7 52%,#ffffff 100%);background-size:12px 12px,auto;padding:8px 10px;">
+<p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:10px;font-weight:800;line-height:1.05;"><span style="color:#0B1D36;">Better</span><span style="color:#F4B93A;">Solutions.</span><br/><span style="color:#0B1D36;">Stronger</span><span style="color:#F4B93A;">Results.</span></p>
+<table cellpadding="0" cellspacing="0" border="0" style="margin-top:5px;border-collapse:collapse;"><tr>
+<td style="width:2px;background:#F4B93A;font-size:0;">&nbsp;</td>
+<td style="padding-left:6px;font-family:Montserrat,Arial,sans-serif;font-size:6px;color:#555555;line-height:1.25;">Smart solutions for every department.</td>
+</tr></table>
 </td>
-<td valign="middle" width="164" style="width:164px;background-color:#7ab82a;padding:6px 10px 8px 12px;vertical-align:middle;">
+<td valign="middle" width="154" style="width:154px;background-color:#0B1D36;background-image:repeating-linear-gradient(152deg,rgba(255,255,255,0.06) 0px,rgba(255,255,255,0.06) 1px,transparent 1px,transparent 7px);padding:7px 8px;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;"><tr>
-<td style="vertical-align:top;">
-<p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:11px;font-weight:800;color:#1a2e0a;line-height:1.1;">Boost and Improve</p>
-<p style="margin:3px 0 5px;font-family:Montserrat,Arial,sans-serif;font-size:8px;font-weight:500;color:#2a4a10;">Your Immune System</p>
-<span style="display:inline-block;background-color:#1e2d1e;border-radius:2px;padding:4px 9px;font-family:Montserrat,Arial,sans-serif;font-size:7px;font-weight:700;color:#ffffff;letter-spacing:0.06em;text-transform:uppercase;">Click Here</span>
-</td></tr>
-<tr><td align="right" style="padding-top:6px;font-size:0;line-height:0;">
-<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#ffffff;margin-left:3px;"></span>
-<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);margin-left:3px;"></span>
-<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);margin-left:3px;"></span>
-<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);margin-left:3px;"></span>
-<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.4);margin-left:3px;"></span>
-</td></tr></table>
+<td width="28" style="width:28px;padding-right:5px;vertical-align:middle;line-height:0;"><svg width="26" height="26" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><circle cx="22" cy="22" r="16" fill="none" stroke="#F4B93A" stroke-width="1.6"/><path d="M22 12l5 10h-3l-1 8h-2l-1-8h-3z" fill="#ffffff"/></svg></td>
+<td valign="middle" style="font-family:Montserrat,Arial,sans-serif;font-size:5px;color:#ffffff;line-height:1.3;">Explore smart solutions designed for impact. See how teams align strategy, execution, and measurement.</td>
+</tr></table>
+<p style="margin:6px 0 0;padding:0;"><span style="display:inline-block;background:#F4B93A;color:#0B1D36;font-family:Montserrat,Arial,sans-serif;font-size:6px;font-weight:800;padding:4px 8px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;">EXPLORE NOW &#8594;</span></p>
+<p style="margin:5px 0 0;padding:0;text-align:right;font-size:0;line-height:0;">
+<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#fff;margin-left:2px;"></span>
+<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.35);margin-left:2px;"></span>
+<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.35);margin-left:2px;"></span>
+<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.35);margin-left:2px;"></span>
+<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.35);margin-left:2px;"></span>
+</p>
 </td>
 </tr>
 </table>
@@ -210,8 +127,8 @@ export function onlineLoanBannerThumbnailSrcDoc() {
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
 <tr>
 <td valign="middle" width="32%" style="width:32%;padding:6px 4px 6px 12px;vertical-align:middle;">
-<p style="margin:0;font-family:Arial Black,Arial,sans-serif;font-size:11px;font-weight:900;color:#1a1a1a;line-height:1.15;letter-spacing:-0.2px;">Online půjčka pro</p>
-<p style="margin:0;font-family:Arial Black,Arial,sans-serif;font-size:11px;font-weight:900;color:#1a1a1a;line-height:1.15;letter-spacing:-0.2px;">každého</p>
+<p style="margin:0;font-family:Arial Black,Arial,sans-serif;font-size:11px;font-weight:900;color:#1a1a1a;line-height:1.15;letter-spacing:-0.2px;">Fast funding</p>
+<p style="margin:0;font-family:Arial Black,Arial,sans-serif;font-size:11px;font-weight:900;color:#1a1a1a;line-height:1.15;letter-spacing:-0.2px;">for your next move</p>
 </td>
 <td valign="bottom" width="44%" align="center" style="width:44%;padding:0;line-height:0;vertical-align:bottom;">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 95" width="160" height="84" preserveAspectRatio="xMidYMax meet" style="display:block;margin:0 auto;">
@@ -223,10 +140,10 @@ export function onlineLoanBannerThumbnailSrcDoc() {
 <td valign="top" width="24%" style="width:24%;padding:6px 12px 6px 4px;vertical-align:top;">
 <table cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse;"><tr>
 <td valign="middle" style="padding:0 3px 0 0;"><span style="display:inline-block;width:3px;height:10px;background:#c8a84b;border-radius:1px;font-size:0;line-height:0;">&nbsp;</span></td>
-<td valign="middle" style="font-family:Arial,sans-serif;font-size:9px;font-weight:800;color:#444;letter-spacing:0.5px;text-transform:uppercase;">REVOLIO</td>
+<td valign="middle" style="font-family:Arial,sans-serif;font-size:9px;font-weight:800;color:#444;letter-spacing:0.5px;text-transform:uppercase;">YOUR BRAND</td>
 </tr></table>
 <table cellpadding="0" cellspacing="0" border="0" align="right" style="margin-top:4px;border-collapse:collapse;"><tr><td>
-<span style="display:inline-block;background:#1e3d2f;color:#fff;font-family:Arial,sans-serif;font-size:8px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;padding:4px 10px;border-radius:4px;">CHCI PŮJČIT</span>
+<span style="display:inline-block;background:#1e3d2f;color:#fff;font-family:Arial,sans-serif;font-size:8px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;padding:4px 10px;border-radius:4px;">Get pre-approved</span>
 </td></tr></table>
 </td>
 </tr>
@@ -243,8 +160,8 @@ export function leaveReviewBannerThumbnailSrcDoc() {
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;background-color:#ffffff;border:1px solid #e8e8e8;border-radius:14px;">
 <tr>
 <td valign="middle" width="36%" style="width:36%;padding:10px 6px 10px 14px;vertical-align:middle;font-family:system-ui,Arial,sans-serif;">
-<p style="margin:0 0 3px;font-size:13px;font-weight:800;color:#111;line-height:1.2;">Leave us a review</p>
-<p style="margin:0;font-size:10px;font-weight:400;color:#444;">on Trustpilot</p>
+<p style="margin:0 0 3px;font-size:13px;font-weight:800;color:#111;line-height:1.2;">Loved working with us?</p>
+<p style="margin:0;font-size:10px;font-weight:400;color:#444;">Leave a quick Google review</p>
 <p style="margin:6px 0 0;line-height:0;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:block;"><path d="M7 11V5.5a1.5 1.5 0 013 0V11" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"/><path d="M10 10.5V4a1.5 1.5 0 013 0v6.5" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"/></svg></p>
 </td>
 <td valign="bottom" width="48%" style="width:48%;padding:0;line-height:0;vertical-align:bottom;text-align:center;">

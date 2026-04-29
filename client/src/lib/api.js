@@ -378,9 +378,9 @@ export const uploadAPI = {
     return api.post('upload/logo', form);
   },
   /**
-   * Banner uploads. Default: 720×~93 JPEG (`cover`) for full-strip / blank banners.
-   * `{ mode: 'mark' }`: 400×400 max PNG (`inside`) for CTA logos/icons (no strip crop).
-   * `{ mode: 'scene' }`: 560×200 max PNG (`inside`) for CTA hero / illustration slots.
+   * Banner uploads. Default (`strip`): up to 2000×2000 JPEG, aspect preserved (no server crop).
+   * `{ mode: 'mark' }`: 400×400 max PNG (`inside`) for CTA logos/icons.
+   * `{ mode: 'scene' }`: 800×280 max PNG (`inside`) for CTA hero / illustration slots.
    */
   uploadBannerImage: (file, opts = {}) => {
     const form = new FormData();

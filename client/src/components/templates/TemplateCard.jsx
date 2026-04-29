@@ -41,7 +41,6 @@ export function TemplateCard({
   const previewWidthPx = useMemo(() => {
     const slug = uuidToTemplateSlug(template.id);
     if (slug === 'template_2') return 600;
-    if (slug === 'template_4') return 470;
     if (slug === 'template_1' || slug === 'template_5') return 520;
     if (slug === 'template_11') return 620;
     if (slug === 'template_12') return 520;
@@ -53,6 +52,7 @@ export function TemplateCard({
     if (slug === 'template_18') return 521;
     if (slug === 'template_19') return 600;
     if (slug === 'template_20') return 600;
+    if (slug === 'template_21') return 620;
     return 600;
   }, [template.id]);
 
@@ -169,20 +169,22 @@ export function TemplateCard({
         ) : null}
       </div>
 
-      <div className="flex items-center justify-center gap-2.5 border-t border-[#eceef1] px-4 py-3.5 sm:px-5">
-        <span className="flex shrink-0 gap-1">
-          {swatches.map((c, i) => (
-            <span
-              key={`${pKey}-${i}`}
-              title={c}
-              className="h-4 w-4 rounded-[3px] border border-white shadow-sm ring-1 ring-black/[0.06]"
-              style={{ backgroundColor: c }}
-            />
-          ))}
-        </span>
-        <span className="text-[12px] font-medium tabular-nums text-[#6b7280]">
-          {colorCount} {colorCount === 1 ? 'color' : 'colors'}
-        </span>
+      <div className="border-t border-[#eceef1] px-4 py-3 sm:px-5">
+        <div className="flex items-center justify-center gap-2.5">
+          <span className="flex shrink-0 gap-1">
+            {swatches.map((c, i) => (
+              <span
+                key={`${pKey}-${i}`}
+                title={c}
+                className="h-4 w-4 rounded-[3px] border border-white shadow-sm ring-1 ring-black/[0.06]"
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </span>
+          <span className="text-[12px] font-medium tabular-nums text-[#6b7280]">
+            {colorCount} {colorCount === 1 ? 'color' : 'colors'}
+          </span>
+        </div>
       </div>
     </button>
   );

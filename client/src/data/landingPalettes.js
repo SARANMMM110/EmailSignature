@@ -30,7 +30,6 @@ export const LANDING_TEMPLATE_ROWS = [
   { id: 'template_1', label: 'Pristine', tier: 'free' },
   { id: 'template_2', label: 'Aurora', tier: 'free' },
   { id: 'template_3', label: 'Lumen', tier: 'free' },
-  { id: 'template_4', label: 'Meridian', tier: 'free' },
   { id: 'template_5', label: 'Vertex', tier: 'pro' },
   { id: 'template_6', label: 'Helix', tier: 'pro' },
   { id: 'template_7', label: 'Studio', tier: 'free' },

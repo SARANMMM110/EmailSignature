@@ -8,21 +8,7 @@ import {
   FilterSidebar,
 } from '../../templates/FilterSidebar.jsx';
 import { TemplateCard } from '../../templates/TemplateCard.jsx';
-import {
-  displayNameForTemplateRow,
-  TEMPLATE_10_CANONICAL_COLORS,
-  TEMPLATE_11_CANONICAL_COLORS,
-  TEMPLATE_12_CANONICAL_COLORS,
-  TEMPLATE_13_CANONICAL_COLORS,
-  TEMPLATE_14_CANONICAL_COLORS,
-  TEMPLATE_15_CANONICAL_COLORS,
-  TEMPLATE_16_CANONICAL_COLORS,
-  TEMPLATE_17_CANONICAL_COLORS,
-  TEMPLATE_18_CANONICAL_COLORS,
-  TEMPLATE_19_CANONICAL_COLORS,
-  TEMPLATE_20_CANONICAL_COLORS,
-  uuidToTemplateSlug,
-} from '../../../lib/templateIds.js';
+import { displayNameForTemplateRow, uuidToTemplateSlug } from '../../../lib/templateIds.js';
 import { resolvePaletteColorsFromDesign } from '../../../lib/resolveDesignPalette.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { usePlanGate } from '../../../hooks/usePlanGate.js';
@@ -103,6 +89,7 @@ export function LayoutsTab() {
         tier: t.tier || 'free',
         style: t.style || 'design',
         style_tags: Array.isArray(t.style_tags) ? t.style_tags : [t.style || 'design'],
+        persona_tags: Array.isArray(t.persona_tags) ? t.persona_tags : [],
         has_logo: t.has_logo === false ? false : true,
         color_count: t.color_count ?? 10,
       })),
@@ -230,31 +217,7 @@ export function LayoutsTab() {
                     if (locked) return;
                     setTemplate(t.id);
                   }}
-                  paletteColors={
-                    uuidToTemplateSlug(t.id) === 'template_10'
-                      ? [...TEMPLATE_10_CANONICAL_COLORS]
-                      : uuidToTemplateSlug(t.id) === 'template_11'
-                        ? [...TEMPLATE_11_CANONICAL_COLORS]
-                        : uuidToTemplateSlug(t.id) === 'template_12'
-                          ? [...TEMPLATE_12_CANONICAL_COLORS]
-                          : uuidToTemplateSlug(t.id) === 'template_13'
-                            ? [...TEMPLATE_13_CANONICAL_COLORS]
-                            : uuidToTemplateSlug(t.id) === 'template_14'
-                              ? [...TEMPLATE_14_CANONICAL_COLORS]
-                              : uuidToTemplateSlug(t.id) === 'template_15'
-                                ? [...TEMPLATE_15_CANONICAL_COLORS]
-                                : uuidToTemplateSlug(t.id) === 'template_16'
-                                  ? [...TEMPLATE_16_CANONICAL_COLORS]
-                                  : uuidToTemplateSlug(t.id) === 'template_17'
-                                    ? [...TEMPLATE_17_CANONICAL_COLORS]
-                                    : uuidToTemplateSlug(t.id) === 'template_18'
-                                      ? [...TEMPLATE_18_CANONICAL_COLORS]
-                                      : uuidToTemplateSlug(t.id) === 'template_19'
-                                        ? [...TEMPLATE_19_CANONICAL_COLORS]
-                                        : uuidToTemplateSlug(t.id) === 'template_20'
-                                          ? [...TEMPLATE_20_CANONICAL_COLORS]
-                                          : paletteSwatches
-                  }
+                  paletteColors={paletteSwatches}
                   liveHtml={liveHtmlById[t.id] || ''}
                   liveLoading={loadingLivePreviews && !liveHtmlById[t.id]}
                 />

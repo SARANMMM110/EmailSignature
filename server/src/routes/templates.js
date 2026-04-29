@@ -13,6 +13,7 @@ import {
   getFilteredTemplatesCatalog,
   getTemplateCatalogSize,
 } from '../data/templatesCatalog.js';
+import { TEMPLATE_PERSONA_TAGS } from '../data/templatePersonas.js';
 
 const router = Router();
 
@@ -77,6 +78,10 @@ function normalizeCatalogRowForEngine(row) {
   const fileRow = fileTemplates.find((t) => t.id === eng);
   const styleTags =
     meta && Array.isArray(meta.style_tags) ? [...meta.style_tags] : [meta?.style || row.style || 'design'];
+  const personaTags =
+    (meta && Array.isArray(meta.persona_tags) && meta.persona_tags.length
+      ? meta.persona_tags
+      : TEMPLATE_PERSONA_TAGS[eng]) || [];
   return {
     ...row,
     id: eng,
@@ -84,6 +89,7 @@ function normalizeCatalogRowForEngine(row) {
     tier: meta?.tier || row.tier || 'free',
     style: meta?.style || row.style || 'design',
     style_tags: styleTags,
+    persona_tags: Array.isArray(row.persona_tags) && row.persona_tags.length ? row.persona_tags : personaTags,
     has_logo: meta?.has_logo ?? row.has_logo !== false,
     has_photo: meta?.has_photo ?? row.has_photo !== false,
     color_count: meta?.color_count ?? row.color_count ?? 6,

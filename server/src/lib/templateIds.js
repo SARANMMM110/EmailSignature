@@ -92,13 +92,20 @@ export const TEMPLATE_20_CANONICAL_COLORS = Object.freeze([
   '#f0f4f0',
 ]);
 
+/** Layout 21 — engine order matches colour legend (primary = largest shell, secondary = bronze rail). Sync client. */
+export const TEMPLATE_21_CANONICAL_COLORS = Object.freeze([
+  '#E5D8CD', // primary — beige shell (main fill)
+  '#8E623B', // secondary — bronze accent rail + CTA square
+  '#F5EFE8', // accent — cream photo panel
+  '#000000', // text — black ink
+]);
+
 /** UUID → slug for HTML generation (must match client `templateIds.js`). */
 export const UUID_TO_TEMPLATE_SLUG = {
   'a0000001-0000-4000-8000-000000000001': 'template_1',
   'a0000002-0000-4000-8000-000000000002': 'template_2',
   'a0000003-0000-4000-8000-000000000003': 'template_3',
-  /** Legacy “Card Style” gallery row → Layout 4 (dark card). */
-  'a0000004-0000-4000-8000-000000000004': 'template_4',
+  'a0000004-0000-4000-8000-000000000004': 'template_1',
   'a0000005-0000-4000-8000-000000000005': 'template_5',
   'a0000006-0000-4000-8000-000000000006': 'template_6',
   'a0000007-0000-4000-8000-000000000007': 'template_7',
@@ -115,13 +122,13 @@ export const UUID_TO_TEMPLATE_SLUG = {
   'a0000018-0000-4000-8000-000000000018': 'template_18',
   'a0000019-0000-4000-8000-000000000019': 'template_19',
   'a0000020-0000-4000-8000-000000000020': 'template_20',
+  'a0000021-0000-4000-8000-000000000021': 'template_21',
 };
 
 /** Stable UUIDs — must match supabase template seed migrations (e.g. 002, 009, 010). */
 const TEMPLATE_1_UUID = 'a0000001-0000-4000-8000-000000000001';
 const TEMPLATE_2_UUID = 'a0000002-0000-4000-8000-000000000002';
 const TEMPLATE_3_UUID = 'a0000003-0000-4000-8000-000000000003';
-const TEMPLATE_4_UUID = 'a0000004-0000-4000-8000-000000000004';
 const TEMPLATE_5_UUID = 'a0000005-0000-4000-8000-000000000005';
 const TEMPLATE_6_UUID = 'a0000006-0000-4000-8000-000000000006';
 const TEMPLATE_7_UUID = 'a0000007-0000-4000-8000-000000000007';
@@ -138,12 +145,12 @@ const TEMPLATE_17_UUID = 'a0000017-0000-4000-8000-000000000017';
 const TEMPLATE_18_UUID = 'a0000018-0000-4000-8000-000000000018';
 const TEMPLATE_19_UUID = 'a0000019-0000-4000-8000-000000000019';
 const TEMPLATE_20_UUID = 'a0000020-0000-4000-8000-000000000020';
+const TEMPLATE_21_UUID = 'a0000021-0000-4000-8000-000000000021';
 
 export const TEMPLATE_SLUG_TO_UUID = {
   template_1: TEMPLATE_1_UUID,
   template_2: TEMPLATE_2_UUID,
   template_3: TEMPLATE_3_UUID,
-  template_4: TEMPLATE_4_UUID,
   template_5: TEMPLATE_5_UUID,
   template_6: TEMPLATE_6_UUID,
   template_7: TEMPLATE_7_UUID,
@@ -160,6 +167,9 @@ export const TEMPLATE_SLUG_TO_UUID = {
   template_18: TEMPLATE_18_UUID,
   template_19: TEMPLATE_19_UUID,
   template_20: TEMPLATE_20_UUID,
+  template_21: TEMPLATE_21_UUID,
+  /** Retired Layout 4 (Mindscope split) — stale slugs map to Layout 1. */
+  template_4: TEMPLATE_1_UUID,
   'classic-table': TEMPLATE_1_UUID,
   'minimal-stack': TEMPLATE_1_UUID,
   'corporate-strip': TEMPLATE_1_UUID,
@@ -168,16 +178,7 @@ export const TEMPLATE_SLUG_TO_UUID = {
 /** Full-width image-only CTA — matches engine `banner_blank`. */
 export const BLANK_IMAGE_BANNER_UUID = 'b0000005-0000-4000-8000-000000000005';
 
-/** Mindscope-style dark ATS strip — matches engine `banner_5`. */
-export const MINDSCOPE_BANNER_UUID = 'b0000006-0000-4000-8000-000000000006';
-
-/** Mailchimp-inspired illustrated strip — matches engine `banner_6`. */
-export const MAILCHIMP_BANNER_UUID = 'b0000007-0000-4000-8000-000000000007';
-
-/** “Explore your world” travel strip — matches engine `banner_7`. */
-export const EXPLORE_WORLD_BANNER_UUID = 'b0000008-0000-4000-8000-000000000008';
-
-/** Wellness “Boost and Improve” strip — matches engine `banner_8`. */
+/** Corporate navy + gold “Boost” strip — matches engine `banner_8`. */
 export const BOOST_IMPROVE_BANNER_UUID = 'b0000009-0000-4000-8000-000000000009';
 
 /** Online loan / Revolio-style strip — matches engine `banner_9`. */
@@ -195,15 +196,16 @@ export const SEO_WHITEPAPER_BANNER_UUID = 'b0000013-0000-4000-8000-000000000013'
 /** Green gradient CTA with logo + decor — matches engine `banner_13`. */
 export const GREEN_GRADIENT_CTA_BANNER_UUID = 'b0000014-0000-4000-8000-000000000014';
 
+/** Lavender funnel + navy copy + gradient CTA — same engine as `banner_4` (alias of need-call layout). */
+export const SUBSCRIBER_JOURNEY_BANNER_UUID = 'b0000015-0000-4000-8000-000000000015';
+
 export const BANNER_SLUG_TO_UUID = {
   'book-call': 'b0000001-0000-4000-8000-000000000001',
   download: 'b0000002-0000-4000-8000-000000000002',
   webinar: 'b0000003-0000-4000-8000-000000000003',
   'need-call': 'b0000004-0000-4000-8000-000000000004',
+  'subscriber-journey': SUBSCRIBER_JOURNEY_BANNER_UUID,
   blank: BLANK_IMAGE_BANNER_UUID,
-  'mindscope-ats': MINDSCOPE_BANNER_UUID,
-  'mailchimp-campaign': MAILCHIMP_BANNER_UUID,
-  'explore-world-banner': EXPLORE_WORLD_BANNER_UUID,
   'boost-improve-banner': BOOST_IMPROVE_BANNER_UUID,
   'online-loan-banner': ONLINE_LOAN_BANNER_UUID,
   'leave-review-banner': LEAVE_REVIEW_BANNER_UUID,
@@ -216,30 +218,6 @@ export function isBlankImageBannerPreset(presetId, bannerId) {
   if (p === 'blank-image' || p.includes('blank-image')) return true;
   const id = String(bannerId || '').trim().toLowerCase();
   return id === String(BLANK_IMAGE_BANNER_UUID).toLowerCase();
-}
-
-/** Matches server `resolveBannerKey` → `banner_5`. */
-export function isMindscopeBannerPreset(presetId, bannerId) {
-  const bid = String(bannerId || '').trim().toLowerCase();
-  if (bid === String(MINDSCOPE_BANNER_UUID).toLowerCase()) return true;
-  const p = String(presetId || '').toLowerCase();
-  return p.includes('mindscope');
-}
-
-/** Matches server `resolveBannerKey` → `banner_6`. */
-export function isMailchimpBannerPreset(presetId, bannerId) {
-  const bid = String(bannerId || '').trim().toLowerCase();
-  if (bid === String(MAILCHIMP_BANNER_UUID).toLowerCase()) return true;
-  const p = String(presetId || '').toLowerCase();
-  return p.includes('mailchimp');
-}
-
-/** Matches server `resolveBannerKey` → `banner_7`. */
-export function isExploreWorldBannerPreset(presetId, bannerId) {
-  const bid = String(bannerId || '').trim().toLowerCase();
-  if (bid === String(EXPLORE_WORLD_BANNER_UUID).toLowerCase()) return true;
-  const p = String(presetId || '').toLowerCase();
-  return p.includes('explore-world') || p.includes('explore-your-world');
 }
 
 /** Matches server `resolveBannerKey` → `banner_8`. */
@@ -294,7 +272,6 @@ export function uuidToTemplateSlug(uuid) {
   if (UUID_TO_TEMPLATE_SLUG[s]) return UUID_TO_TEMPLATE_SLUG[s];
   if (/^template_3$/i.test(s)) return 'template_3';
   if (/^template_2$/i.test(s)) return 'template_2';
-  if (/^template_4$/i.test(s)) return 'template_4';
   if (/^template_5$/i.test(s)) return 'template_5';
   if (/^template_6$/i.test(s)) return 'template_6';
   if (/^template_7$/i.test(s)) return 'template_7';
@@ -311,6 +288,7 @@ export function uuidToTemplateSlug(uuid) {
   if (/^template_18$/i.test(s)) return 'template_18';
   if (/^template_19$/i.test(s)) return 'template_19';
   if (/^template_20$/i.test(s)) return 'template_20';
+  if (/^template_21$/i.test(s)) return 'template_21';
   if (/^template_\d+$/i.test(s)) return 'template_1';
   return 'template_1';
 }
@@ -319,21 +297,29 @@ export function resolveTemplateUuid(input) {
   if (input == null || input === '') return null;
   const s = String(input).trim();
   const lower = s.toLowerCase();
-  if (UUID_RE.test(s)) return s;
+  if (UUID_RE.test(s)) {
+    if (lower === 'a0000004-0000-4000-8000-000000000004') return TEMPLATE_1_UUID;
+    return s;
+  }
   return TEMPLATE_SLUG_TO_UUID[lower] || null;
 }
 
 export function resolveBannerUuid(input) {
   if (input == null || input === '') return null;
   const s = String(input).trim().toLowerCase();
-  if (UUID_RE.test(s)) return s;
+  if (UUID_RE.test(s)) {
+    if (s === 'b0000006-0000-4000-8000-000000000006') return BANNER_SLUG_TO_UUID['book-call'];
+    return s;
+  }
   if (s.includes('blank')) return BANNER_SLUG_TO_UUID.blank;
   if (s.includes('download')) return BANNER_SLUG_TO_UUID.download;
   if (s.includes('webinar')) return BANNER_SLUG_TO_UUID.webinar;
+  if (s.includes('subscriber-journey')) return SUBSCRIBER_JOURNEY_BANNER_UUID;
   if (s.includes('need')) return BANNER_SLUG_TO_UUID['need-call'];
-  if (s.includes('mindscope')) return MINDSCOPE_BANNER_UUID;
-  if (s.includes('mailchimp')) return MAILCHIMP_BANNER_UUID;
-  if (s.includes('explore-world') || s.includes('explore-your-world')) return EXPLORE_WORLD_BANNER_UUID;
+  if (s.includes('mindscope')) return BANNER_SLUG_TO_UUID['book-call'];
+  if (s.includes('mailchimp')) return BANNER_SLUG_TO_UUID['need-call'];
+  if (s.includes('explore-world') || s.includes('explore-your-world'))
+    return BANNER_SLUG_TO_UUID['book-call'];
   if (s.includes('boost-improve')) return BOOST_IMPROVE_BANNER_UUID;
   if (s.includes('online-loan')) return ONLINE_LOAN_BANNER_UUID;
   if (s.includes('business-city')) return BUSINESS_CITY_BANNER_UUID;
@@ -358,7 +344,7 @@ export function engineSlugFromCatalogTemplateId(id) {
   const n = parseInt(m[1], 10);
   if (n === 2) return 'template_2';
   if (n === 3) return 'template_3';
-  if (n === 4) return 'template_4';
+  if (n === 4) return 'template_1';
   if (n === 5) return 'template_5';
   if (n === 6) return 'template_6';
   if (n === 7) return 'template_7';
@@ -375,19 +361,20 @@ export function engineSlugFromCatalogTemplateId(id) {
   if (n === 18) return 'template_18';
   if (n === 19) return 'template_19';
   if (n === 20) return 'template_20';
+  if (n === 21) return 'template_21';
   return 'template_1';
 }
 
-/** Bundle / preview rail: Layout 2 = 600px; Layout 4 = 470px; Layout 1, 5 & 12 = 520px; Layout 18 = 521px; Layout 3, 13–17, 19–20 = 600px; Layout 11 = 620px (must match client editor preview). */
+/** Bundle / preview rail: Layout 2 = 600px; Layout 1, 5 & 12 = 520px; Layout 18 = 521px; Layout 3, 13–17, 19–20 = 600px; Layout 11 & 21 = 620px (must match client editor preview). */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
   if (s === 'template_2') return 600;
-  if (s === 'template_4') return 470;
   if (s === 'template_1' || s === 'template_5' || s === 'template_12') return 520;
   if (s === 'template_11') return 620;
   if (s === 'template_18') return 521;
   if (s === 'template_19') return 600;
   if (s === 'template_20') return 600;
+  if (s === 'template_21') return 620;
   if (s === 'template_17') return 600;
   if (s === 'template_13') return 600;
   if (s === 'template_14') return 600;

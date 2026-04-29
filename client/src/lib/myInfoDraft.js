@@ -127,25 +127,20 @@ export function profileFormPartialForGenerate(profile, user) {
   return out;
 }
 
-/** Fill empty signature fields from the account profile (same keys as FIELD_KEYS). */
-export function mergeProfileIntoSignature(sig, profile, user) {
-  const p = fieldsFromAccountProfile(profile, user);
-  if (!sig || Object.keys(p).length === 0) return sig;
-  const nextFields = { ...(sig.fields || {}) };
-  let changed = false;
-  for (const k of FIELD_KEYS) {
-    if (String(nextFields[k] ?? '').trim() === '' && String(p[k] ?? '').trim() !== '') {
-      nextFields[k] = p[k];
-      changed = true;
-    }
-  }
-  return changed ? { ...sig, fields: nextFields } : sig;
+/**
+ * Previously filled any empty field from the account profile. That made intentional clears
+ * impossible (empty was treated like “not set yet”). Profile seeding now happens only for
+ * fresh template rows via {@link starterFieldsWithProfile}; do not merge profile into empties here.
+ */
+export function mergeProfileIntoSignature(sig, _profile, _user) {
+  return sig;
 }
 
 /**
  * After a signature was seeded with {@link starterFieldsWithProfile} using empty profile, or when
  * profile loads later, replace fields that still match demo placeholders with account data.
- * Does not overwrite values the user has changed away from the demo defaults.
+ * Does not overwrite values the user has changed away from the demo defaults, and does not
+ * refill fields the user cleared to empty (empty is intentional, not “still demo”).
  */
 export function applyProfileOverDemoPlaceholders(sig, profile, user, demoFields) {
   const p = fieldsFromAccountProfile(profile, user);
@@ -157,7 +152,7 @@ export function applyProfileOverDemoPlaceholders(sig, profile, user, demoFields)
     if (!pv) continue;
     const cur = String(nextFields[k] ?? '').trim();
     const demoVal = String(demoFields[k] ?? '').trim();
-    if (cur === '' || (demoVal !== '' && cur === demoVal)) {
+    if (demoVal !== '' && cur === demoVal) {
       nextFields[k] = p[k];
       changed = true;
     }

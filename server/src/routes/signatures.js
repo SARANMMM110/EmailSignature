@@ -22,6 +22,7 @@ import {
   TEMPLATE_18_CANONICAL_COLORS,
   TEMPLATE_19_CANONICAL_COLORS,
   TEMPLATE_20_CANONICAL_COLORS,
+  TEMPLATE_21_CANONICAL_COLORS,
 } from '../lib/templateIds.js';
 import { requireUnderLimit } from '../middleware/planGate.js';
 import { countUserSignatures } from '../lib/planCounts.js';
@@ -87,6 +88,7 @@ function dbRowFromRequest(body, html) {
           field_3: bundle.banner.field_3,
           field_4: bundle.banner.field_4,
           field_5: bundle.banner.field_5,
+          field_6: bundle.banner.field_6,
           banner_image_url: bundle.banner.banner_image_url,
           image_url: bundle.banner.image_url,
         }
@@ -138,6 +140,7 @@ export function signatureRowToClient(row) {
                   field_3: row.banner_config.field_3,
                   field_4: row.banner_config.field_4,
                   field_5: row.banner_config.field_5,
+                  field_6: row.banner_config.field_6,
                   banner_image_url: row.banner_config.banner_image_url,
                   image_url: row.banner_config.image_url,
                 }
@@ -372,7 +375,18 @@ router.post(
                                   },
                                   colors: [...TEMPLATE_20_CANONICAL_COLORS],
                                 }
-                              : { templateId: canonicalSlug, palette: {} };
+                              : canonicalSlug === 'template_21'
+                                ? {
+                                    templateId: canonicalSlug,
+                                    palette: {
+                                      primary: TEMPLATE_21_CANONICAL_COLORS[0],
+                                      secondary: TEMPLATE_21_CANONICAL_COLORS[1],
+                                      accent: TEMPLATE_21_CANONICAL_COLORS[2],
+                                      text: TEMPLATE_21_CANONICAL_COLORS[3],
+                                    },
+                                    colors: [...TEMPLATE_21_CANONICAL_COLORS],
+                                  }
+                                : { templateId: canonicalSlug, palette: {} };
       const row = {
         user_id: req.user.id,
         template_id: tid,

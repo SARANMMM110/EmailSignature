@@ -2,15 +2,14 @@ import { normalizeSignatureTemplateSlug, isImageTemplateSignature } from './temp
 
 /**
  * Which “My information” form fields each HTML layout actually reads.
- * Keep in sync with `server/src/templates/signatureTemplates.js` + `contextFromEditorPayload` in htmlGenerator.
+ * Keep in sync with `server/src/templates/signatureTemplates.js` + `contextFromEditorPayload` in `htmlGenerator.js` (name/title are trimmed so empty values stay hidden in templates).
  */
 
-/** Layouts that include a headshot upload (template_4 is text-only on the left). */
+/** Layouts that include a headshot upload in My information. */
 export const TEMPLATE_HAS_PHOTO_SLOT = {
   template_1: true,
   template_2: true,
   template_3: true,
-  template_4: false,
   template_5: true,
   template_6: true,
   template_7: true,
@@ -27,6 +26,7 @@ export const TEMPLATE_HAS_PHOTO_SLOT = {
   template_18: true,
   template_19: true,
   template_20: true,
+  template_21: true,
 };
 
 /** @type {Record<string, Set<string>>} */
@@ -34,7 +34,6 @@ const MY_INFO_KEYS_BY_SLUG = {
   template_1: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'company']),
   template_2: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'company']),
   template_3: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
-  template_4: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'company']),
   template_5: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
   template_6: new Set([
     'full_name',
@@ -46,7 +45,8 @@ const MY_INFO_KEYS_BY_SLUG = {
     'company',
     'facebook',
   ]),
-  template_7: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'company']),
+  /** Layout 7 omits job title in HTML — hide the field in My information. */
+  template_7: new Set(['full_name', 'phone', 'email', 'website', 'address', 'company']),
   template_8: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'company']),
   template_9: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
   template_10: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address', 'company', 'tagline']),
@@ -82,6 +82,8 @@ const MY_INFO_KEYS_BY_SLUG = {
   template_18: new Set(['full_name', 'job_title', 'company', 'phone', 'email', 'website', 'address']),
   template_19: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
   template_20: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
+  /** Layout 21 — company + tagline lines removed from My information (name + role + contacts only). */
+  template_21: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
 };
 
 const DEFAULT_KEYS = MY_INFO_KEYS_BY_SLUG.template_1;

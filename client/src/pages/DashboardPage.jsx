@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { SignatureGrid } from '../components/dashboard/SignatureGrid.jsx';
 import { Toast } from '../components/ui/Toast.jsx';
-import { SupportFab } from '../components/ui/SupportFab.jsx';
 import { useToast } from '../hooks/useToast.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
@@ -246,8 +245,6 @@ export function DashboardPage() {
           )}
         </main>
       </div>
-
-      <SupportFab />
 
       {toast && (
         <Toast

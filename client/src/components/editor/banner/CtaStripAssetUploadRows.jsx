@@ -2,32 +2,29 @@ import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { HiArrowUpTray } from 'react-icons/hi2';
 import { uploadAPI } from '../../../lib/api.js';
+import { buildCtaBannerImageStyleObject } from '../../../lib/ctaBannerImageStyle.js';
 
 const ACCEPT = { 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/webp': ['.webp'] };
 const DEFAULT_MAX = 5 * 1024 * 1024;
 
 function slotLabels(presetKind) {
   if (presetKind === 'boost') {
-    return {
-      logo: 'Logo mark (replaces built-in leaf)',
-      hero: 'Center scene image (replaces juice illustration)',
-    };
+    return { logo: 'Logo (replaces default gold mark)' };
   }
   return {
     logo: 'Top brand graphic (left column)',
-    hero: 'Right illustration (replaces traveler art)',
   };
 }
 
-function CtaStripSlot({
-  label,
-  hint,
-  url,
-  uploading,
-  disabled,
-  dropzone,
-  onClear,
-}) {
+function CtaStripSlot({ label, hint, url, uploading, disabled, dropzone, onClear, previewW, previewH, objectFit }) {
+  const imgStyle = String(url || '').trim()
+    ? buildCtaBannerImageStyleObject({
+        widthPx: previewW,
+        heightPx: previewH,
+        ...(objectFit === 'cover' ? { objectFit: 'cover' } : {}),
+      })
+    : {};
+
   return (
     <div className="space-y-2">
       <span className="mb-1.5 block text-sm font-bold text-slate-800">{label}</span>
@@ -44,7 +41,7 @@ function CtaStripSlot({
         {uploading ? (
           <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
         ) : String(url || '').trim() ? (
-          <img src={url} alt="" className="max-h-24 max-w-full rounded-lg object-contain" />
+          <img src={url} alt="" className="max-w-full rounded-lg" style={imgStyle} />
         ) : (
           <>
             <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
@@ -67,8 +64,8 @@ function CtaStripSlot({
 }
 
 /**
- * Optional uploads for Explore-your-world (logo + hero) and Boost-and-improve (logo mark + center scene).
- * Primary slot uses `cta_strip_*`; secondary uses `secondary_cta_strip_*` on `banner_config`.
+ * Optional uploads: Boost (`banner_8`) — left mark only; other presets may include logo + hero slots.
+ * Primary `cta_strip_*`; secondary `secondary_cta_strip_*`.
  */
 export function CtaStripAssetUploadRows({
   presetKind,
@@ -80,6 +77,7 @@ export function CtaStripAssetUploadRows({
 }) {
   const [busy, setBusy] = useState(null);
   const labels = slotLabels(presetKind);
+  const showHeroSlot = presetKind !== 'boost';
   const keyLogo = secondary ? 'secondary_cta_strip_logo_url' : 'cta_strip_logo_url';
   const keyHero = secondary ? 'secondary_cta_strip_hero_url' : 'cta_strip_hero_url';
 
@@ -110,13 +108,6 @@ export function CtaStripAssetUploadRows({
     multiple: false,
     disabled: disabled || busy !== null,
   });
-  const iconDrop = useDropzone({
-    onDrop: (a) => void runUpload(a, keyIcon, 'mark'),
-    accept: ACCEPT,
-    maxSize,
-    multiple: false,
-    disabled: disabled || busy !== null,
-  });
   const heroDrop = useDropzone({
     onDrop: (a) => void runUpload(a, keyHero, 'scene'),
     accept: ACCEPT,
@@ -128,7 +119,9 @@ export function CtaStripAssetUploadRows({
   return (
     <div className="space-y-5 border-b border-slate-200/80 pb-5">
       <p className="text-[11px] leading-relaxed text-slate-500">
-        Optional images replace the built-in artwork. Leave empty to keep the default graphics for each area.
+        {presetKind === 'boost'
+          ? 'Optional image replaces the default gold mark in the left column. Leave empty to keep the built-in icon.'
+          : 'Optional images replace the built-in artwork. Leave empty to keep the default graphics for each area.'}
       </p>
       <CtaStripSlot
         label={labels.logo}
@@ -138,16 +131,23 @@ export function CtaStripAssetUploadRows({
         disabled={disabled}
         dropzone={logoDrop}
         onClear={() => mergeBannerCfg({ [keyLogo]: '' })}
+        previewW={presetKind === 'boost' ? 56 : 110}
+        previewH={presetKind === 'boost' ? 56 : 36}
       />
-      <CtaStripSlot
-        label={labels.hero}
-        hint=""
-        url={heroUrl}
-        uploading={busy === keyHero}
-        disabled={disabled}
-        dropzone={heroDrop}
-        onClear={() => mergeBannerCfg({ [keyHero]: '' })}
-      />
+      {showHeroSlot ? (
+        <CtaStripSlot
+          label={labels.hero}
+          hint=""
+          url={heroUrl}
+          uploading={busy === keyHero}
+          disabled={disabled}
+          dropzone={heroDrop}
+          onClear={() => mergeBannerCfg({ [keyHero]: '' })}
+          previewW={200}
+          previewH={presetKind === 'boost' ? 120 : 100}
+          objectFit={presetKind === 'boost' ? undefined : 'cover'}
+        />
+      ) : null}
     </div>
   );
 }

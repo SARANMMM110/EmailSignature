@@ -15,15 +15,15 @@ export const TEMPLATE_12_MARKUP = `<table role="presentation" cellpadding="0" ce
 <td valign="top" style="padding:8px 8px 0 0;line-height:0;font-size:0;vertical-align:top;"><img src="{{{t12_hello_mark_uri}}}" width="20" height="20" alt="" style="display:block;width:20px;height:20px;border:0;"></td>
 <td valign="top" style="vertical-align:top;padding:0;">
 <div style="font-size:13px;font-weight:500;line-height:15px;color:{{t12_name_color}};mso-line-height-rule:exactly;">Hello, I&#8217;m</div>
-<div style="font-size:26px;font-weight:700;line-height:28px;color:{{t12_name_color}};letter-spacing:-0.03em;padding-top:2px;mso-line-height-rule:exactly;">{{name}}</div>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:12px;">
+{{#if name}}<div style="font-size:26px;font-weight:700;line-height:28px;color:{{t12_name_color}};letter-spacing:-0.03em;padding-top:2px;mso-line-height-rule:exactly;">{{name}}</div>{{/if}}
+{{#if title}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:12px;">
 <tr>
 <td valign="middle" style="padding:0 5px 0 0;line-height:0;vertical-align:middle;"><img src="{{{t12_chevron_uri}}}" width="12" height="12" alt="" style="display:block;width:12px;height:12px;border:0;"></td>
 <td valign="middle" align="center" bgcolor="{{t12_badge_fill}}" style="background-color:{{t12_badge_fill}};border-radius:999px;padding:4px 18px;text-align:center;vertical-align:middle;white-space:nowrap;mso-line-height-rule:exactly;">
 <span style="display:block;font-size:9px;font-weight:700;color:{{t12_role_pill_text}};line-height:14px;text-align:center;mso-line-height-rule:exactly;">{{title}}</span>
 </td>
 </tr>
-</table>
+</table>{{/if}}
 </td>
 </tr>
 </table>
@@ -50,7 +50,7 @@ export const TEMPLATE_12_MARKUP = `<table role="presentation" cellpadding="0" ce
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="112" height="120" style="width:112px;height:120px;border-collapse:collapse;">
 <tr>
 <td width="112" height="120" valign="bottom" align="center" background="{{{t12_photo_rail_uri}}}" bgcolor="{{t12_card_bg}}" style="width:112px;height:120px;vertical-align:bottom;text-align:center;background-color:{{t12_card_bg}};background-image:url({{{t12_photo_rail_uri}}});background-repeat:no-repeat;background-position:center;background-size:112px 120px;mso-line-height-rule:exactly;">
-{{#if photo_url}}<img src="{{{photo_url}}}" width="112" height="120" alt="" style="display:block;width:112px;height:120px;border:0;object-fit:contain;object-position:center bottom;background-color:transparent;">{{else}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="112" height="120" style="width:112px;height:120px;border-collapse:collapse;"><tr><td width="112" height="120" align="center" valign="middle" bgcolor="{{t12_photo_placeholder_bg}}" style="width:112px;height:120px;background-color:{{t12_photo_placeholder_bg}};font-size:22px;font-weight:700;color:{{t12_photo_placeholder_color}};mso-line-height-rule:exactly;">{{name_initials}}</td></tr></table>{{/if}}
+{{#if photo_url}}<img src="{{{photo_url}}}" width="112" height="120" alt="" style="display:block;width:112px;height:120px;border:0;object-fit:contain;object-position:center bottom;background-color:transparent;">{{else}}{{#if show_photo}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="112" height="120" style="width:112px;height:120px;border-collapse:collapse;"><tr><td width="112" height="120" align="center" valign="middle" bgcolor="{{t12_photo_placeholder_bg}}" style="width:112px;height:120px;background-color:{{t12_photo_placeholder_bg}};font-size:22px;font-weight:700;color:{{t12_photo_placeholder_color}};mso-line-height-rule:exactly;">{{name_initials}}</td></tr></table>{{/if}}{{/if}}
 </td>
 </tr>
 </table>

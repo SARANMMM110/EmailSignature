@@ -63,8 +63,8 @@ export const REVIEW_STAR_SCENE_SVG_BODY =
 /** White arrow inside black circle (18×18 glyph, padded to 44×44 cell). */
 export const REVIEW_ARROW_CIRCLE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44" style="display:block;margin:0 auto;" role="presentation" aria-hidden="true">' +
-  '<circle cx="22" cy="22" r="22" fill="#111111"/>' +
+  '<circle cx="22" cy="22" r="22" fill="{{banner_b11_cta_circle_bg}}"/>' +
   '<g transform="translate(13,13)">' +
-  '<path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="{{banner_b11_cta_circle_ink}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
   '</g>' +
   '</svg>';

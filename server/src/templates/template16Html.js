@@ -27,8 +27,13 @@ export const TEMPLATE_16_MARKUP = `<!-- T16: outer ${T16_OUTER}px — 45% / seam
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
 <tr><td align="center" style="padding:6px 10px 6px 11px;vertical-align:middle;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:0 auto;">
+{{#if show_logo}}
 {{#if logo_url}}
 <tr><td align="center" style="padding:0 0 2px 0;line-height:0;font-size:0;"><img src="{{{logo_url}}}" alt="" width="108" height="32" style="display:block;max-width:108px;max-height:36px;width:108px;height:auto;border:0;object-fit:contain;"></td></tr>
+{{else}}
+<tr><td align="center" style="padding:0 0 2px 0;line-height:0;font-size:0;"><img src="{{{t16_hex_uri}}}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border:0;margin:0 auto;"></td></tr>
+<tr><td align="center" style="padding:0;font-size:13px;font-weight:700;line-height:1.05;letter-spacing:0.09em;color:#ffffff;mso-line-height-rule:exactly;">{{t16_lockup_upper}}</td></tr>
+{{/if}}
 {{else}}
 <tr><td align="center" style="padding:0 0 2px 0;line-height:0;font-size:0;"><img src="{{{t16_hex_uri}}}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border:0;margin:0 auto;"></td></tr>
 <tr><td align="center" style="padding:0;font-size:13px;font-weight:700;line-height:1.05;letter-spacing:0.09em;color:#ffffff;mso-line-height-rule:exactly;">{{t16_lockup_upper}}</td></tr>
@@ -45,7 +50,7 @@ export const TEMPLATE_16_MARKUP = `<!-- T16: outer ${T16_OUTER}px — 45% / seam
 <tr><td align="center" valign="middle" style="padding:0;line-height:0;font-size:0;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" valign="middle" bgcolor="{{t16_navy}}" style="padding:${T16_RING_NAVY}px;background-color:{{t16_navy}};border-radius:50%;-webkit-border-radius:50%;line-height:0;font-size:0;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" valign="middle" style="padding:${T16_RING_WHITE}px;background-color:#ffffff;border-radius:50%;-webkit-border-radius:50%;line-height:0;font-size:0;">
-{{#if photo_url}}<img src="{{{photo_url}}}" alt="" width="${T16_PHOTO_INNER}" height="${T16_PHOTO_INNER}" style="display:block;width:${T16_PHOTO_INNER}px;height:${T16_PHOTO_INNER}px;border-radius:50%;-webkit-border-radius:50%;border:0;object-fit:cover;">{{else}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${T16_PHOTO_INNER}" height="${T16_PHOTO_INNER}" style="width:${T16_PHOTO_INNER}px;height:${T16_PHOTO_INNER}px;border-collapse:collapse;"><tr><td width="${T16_PHOTO_INNER}" height="${T16_PHOTO_INNER}" align="center" valign="middle" bgcolor="{{t16_photo_placeholder_bg}}" style="width:${T16_PHOTO_INNER}px;height:${T16_PHOTO_INNER}px;border-radius:50%;-webkit-border-radius:50%;background-color:{{t16_photo_placeholder_bg}};font-size:24px;font-weight:700;color:{{t16_photo_placeholder_color}};mso-line-height-rule:exactly;">{{name_initials}}</td></tr></table>{{/if}}
+{{#if photo_url}}<img src="{{{photo_url}}}" alt="" width="${T16_PHOTO_INNER}" height="${T16_PHOTO_INNER}" style="display:block;width:${T16_PHOTO_INNER}px;height:${T16_PHOTO_INNER}px;border-radius:50%;-webkit-border-radius:50%;border:0;object-fit:cover;">{{else}}{{#if show_photo}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${T16_PHOTO_INNER}" height="${T16_PHOTO_INNER}" style="width:${T16_PHOTO_INNER}px;height:${T16_PHOTO_INNER}px;border-collapse:collapse;"><tr><td width="${T16_PHOTO_INNER}" height="${T16_PHOTO_INNER}" align="center" valign="middle" bgcolor="{{t16_photo_placeholder_bg}}" style="width:${T16_PHOTO_INNER}px;height:${T16_PHOTO_INNER}px;border-radius:50%;-webkit-border-radius:50%;background-color:{{t16_photo_placeholder_bg}};font-size:24px;font-weight:700;color:{{t16_photo_placeholder_color}};mso-line-height-rule:exactly;">{{name_initials}}</td></tr></table>{{/if}}{{/if}}
 </td></tr></table>
 </td></tr></table>
 </td></tr>

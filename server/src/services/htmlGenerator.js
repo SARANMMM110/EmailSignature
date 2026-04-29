@@ -8,12 +8,7 @@ import {
 } from '../lib/templateIds.js';
 import { resolveTemplateKey, TEMPLATE_META, getTemplateHtml } from '../templates/signatureTemplates.js';
 import { BANNER_TEMPLATES, resolveBannerKey } from '../templates/bannerTemplates.js';
-import {
-  EXPLORE_WORLD_B7_CENTER_ACCENT_SVG,
-  EXPLORE_WORLD_B7_RAIL_DECOR_SVG,
-  EXPLORE_WORLD_TRAVELER_SVG,
-} from '../templates/exploreWorldBannerAssets.js';
-import { BOOST_LOGO_LEAF_SVG, BOOST_WELLNESS_SCENE_SVG } from '../templates/boostImproveBannerAssets.js';
+import { boostLogoMarkSvg } from '../templates/boostImproveBannerAssets.js';
 import { T18_BORDER_TOP, T18_BORDER_RIGHT } from '../templates/template18Assets.js';
 import { T18_CARD_HEIGHT_PX } from '../templates/template18Html.js';
 import { T19_CARD_HEIGHT_PX, T19_CARD_WIDTH_PX } from '../templates/template19Html.js';
@@ -23,6 +18,22 @@ import {
   intersperseBrBetweenBannerPartTables,
 } from '../lib/splitSignaturePreviewSlots.js';
 import { premiumCtaTokensForBanner } from './premiumCtaBannerStyleTokens.js';
+import { buildBannerBlankImgStyleString } from '../lib/bannerBlankImageStyle.js';
+import {
+  buildCtaBannerImageStyleString,
+  buildCtaBannerLogoRailStyleString,
+} from '../lib/ctaBannerImageStyle.js';
+import {
+  buildSubscriberFlowSceneSvg,
+  subscriberFlowBannerSceneHeightPx,
+} from '../templates/subscriberFlowBannerAssets.js';
+import { buildEmailTheme } from '../lib/emailTheme.js';
+import { ENGINE_PALETTE_DEFAULTS } from '../lib/enginePaletteDefaults.js';
+import {
+  brandFieldMidFromStops,
+  brandLightWashFromStops,
+  brandStripGradientFromStops,
+} from '../lib/engineBrandSurfaces.js';
 
 /** Rich layouts embed multiple SVG data-URIs — keep headroom so output is never sliced mid-signature. */
 const MAX_OUTPUT_BYTES = 48 * 1024;
@@ -178,6 +189,14 @@ function hexToRgb(hex) {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
+/** `rgba(r,g,b,a)` for email-safe translucent chrome (dots, borders). */
+function hexToRgbaString(hex, alpha) {
+  const rgb = hexToRgb(hex);
+  const a = Math.max(0, Math.min(1, Number(alpha) || 0));
+  if (!rgb) return `rgba(130,208,255,${a})`;
+  return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+}
+
 /** WCAG-style relative luminance (0–1). */
 function relativeLuminance(hex) {
   const rgb = hexToRgb(hex);
@@ -298,6 +317,18 @@ function enforceContrastOnSurface(textHex, surfaceHex, minRatio = 4.5) {
   return toDark ? '#000000' : '#ffffff';
 }
 
+/**
+ * Use the editor’s text swatch as-is when it already meets contrast on `surfaceHex`; otherwise
+ * {@link enforceContrastOnSurface}. Lets light text (e.g. white) on dark backgrounds match signature + CTA.
+ */
+function paletteTextOnSurface(textHex, surfaceHex, minRatio = 4.5) {
+  const t = String(textHex ?? '').trim();
+  const s = String(surfaceHex ?? '').trim();
+  if (hexToRgb(t) && hexToRgb(s) && wcagContrastRatio(t, s) >= minRatio) return t;
+  const fallback = relativeLuminance(s) > 0.45 ? '#0f172a' : '#ffffff';
+  return enforceContrastOnSurface(t || fallback, s, minRatio);
+}
+
 function bannerHeadlineOnDark(c4) {
   const c = String(c4 || '').trim();
   if (c && relativeLuminance(c) > 0.82) return c;
@@ -334,113 +365,307 @@ function bannerCtaOnDark(c1, c2, c3, c4) {
 }
 
 /**
- * Webinar / CTA banner 1 — light card + organic blobs (palette primary/accent/text); see `bannerTemplates.js` banner_1.
+ * Webinar / CTA banner 1 vertical band height (blob `<img>` height) — reuse for other strips so rails align visually.
+ * At rail 560px → 140px; scales linearly, floored at 84px.
  */
-function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 470) {
+function ctaBanner1BandHeightPx(railPx = 470) {
+  const rail = Math.max(320, Math.min(720, Number(railPx) || 470));
+  return Math.max(84, Math.round((rail * 140) / 560));
+}
+
+/**
+ * Book-a-call (`banner_2`) row height — matches banner 1’s **content row** (text + CTA), not the full blob art height,
+ * so the blue strip reads as the same compact “strip” as the webinar card.
+ * At rail 560px → 92px; floored at 72px.
+ */
+function ctaBanner2StripHeightPx(railPx = 470) {
+  const rail = Math.max(320, Math.min(720, Number(railPx) || 470));
+  return Math.max(72, Math.round((rail * 92) / 560));
+}
+
+/**
+ * Webinar / CTA banner 1 — same four engine roles; card fill uses {@link brandFieldMidFromStops} (Banner 2 / Layout 7 family).
+ */
+function webinarBannerStyleVars(color1, color2, color3, color4, railPx = 470, theme = null) {
   const c1 = String(color1 || '#e8630a').trim();
   const c2 = String(color2 || c1).trim();
   const c3 = String(color3 || '#94a3b8').trim();
   const c4 = String(color4 || '#0f172a').trim();
   const rail = Math.max(320, Math.min(720, Number(railPx) || 470));
-  const surface = mixHexPair(mixHexWithWhite(c4, 0.97), mixHexWithWhite(c3, 0.82), 0.58);
-  const blobPeach = mixHexPair(mixHexWithWhite(c1, 0.38), mixHexWithWhite(c3, 0.5), 0.55);
-  const blobOrange = c1;
-  const headlineRaw = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.04)], 0.48);
-  const sublineRaw = companyMutedColor(c4, c2);
+  const surface = brandFieldMidFromStops(c1, c2, c4);
+  const blobSoft = mixHexPair(mixHexWithWhite(c2, 0.2), mixHexWithWhite(c3, 0.35), 0.55);
+  const blobBold = mixHexPair(c1, mixHexWithWhite(c1, 0.08), 0.62);
   const minCopy = 4.5;
-  const headline = enforceContrastOnSurface(headlineRaw, surface, minCopy);
-  const subline = enforceContrastOnSurface(sublineRaw, surface, minCopy);
-  const brand = enforceContrastOnSurface(c1, surface, minCopy);
+  const headline = paletteTextOnSurface(c4, surface, minCopy);
+  const subline = paletteTextOnSurface(companyMutedColor(c4, c2, surface), surface, minCopy);
+  const brand = paletteTextOnSurface(c3, surface, minCopy);
+  const pillBg = String(theme?.surface_light || '#fafafa').trim() || '#fafafa';
+  const ctaText = paletteTextOnSurface(c4, pillBg, 4.5);
+  const ctaBorder = paletteTextOnSurface(mixHexPair(c3, c1, 0.35), pillBg, 3);
+  /** Right-side decorative blobs — data URI, palette-tinted; sits under copy via absolute positioning in template. */
   const blobSvg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="560" height="140" viewBox="-200 0 760 140" preserveAspectRatio="xMaxYMid meet" fill="none">` +
     `<g transform="translate(28,0)">` +
-    `<path d="M 320 -10 C 310 10, 270 5, 275 35 C 280 60, 320 55, 315 80 C 308 110, 270 105, 280 125 C 290 145, 340 135, 360 110 C 380 85, 360 70, 375 50 C 392 28, 420 35, 415 10 C 410 -10, 330 -30, 320 -10 Z" fill="${blobPeach}" opacity="0.6"/>` +
-    `<path d="M 355 -20 C 340 5, 360 30, 390 25 C 420 20, 445 -5, 460 20 C 475 45, 450 70, 420 75 C 395 80, 375 65, 370 85 C 364 108, 390 125, 420 120 C 455 114, 480 90, 500 65 C 520 40, 510 5, 490 -15 C 468 -38, 375 -48, 355 -20 Z" fill="${blobOrange}" opacity="0.95"/>` +
+    `<path d="M 320 -10 C 310 10, 270 5, 275 35 C 280 60, 320 55, 315 80 C 308 110, 270 105, 280 125 C 290 145, 340 135, 360 110 C 380 85, 360 70, 375 50 C 392 28, 420 35, 415 10 C 410 -10, 330 -30, 320 -10 Z" fill="${blobSoft}" opacity="0.6"/>` +
+    `<path d="M 355 -20 C 340 5, 360 30, 390 25 C 420 20, 445 -5, 460 20 C 475 45, 450 70, 420 75 C 395 80, 375 65, 370 85 C 364 108, 390 125, 420 120 C 455 114, 480 90, 500 65 C 520 40, 510 5, 490 -15 C 468 -38, 375 -48, 355 -20 Z" fill="${blobBold}" opacity="0.95"/>` +
     `</g></svg>`;
-  const blobsH = Math.max(84, Math.round((rail * 140) / 560));
+  const blobsH = ctaBanner1BandHeightPx(railPx);
   return {
     banner_surface_bg: surface,
     banner_brand_color: brand,
     banner_headline_color: headline,
     banner_subline_color: subline,
-    banner_cta_border: headline,
-    banner_cta_text: headline,
+    banner_cta_border: ctaBorder,
+    banner_cta_text: ctaText,
+    banner_cta_pill_bg: pillBg,
     banner_b1_blobs_uri: svgDataUri(blobSvg),
     banner_b1_blobs_h: String(blobsH),
   };
 }
 
 /**
- * When `apply_brand_palette_to_cta_banners` is not true on the Handlebars context, palette-tinted
- * CTA strips use these stops so thumbnails and previews match each template’s “original” art
- * instead of inheriting the signature layout colors. Choosing a palette in the editor sets the flag.
+ * Four-stop tints for CTA strips — same engine order as the editor / signature:
+ * `color_1` primary (background 1), `color_2` secondary (background 2), `color_3` accent (labels & icons), `color_4` text.
  */
-function ctaBannerTintStops(context, variant) {
-  const useBrand = context.apply_brand_palette_to_cta_banners === true;
-  if (useBrand) {
-    return [context.color_1, context.color_2, context.color_3, context.color_4];
-  }
-  if (variant === 'webinar') {
-    return ['#e8630a', '#e8630a', '#94a3b8', '#0f172a'];
-  }
-  if (variant === 'bookCall') {
-    return ['#4d8a6a', '#2f5c45', '#b8e8d0', '#0f172a'];
-  }
-  if (variant === 'needCall') {
-    return ['#1e3a5f', '#2d6a9f', '#94a3b8', '#0f172a'];
-  }
-  return [context.color_1, context.color_2, context.color_3, context.color_4];
+function ctaBannerTintStops(context, _variant) {
+  const ctx = context && typeof context === 'object' ? context : {};
+  const D = ENGINE_PALETTE_DEFAULTS;
+  const pick = (k, fb) => String(ctx[k] || fb).trim();
+  return [pick('color_1', D.primary), pick('color_2', D.secondary), pick('color_3', D.accent), pick('color_4', D.text)];
 }
 
 /**
- * Book-a-call banner (banner_2) — soft horizontal wash from palette primary / accent / secondary.
+ * Book-a-call banner (banner_2) — height follows {@link ctaBanner2StripHeightPx} (banner 1 text row, not blob layer).
+ * Tight decor (single dot row), small right image, type aligned to banner_1 headline/sub sizes.
+ * Gradient / CTA / chrome follow {@link ctaBannerTintStops} (signature palette stops).
  */
-function bookCallBannerStyleVars(color1, color2, color3, color4) {
-  const c1 = String(color1 || '#1e3a5f').trim();
-  const c2 = String(color2 || c1).trim();
-  const c3 = String(color3 || '#94a3b8').trim();
-  const c4 = String(color4 || '#0f172a').trim();
-  const gradStart = mixHexPair(mixHexWithWhite(c1, 0.28), mixHexWithWhite(c3, 0.2), 0.55);
-  const gradEnd = mixHexPair(c1, c2, 0.42);
-  const titleColor = pickDarkestReadable([c4, mixHexWithBlack(c1, 0.18), mixHexWithBlack(c2, 0.12)], 0.5);
-  const arrowColor = pickDarkestReadable([mixHexWithBlack(c2, 0.1), c4, c1], 0.48);
+function bookCallBannerStyleVars(railPx = 470, context) {
+  const rail = Math.max(320, Math.min(720, Number(railPx) || 470));
+  const H = ctaBanner2StripHeightPx(railPx);
+  const scale = H / 92;
+
+  const radius = Math.max(10, Math.min(14, Math.round(12 * scale)));
+  const padV = Math.max(4, Math.round(8 * scale));
+  const padL = Math.max(6, Math.round(12 * scale));
+  const padSideRight = Math.max(5, Math.round(10 * scale));
+  const fsTitle = Math.max(12, Math.min(16, Math.round(16 * scale)));
+  const fsSub = Math.max(7, Math.min(9, Math.round(9 * scale)));
+  const fsBtn = Math.max(8, Math.min(10, Math.round(10 * scale)));
+  const gapSub = Math.max(1, Math.round(2 * scale));
+  const gapCta = Math.max(2, Math.round(4 * scale));
+  const btnR = Math.max(6, Math.round(10 * scale));
+  const btnPy = Math.max(3, Math.round(5 * scale));
+  const btnPx = Math.max(6, Math.round(10 * scale));
+  const calPadR = Math.max(4, Math.round(8 * scale));
+
+  const imgH = Math.max(44, Math.min(H - padV * 2 - 2, Math.round(H * 0.78)));
+  const imgW = Math.max(96, Math.min(Math.round(rail * 0.30), Math.round(imgH * 2.15)));
+
+  const imgOuterR = Math.max(6, Math.min(11, Math.round(9 * scale)));
+  const imgInnerR = Math.max(5, Math.round(8 * scale));
+  const doodleW = Math.max(14, Math.min(28, Math.round(22 * scale)));
+  const doodleH = Math.max(12, Math.min(24, Math.round(18 * scale)));
+  const dot = Math.max(2, Math.min(5, Math.round(4 * scale)));
+  const dotGap = Math.max(3, Math.round(5 * scale));
+  const calSz = Math.max(12, Math.min(17, Math.round(15 * scale)));
+
+  const [c1, c2, c3, c4] = ctaBannerTintStops(context, 'bookCall');
+  const De = ENGINE_PALETTE_DEFAULTS;
+  const ac = String(c3 || De.accent).trim();
+  const { gradStart, gradEnd, mid, a, b, tx } = brandStripGradientFromStops(c1, c2, c4);
+  const titleLine = paletteTextOnSurface(tx, mid, 3);
+  let titleAccent = mixHexPair(ac, mixHexWithWhite(a, 0.22), 0.55);
+  titleAccent = paletteTextOnSurface(titleAccent, mid, 3);
+  /** Same pill system as {@link webinarBannerStyleVars} — light card from email theme + text/border from palette. */
+  const theme = context && typeof context.theme === 'object' ? context.theme : null;
+  const pillBg = String(theme?.surface_light || '#fafafa').trim() || '#fafafa';
+  const btnBg = pillBg;
+  const btnInk = paletteTextOnSurface(tx, pillBg, 4.5);
+  const btnBorder = paletteTextOnSurface(mixHexPair(ac, a, 0.35), pillBg, 3);
+  const dotBase = mixHexPair(a, mixHexWithWhite(ac, 0.35), 0.5);
+  const dotFill = hexToRgbaString(dotBase, 0.55);
+  const imgBorderRgba = hexToRgbaString(mixHexPair(a, ac, 0.42), 0.78);
+  const doodleMain = titleLine;
+  const doodleAccent = titleAccent;
+  const subHex = paletteTextOnSurface(companyMutedColor(tx, b, mid), mid, 3);
+  const subtitleColor = hexToRgbaString(mixHexWithWhite(subHex, 0.06), 0.92);
+
+  const doodleSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="55" viewBox="0 0 70 55" fill="none">` +
+    `<path d="M8 46 Q24 14 52 6" stroke="${doodleMain}" stroke-width="2.8" stroke-linecap="round" fill="none"/>` +
+    `<path d="M44 10 L54 4" stroke="${doodleAccent}" stroke-width="2" stroke-linecap="round"/>` +
+    `<path d="M48 14 L58 8" stroke="${doodleAccent}" stroke-width="2" stroke-linecap="round"/>` +
+    `<path d="M52 18 L62 12" stroke="${doodleAccent}" stroke-width="2" stroke-linecap="round"/>` +
+    `</svg>`;
+
+  const calSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${btnInk}" stroke-width="2">` +
+    `<rect x="3" y="5" width="18" height="16" rx="2"/>` +
+    `<line x1="3" y1="10" x2="21" y2="10"/>` +
+    `<line x1="8" y1="3" x2="8" y2="7"/>` +
+    `<line x1="16" y1="3" x2="16" y2="7"/>` +
+    `</svg>`;
+  const banner_b2_cal_html = `<img src="${svgDataUri(calSvg)}" width="${calSz}" height="${calSz}" alt="" style="display:block;border:0;line-height:0;font-size:0;">`;
+
   return {
     banner_b2_grad_start: gradStart,
     banner_b2_grad_end: gradEnd,
-    banner_b2_title_color: titleColor,
-    banner_b2_arrow_color: arrowColor,
+    banner_b2_title_line_color: titleLine,
+    banner_b2_title_accent: titleAccent,
+    banner_b2_subtitle_color: subtitleColor,
+    banner_b2_btn_bg: btnBg,
+    banner_b2_btn_border: btnBorder,
+    banner_b2_btn_ink: btnInk,
+    banner_b2_dot_fill: dotFill,
+    banner_b2_img_border_rgba: imgBorderRgba,
+    banner_b2_row_h: String(H),
+    banner_b2_radius: String(radius),
+    banner_b2_fs_title: String(fsTitle),
+    banner_b2_fs_sub: String(fsSub),
+    banner_b2_fs_btn: String(fsBtn),
+    banner_b2_pad_l: String(padL),
+    banner_b2_pad_t: String(padV),
+    banner_b2_pad_side_right: String(padSideRight),
+    banner_b2_gap_sub: String(gapSub),
+    banner_b2_gap_cta: String(gapCta),
+    banner_b2_btn_r: String(btnR),
+    banner_b2_btn_py: String(btnPy),
+    banner_b2_btn_px: String(btnPx),
+    banner_b2_cal_pad_r: String(calPadR),
+    banner_b2_img_w: String(imgW),
+    banner_b2_img_h: String(imgH),
+    banner_b2_img_border: String(Math.max(1, Math.round(2 * scale))),
+    banner_b2_img_outer_r: String(imgOuterR),
+    banner_b2_img_inner_r: String(imgInnerR),
+    banner_b2_doodle_w: String(doodleW),
+    banner_b2_doodle_h: String(doodleH),
+    banner_b2_dot: String(dot),
+    banner_b2_dot_gap: String(dotGap),
+    banner_b2_doodle_uri: svgDataUri(doodleSvg),
+    banner_b2_cal_html,
   };
 }
 
 /**
- * Need-a-call strip (banner_4) — bar uses `color_1`; label + pill CTA follow palette contrast rules.
+ * Subscriber funnel strip (banner_4) — left art wash from background 1+2, dark panel from text + secondary,
+ * headline = text, accent phrase = accent slot, CTA pill blends backgrounds with accent.
  */
-function needCallBannerStyleVars(color1, color2, _color3, color4) {
-  const c1 = String(color1 || '#1e3a5f').trim();
-  const c2 = String(color2 || c1).trim();
-  const c4 = String(color4 || '#0f172a').trim();
-  const barL = relativeLuminance(c1);
-  const leftText = barL < 0.42 ? '#ffffff' : pickDarkestReadable([c4, mixHexWithBlack(c1, 0.22)], 0.5);
-  let btnBg = c2;
-  if (relativeLuminance(btnBg) > 0.58) {
-    btnBg = mixHexPair(c1, c2, 0.55);
-  }
-  if (relativeLuminance(btnBg) > 0.58) {
-    btnBg = mixHexWithBlack(c1, 0.08);
-  }
-  if (relativeLuminance(btnBg) > 0.62) {
-    btnBg = pickDarkestReadable([c2, c1, mixHexWithBlack(c1, 0.05)], 0.44);
-  }
-  const btnL = relativeLuminance(btnBg);
-  const btnText =
-    btnL < 0.52 ? '#ffffff' : pickDarkestReadable([c4, mixHexWithBlack(c1, 0.12)], 0.5);
-  const btnBorder = mixHexWithWhite(btnBg, btnL < 0.45 ? 0.32 : 0.22);
+function needCallBannerStyleVars(color1, color2, color3, color4) {
+  const c1 = String(color1 || '#3b82f6').trim();
+  const c2 = String(color2 || '#8b5cf6').trim();
+  const c3 = String(color3 || '#f1f3ff').trim();
+  const c4 = String(color4 || '#0a1120').trim();
+  const leftPanel = brandLightWashFromStops(c1, c2, c4);
+  const { gradStart, gradEnd, mid } = brandStripGradientFromStops(c1, c2, c4);
+  const rightDeep = mid;
+  const titleColor = paletteTextOnSurface(c4, rightDeep, 4.5);
+  const accentPhrase = paletteTextOnSurface(
+    relativeLuminance(c3) > 0.78 ? mixHexPair(c3, c1, 0.45) : c3,
+    rightDeep,
+    3
+  );
+  const subColor = paletteTextOnSurface(mixHexPair(c4, c2, 0.35), rightDeep, 3.2);
+  const cta1 = mixHexPair(c1, c3, 0.38);
+  const cta2 = mixHexPair(c2, c3, 0.38);
+  const ctaMid = mixHexPair(cta1, cta2, 0.5);
   return {
-    banner_4_left_text: leftText,
-    banner_4_btn_bg: btnBg,
-    banner_4_btn_text: btnText,
-    banner_4_btn_border: btnBorder,
+    banner_b4_left_fallback_bg: leftPanel,
+    banner_b4_right_bg_solid: rightDeep,
+    banner_b4_right_bg_image: `linear-gradient(135deg,${gradStart} 0%,${gradEnd} 100%)`,
+    banner_b4_title_color: titleColor,
+    banner_b4_accent: accentPhrase,
+    banner_b4_sub_color: subColor,
+    banner_b4_cta_g1: cta1,
+    banner_b4_cta_g2: cta2,
+    banner_b4_cta_bg_mid: ctaMid,
   };
+}
+
+/** Typography + spacing for `banner_4` (art 1200×180; layout tuned for shorter `subscriberFlowBannerSceneHeightPx`). */
+function subscriberFlowBannerLayoutVars(railPx = 470) {
+  const rail = Math.max(320, Math.min(720, Number(railPx) || 470));
+  const H = subscriberFlowBannerSceneHeightPx(rail);
+  const refH = 180;
+  const scale = H / refH;
+  const fsTitle = Math.max(11, Math.min(17, Math.round(31 * scale)));
+  const fsSub = Math.max(8, Math.min(11, Math.round(14 * scale)));
+  const fsCta = Math.max(9, Math.min(13, Math.round(17 * scale)));
+  const fsArrow = Math.max(11, Math.min(16, Math.round(24 * scale)));
+  const padT = Math.max(5, Math.round(16 * scale));
+  const padR = Math.max(8, Math.round(28 * scale));
+  const padB = Math.max(5, Math.round(16 * scale));
+  const padL = Math.max(8, Math.round(28 * scale));
+  const subMt = Math.max(4, Math.round(9 * scale));
+  const ctaMt = Math.max(5, Math.round(11 * scale));
+  const ctaRad = 9999;
+  const ctaPadV = Math.max(5, Math.round(11 * scale));
+  const ctaPadH = Math.max(7, Math.round(14 * scale));
+  const shellR = Math.max(4, Math.round(5 * scale));
+  const rocket = Math.max(11, Math.round(18 * scale));
+  return {
+    banner_b4_scene_h: String(H),
+    banner_b4_fs_title: String(fsTitle),
+    banner_b4_fs_sub: String(fsSub),
+    banner_b4_fs_cta: String(fsCta),
+    banner_b4_fs_arrow: String(fsArrow),
+    banner_b4_pad_top: String(padT),
+    banner_b4_pad_right: String(padR),
+    banner_b4_pad_bottom: String(padB),
+    banner_b4_pad_left: String(padL),
+    banner_b4_sub_margin_t: String(subMt),
+    banner_b4_cta_margin_t: String(ctaMt),
+    banner_b4_cta_radius: String(ctaRad),
+    banner_b4_cta_pad_v: String(Math.max(4, Math.round(ctaPadV * 0.85))),
+    banner_b4_cta_pad_h: String(ctaPadH),
+    banner_b4_shell_radius: String(shellR),
+    banner_b4_rocket_wh: String(rocket),
+    banner_b4_shell_border: '1px solid #e2e8f0',
+  };
+}
+
+function escapeRegExp(str) {
+  return String(str ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** When subline is empty, treat `headline — rest` as headline + supporting line (reference layout). */
+function splitBanner4EmDashSubline(singleLine) {
+  const t = String(singleLine ?? '').trim();
+  if (!t) return null;
+  const m = /^(.+?)\s+[—–]\s+(.+)$/.exec(t);
+  if (!m) return null;
+  const head = m[1].trim();
+  const tail = m[2].trim();
+  if (!head || !tail) return null;
+  return { headlinePart: head, subPart: tail };
+}
+
+/** Drop one redundant accent word so it is not repeated in the accent `<span>`. */
+function stripRedundantAccentFromLines(lines, accentPhrase) {
+  const a = String(accentPhrase ?? '').trim();
+  if (!a || !Array.isArray(lines) || lines.length === 0) return lines.slice();
+  const stem = a.replace(/\.+$/, '');
+  if (!stem) return lines.slice();
+  const re = new RegExp(`\\b${escapeRegExp(stem)}\\.?\\b`, 'gi');
+  const out = lines.map((ln) => String(ln ?? ''));
+  for (let i = out.length - 1; i >= 0; i--) {
+    const row = String(out[i]);
+    const matches = [...row.matchAll(re)];
+    if (matches.length === 0) continue;
+    const lastM = matches[matches.length - 1];
+    let next = row.slice(0, lastM.index) + row.slice(lastM.index + lastM[0].length);
+    next = next.replace(/\s{2,}/g, ' ').replace(/\s+[—–]\s*$/, '').trim();
+    out[i] = next;
+    return out.filter((x) => String(x).trim().length > 0);
+  }
+  return out.filter((x) => String(x).trim().length > 0);
+}
+
+/** Reference: two lines before the accent span. */
+function normalizeBanner4HeadlineBreak(lines) {
+  if (lines.length !== 1) return lines;
+  const m = /^(Turn subscribers)\s+(into)\s*$/i.exec(String(lines[0]).trim());
+  if (m) return [m[1], m[2]];
+  return lines;
 }
 
 /** Inline SVG contact icons (stroke color) for email-safe data URIs. */
@@ -486,21 +711,28 @@ function pickContactRowIconStroke(primary, secondary) {
   return '#475569';
 }
 
-function companyMutedColor(textHex, secondaryHex) {
-  const t = String(textHex || '').trim();
-  if (t && relativeLuminance(t) >= 0.18 && relativeLuminance(t) <= 0.55) return t;
-  const s = String(secondaryHex || '').trim();
-  if (s && relativeLuminance(s) >= 0.25 && relativeLuminance(s) <= 0.6) return mixHexWithWhite(s, 0.35);
-  return '#6b7280';
+/** Muted / secondary copy on a light card — always anchored to the **text** swatch (`c4`) so palette edits track. */
+function companyMutedColor(textHex, _secondaryHex, surfaceHex = '#ffffff') {
+  const t = String(textHex || '').trim() || '#0f172a';
+  const bg = String(surfaceHex || '#ffffff').trim();
+  const soft = mixHexPair(
+    t,
+    relativeLuminance(t) > 0.62 ? mixHexWithBlack(t, 0.22) : mixHexWithWhite(t, 0.2),
+    0.42
+  );
+  return paletteTextOnSurface(soft, bg, 3.1);
 }
 
-/** Layout 2 — title + contact lines: medium grey (~#888) when palette text is too dark for body copy. */
-function template2BodyText(textHex) {
-  const t = String(textHex || '').trim();
-  if (!t) return '#888888';
-  const L = relativeLuminance(t);
-  if (L >= 0.28 && L <= 0.72) return t;
-  return '#888888';
+/** Layout 2 contact + title lines on `sig_card_surface` — follows text swatch with readability on the card. */
+function template2BodyText(textHex, cardSurfaceHex = '#ffffff') {
+  const t = String(textHex || '').trim() || '#0f172a';
+  const bg = String(cardSurfaceHex || '#ffffff').trim();
+  const soft = mixHexPair(
+    t,
+    relativeLuminance(t) > 0.62 ? mixHexWithBlack(t, 0.18) : mixHexWithWhite(t, 0.16),
+    0.38
+  );
+  return paletteTextOnSurface(soft, bg, 3.1);
 }
 
 function buildGeoDecoDataUri(c1, c2, c3) {
@@ -536,59 +768,10 @@ function svgDataUri(svg) {
 }
 
 /**
- * Layout 4 — each palette stop is visible: 4-stop field gradient + 4 tinted shapes (p1–p4),
- * name/title/company from different mixes, phone/email/web lines + icons each tied to a swatch.
+ * Palette contract (signature + CTA, all templates): `c1` = background 1 / primary, `c2` = background 2 / secondary,
+ * `c3` = accent (labels, icon tints, pills where the layout uses that slot), `c4` = text / body ink.
+ * Large surfaces should blend `c1`+`c2` before falling back to text for chrome so legend edits track like CTA strips.
  */
-function template4StrokeOnDark(swatchesHex) {
-  let s = mixHexWithWhite(String(swatchesHex || '#94a3b8').trim(), 0.42);
-  if (relativeLuminance(s) < 0.56) s = mixHexWithWhite(s, 0.28);
-  if (relativeLuminance(s) > 0.9) s = mixHexWithBlack(s, 0.08);
-  return s;
-}
-
-function buildTemplate4PaletteContext(c1, c2, c3, c4) {
-  const p1 = String(c1 || '#1e3a5f').trim();
-  const p2 = String(c2 || p1).trim();
-  const p3 = String(c3 || p2).trim();
-  const p4 = String(c4 || '#0f172a').trim();
-
-  const g0 = mixHexWithBlack(p1, 0.2);
-  const g1 = mixHexWithBlack(mixHexPair(p1, p2, 0.52), 0.22);
-  const g2 = mixHexWithBlack(mixHexPair(p2, p3, 0.55), 0.28);
-  const g3 = mixHexWithBlack(mixHexPair(p3, p4, 0.48), 0.4);
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="470" height="260" viewBox="0 0 470 260"><defs><linearGradient id="t4bg" x1="0%" y1="8%" x2="100%" y2="92%"><stop offset="0%" stop-color="${g0}"/><stop offset="33%" stop-color="${g1}"/><stop offset="66%" stop-color="${g2}"/><stop offset="100%" stop-color="${g3}"/></linearGradient></defs><rect width="470" height="260" fill="url(#t4bg)"/><circle cx="72" cy="48" r="78" fill="${p1}" opacity="0.2"/><circle cx="402" cy="70" r="104" fill="${p2}" opacity="0.26"/><circle cx="438" cy="198" r="124" fill="${p3}" opacity="0.2"/><ellipse cx="320" cy="200" rx="88" ry="56" fill="${p4}" opacity="0.14"/></svg>`;
-
-  const ic1 = contactStrokeIconDataUrisCompact(template4StrokeOnDark(p1));
-  const ic2 = contactStrokeIconDataUrisCompact(template4StrokeOnDark(p2));
-  const ic3 = contactStrokeIconDataUrisCompact(template4StrokeOnDark(p3));
-
-  const nameOnDark = mixHexPair('#f8fafc', p1, 0.32);
-  const titleOnDark = mixHexPair('#eef2f7', p3, 0.38);
-  const companyOnDark = mixHexPair('#f3f4f6', mixHexPair(p2, p4, 0.45), 0.28);
-
-  const phoneLine = mixHexPair('#e2e8f0', p1, 0.44);
-  const emailLine = mixHexPair('#e2e8f0', p2, 0.44);
-  const webLine = mixHexPair('#e2e8f0', p3, 0.44);
-  const linkEmail = mixHexPair(phoneLine, p2, 0.22);
-  const linkWeb = mixHexPair(webLine, p3, 0.2);
-
-  return {
-    t4_bg_solid: g0,
-    t4_card_bg: svgDataUri(svg),
-    t4_name_color: relativeLuminance(nameOnDark) < 0.45 ? mixHexWithWhite(nameOnDark, 0.35) : nameOnDark,
-    t4_title_color: relativeLuminance(titleOnDark) < 0.42 ? mixHexWithWhite(titleOnDark, 0.3) : titleOnDark,
-    t4_company_color: relativeLuminance(companyOnDark) < 0.45 ? mixHexWithWhite(companyOnDark, 0.32) : companyOnDark,
-    t4_phone_color: phoneLine,
-    t4_email_color: emailLine,
-    t4_web_color: webLine,
-    t4_link_email: linkEmail,
-    t4_link_web: linkWeb,
-    t4_icon_phone: ic1.phone,
-    t4_icon_email: ic2.mail,
-    t4_icon_globe: ic3.globe,
-  };
-}
 
 /**
  * Layout 5 — light card: left/right palette art, typography + contact colors (no stripe/social SVGs).
@@ -665,29 +848,35 @@ function buildTemplate6PaletteContext(c1, c2, c3, c4) {
 
 /**
  * Layout 7 — purple “studio” band: white photo card + logo, name/title + social glyphs, divider, contact stack.
+ * Name, contacts, and glyphs follow the editor text swatch (`p4`) on the coloured shell (contrast-safe).
  */
-function buildTemplate7PaletteContext(c1, _c2, _c3, c4) {
+function buildTemplate7PaletteContext(c1, c2, c3, c4) {
   const p1 = String(c1 || '#5363f2').trim();
-  const shell = mixHexPair('#5363f2', p1, 0.38);
-  const titleMuted = mixHexWithWhite(shell, 0.46);
-  const contactText = mixHexWithWhite(shell, 0.86);
-  const divider = mixHexWithWhite(shell, 0.28);
-  const stroke = '#ffffff';
-  const icons = contactStrokeIconDataUrisCompact(stroke);
-  const li = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${stroke}"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69A1.69 1.69 0 005.19 6.88c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>`;
-  const medium = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${stroke}"><circle cx="5.5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18.5" cy="12" r="2.4"/></svg>`;
-  const tw = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${stroke}"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
-  const gh = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${stroke}"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.41 10.79c.54.1.74-.23.74-.52 0-.26-.01-.94-.01-1.85-3.01.66-3.64-1.45-3.64-1.45-.49-1.25-1.2-1.58-1.2-1.58-.98-.67.07-.66.07-.66 1.09.08 1.66 1.12 1.66 1.12.97 1.66 2.54 1.18 3.16.9.1-.7.38-1.18.69-1.45-2.4-.27-4.92-1.2-4.92-5.34 0-1.18.42-2.15 1.11-2.9-.11-.27-.48-1.36.1-2.85 0 0 .91-.29 2.99 1.11.87-.24 1.8-.36 2.73-.36.92 0 1.86.12 2.73.36 2.08-1.4 2.99-1.11 2.99-1.11.59 1.49.22 2.58.11 2.85.69.75 1.11 1.72 1.11 2.9 0 4.15-2.53 5.06-4.94 5.33.39.34.73 1.01.73 2.03 0 1.46-.01 2.64-.01 3 0 .29.2.63.75.52A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>`;
+  const p2 = String(c2 || p1).trim();
+  const p3 = String(c3 || p1).trim();
   const p4 = String(c4 || '#1e293b').trim();
+  /** Same brand field as Banner 1 / 2 strip midpoint (`engineBrandSurfaces`). */
+  const shell = brandFieldMidFromStops(p1, p2, p4);
+  const nameOnShell = paletteTextOnSurface(p4, shell, 4.5);
+  const contactBody = companyMutedColor(p4, p2, shell);
+  const titleMuted = mixHexPair(contactBody, mixHexWithWhite(shell, 0.4), 0.45);
+  const divider = mixHexPair(shell, mixHexWithWhite(contactBody, 0.12), 0.2);
+  const iconStroke = contactBody;
+  const icons = contactStrokeIconDataUrisCompact(iconStroke);
+  const socGlyph = nameOnShell;
+  const li = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${socGlyph}"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69A1.69 1.69 0 005.19 6.88c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>`;
+  const medium = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${socGlyph}"><circle cx="5.5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18.5" cy="12" r="2.4"/></svg>`;
+  const tw = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${socGlyph}"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+  const gh = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="${socGlyph}"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.41 10.79c.54.1.74-.23.74-.52 0-.26-.01-.94-.01-1.85-3.01.66-3.64-1.45-3.64-1.45-.49-1.25-1.2-1.58-1.2-1.58-.98-.67.07-.66.07-.66 1.09.08 1.66 1.12 1.66 1.12.97 1.66 2.54 1.18 3.16.9.1-.7.38-1.18.69-1.45-2.4-.27-4.92-1.2-4.92-5.34 0-1.18.42-2.15 1.11-2.9-.11-.27-.48-1.36.1-2.85 0 0 .91-.29 2.99 1.11.87-.24 1.8-.36 2.73-.36.92 0 1.86.12 2.73.36 2.08-1.4 2.99-1.11 2.99-1.11.59 1.49.22 2.58.11 2.85.69.75 1.11 1.72 1.11 2.9 0 4.15-2.53 5.06-4.94 5.33.39.34.73 1.01.73 2.03 0 1.46-.01 2.64-.01 3 0 .29.2.63.75.52A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>`;
   const initialsBg = mixHexPair('#f1f5f9', p4, 0.08);
-  const initialsColor = pickDarkestReadable([p1, p4], 0.45);
+  const initialsColor = pickDarkestReadable([p3, p1, p4], 0.45);
   return {
     t7_shell_bg: shell,
     t7_card_bg: '#ffffff',
-    t7_name_color: '#ffffff',
+    t7_name_color: nameOnShell,
     t7_title_color: titleMuted,
     t7_divider_color: divider,
-    t7_contact_text: contactText,
+    t7_contact_text: contactBody,
     t7_initials_bg: initialsBg,
     t7_initials_color: initialsColor,
     t7_icon_mail: icons.mail,
@@ -704,11 +893,15 @@ function buildTemplate7PaletteContext(c1, _c2, _c3, c4) {
 /**
  * Layout 8 — white card + blue wedge behind headshot, circular blue socials, blue contact icons, divider, title + logo.
  */
-function buildTemplate8PaletteContext(c1, _c2, _c3, c4) {
+function buildTemplate8PaletteContext(c1, c2, c3, c4) {
   const p1 = String(c1 || '#5363f2').trim();
-  const muted = mixHexPair('#929292', String(c4 || '#64748b').trim(), 0.38);
+  const p2 = String(c2 || p1).trim();
+  const p3 = String(c3 || p1).trim();
+  const p4 = String(c4 || '#64748b').trim();
+  const muted = mixHexPair('#929292', p4, 0.38);
   const divider = mixHexPair('#e5e5e5', mixHexPair('#929292', p1, 0.25), 0.55);
-  const iconsBlue = contactStrokeIconDataUrisCompact(p1);
+  const iconStroke = mixHexPair(p1, p3, 0.42);
+  const iconsBlue = contactStrokeIconDataUrisCompact(iconStroke);
   const liPath =
     'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69A1.69 1.69 0 005.19 6.88c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z';
   const twPath = 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z';
@@ -724,8 +917,8 @@ function buildTemplate8PaletteContext(c1, _c2, _c3, c4) {
   );
   const twCirc = svgDataUri(circ(`<path transform="translate(4.5,4.5) scale(0.42)" d="${twPath}"/>`));
   const ghCirc = svgDataUri(circ(`<path transform="translate(4,4) scale(0.38)" d="${ghPath}"/>`));
-  const wedge = `<svg xmlns="http://www.w3.org/2000/svg" width="176" height="176" viewBox="0 0 176 176"><rect width="176" height="176" fill="#ffffff"/><g transform="translate(88,90) rotate(-20)"><path d="M0,0 L-92,-78 A 118 118 0 0 1 95,-58 Z" fill="${p1}"/></g></svg>`;
-  const p4 = String(c4 || '#1e293b').trim();
+  const wedgeFill = mixHexPair(p1, mixHexWithBlack(p2, 0.08), 0.35);
+  const wedge = `<svg xmlns="http://www.w3.org/2000/svg" width="176" height="176" viewBox="0 0 176 176"><rect width="176" height="176" fill="#ffffff"/><g transform="translate(88,90) rotate(-20)"><path d="M0,0 L-92,-78 A 118 118 0 0 1 95,-58 Z" fill="${wedgeFill}"/></g></svg>`;
   const initialsBg = mixHexPair('#f4f4f5', p4, 0.06);
   const initialsColor = pickDarkestReadable([p1, p4], 0.42);
   return {
@@ -749,28 +942,35 @@ function buildTemplate8PaletteContext(c1, _c2, _c3, c4) {
 }
 
 /**
- * Layout 9 — mint chevron (#42f5a4 style) + white rim (flat mint), circular headshot (no mat, transparent PNG), flat #111 row, light-grey social + dark glyphs, mint contact pills (reference card).
+ * Layout 9 — chevron + photo mat from **palette primary + accent**; dark band = **secondary** only (no text-slot blend,
+ * which skewed near-black toward green). Pure/near-black secondaries get a tiny lift for email clients.
  */
-function buildTemplate9PaletteContext(c1, _c2, _c3, c4) {
-  const p1 = String(c1 || '#2dd4bf').trim();
-  const p4 = String(c4 || '#0f172a').trim();
-  /** Bright mint accent (~#42f5a4), blended with palette primary. */
-  const mint = mixHexPair('#42f5a4', mixHexPair('#34d399', p1, 0.55), 0.42);
-  const neon = mint;
-  /** Single flat row fill (avoids seam when each &lt;td&gt; had its own gradient). */
-  const darkBg = '#111111';
+function buildTemplate9PaletteContext(c1, c2, c3, c4) {
+  const D = ENGINE_PALETTE_DEFAULTS;
+  const p1 = String(c1 || D.primary).trim();
+  const p2 = String(c2 || '#111111').trim();
+  const p3 = String(c3 || p1).trim();
+  const p4 = String(c4 || D.text).trim();
+  /** Chevron fill + photo ring: brand primary tinted with accent (matches CTA `color_1` / `color_3`). */
+  const heroMint = mixHexPair(p1, p3, 0.26);
+  const neon = mixHexPair(p1, p3, 0.4);
+  let darkBg = hexToRgb(p2) && relativeLuminance(p2) <= 0.42 ? String(p2).trim() : '#111111';
+  if (!darkBg.startsWith('#')) darkBg = `#${darkBg.replace(/^#/, '')}`;
+  if (relativeLuminance(darkBg) < 0.012) darkBg = mixHexWithWhite(darkBg, 0.035);
+  const nameOnDark = paletteTextOnSurface(p4, darkBg, 4.5);
+  const titleMuted = paletteTextOnSurface(mixHexPair(p4, mixHexWithWhite(p4, 0.45), 0.5), darkBg, 3);
   /** Light grey social icon discs. */
   const socCircle = mixHexPair('#e5e7eb', mixHexWithWhite(p4, 0.88), 0.35);
-  /** Dark grey glyphs on social discs. */
-  const socGlyph = mixHexPair('#374151', mixHexWithBlack(p4, 0.08), 0.4);
-  /** Muted light grey for address / phone / email / web lines. */
-  const bodyMuted = mixHexPair('#d4d4d4', mixHexWithWhite(p4, 0.72), 0.25);
+  /** Glyphs on social discs — inked from text swatch for palette consistency. */
+  const socGlyph = paletteTextOnSurface(mixHexPair(p4, '#374151', 0.22), socCircle, 3);
+  /** Address / phone / email / web on dark band — driven by text swatch. */
+  const bodyMuted = paletteTextOnSurface(mixHexPair(p4, mixHexWithWhite(p4, 0.55), 0.5), darkBg, 3);
   /**
    * Full-height chevron: wider stem + tip; white rear + mint front (flat, no drop shadow on mint).
    */
   const chevronSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="275" height="280" viewBox="0 0 275 280" preserveAspectRatio="xMinYMid meet">
 <polygon points="0,0 152,0 268,140 152,280 0,280" fill="#ffffff"/>
-<polygon points="0,0 142,0 250,140 142,280 0,280" fill="${mint}"/>
+<polygon points="0,0 142,0 250,140 142,280 0,280" fill="${heroMint}"/>
 </svg>`;
   const liPath =
     'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69A1.69 1.69 0 005.19 6.88c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z';
@@ -788,14 +988,16 @@ function buildTemplate9PaletteContext(c1, _c2, _c3, c4) {
   const t9_soc_instagram = t9Soc(igGlyph);
   const t9_soc_github = t9Soc(`<path transform="translate(3.8,3.8) scale(0.52)" d="${ghPath}"/>`);
   const icons = contactStrokeIconDataUrisCompact('#ffffff');
-  const initialsBg = mixHexWithBlack(mint, 0.38);
-  const initialsColor = mixHexWithWhite(mint, 0.75);
+  const initialsBg = mixHexWithBlack(heroMint, 0.38);
+  const initialsColor = mixHexWithWhite(heroMint, 0.75);
   /** Initials inside avatar circle. */
   const initialsOnCard = '#ffffff';
   return {
     t9_dark_bg: darkBg,
-    t9_accent: mint,
+    t9_accent: heroMint,
     t9_neon: neon,
+    t9_name_on_dark: nameOnDark,
+    t9_title_muted: titleMuted,
     t9_body_muted: bodyMuted,
     t9_initials_on_card: initialsOnCard,
     t9_chevron_art: svgDataUri(chevronSvg),
@@ -813,17 +1015,13 @@ function buildTemplate9PaletteContext(c1, _c2, _c3, c4) {
 }
 
 /**
- * Layout 10 dark shell — blends **primary + secondary + text** so the card tracks palette *variation*
- * (not only the text slot, which is often the same dark neutral across presets).
+ * Layout 10 dark shell — **primary + secondary only**. Accent is for pills, icon strokes, and stripes;
+ * mixing accent here made “labels & icons” retint the whole field.
  */
-function buildTemplate10ShellBg(p1, p2, p4) {
-  const p4s = String(p4 || '').trim();
-  /** Very light “text” swatches must not wash a dark shell — blend with secondary instead. */
-  const p4w = p4s && relativeLuminance(p4s) > 0.72 ? String(p2 || p1).trim() : p4s;
+function buildTemplate10ShellBg(p1, p2) {
   const deep1 = mixHexWithBlack(p1, 0.78);
   const deep2 = mixHexWithBlack(p2, 0.74);
-  const deep4 = mixHexWithBlack(p4w, 0.32);
-  let bg = mixHexPair(mixHexPair(deep1, deep2, 0.48), deep4, 0.58);
+  let bg = mixHexPair(deep1, deep2, 0.52);
   let L = relativeLuminance(bg);
   if (L > 0.28) bg = mixHexWithBlack(bg, 0.22);
   L = relativeLuminance(bg);
@@ -833,9 +1031,9 @@ function buildTemplate10ShellBg(p1, p2, p4) {
 }
 
 /**
- * Layout 10 — **Vivid mode** (primary === accent): lime bar, lime pill, lime icons on a charcoal shell
- * (reference card). **Split mode**: mid moss accent → pill only; light silver accent → moss pill blend +
- * silver icons; otherwise pill blends primary + secondary for alternate brand themes.
+ * Layout 10 — **Vivid mode** (primary === accent): lime bar + pill + icons share primary on charcoal shell.
+ * Otherwise: **left bar = primary**, **field = primary+secondary**, **pill + row icons = accent** (readable on shell),
+ * **name + contacts = text** swatch.
  */
 function buildTemplate10PaletteContext(c1, c2, c3, c4) {
   const p1 = String(c1 || '#A6E22E').trim();
@@ -844,17 +1042,10 @@ function buildTemplate10PaletteContext(c1, c2, c3, c4) {
   const p4 = String(c4 || '#0f172a').trim();
 
   const barColor = p1;
-  const L3 = relativeLuminance(p3);
   const unifyVividAccent =
     !p3 || String(p3).trim().toLowerCase() === String(barColor).trim().toLowerCase();
 
-  const pillBg = unifyVividAccent
-    ? barColor
-    : p3 && p3.toLowerCase() !== barColor.toLowerCase() && L3 > 0.06 && L3 < 0.45
-      ? p3
-      : mixHexPair(barColor, p2, 0.38);
-
-  let bg = buildTemplate10ShellBg(p1, p2, p4);
+  let bg = buildTemplate10ShellBg(p1, p2);
   /** Lime-on-charcoal card: keep the shell neutral — blending a chromatic primary otherwise tints the field green. */
   if (unifyVividAccent) {
     const p2t = String(p2 || '').trim();
@@ -863,16 +1054,29 @@ function buildTemplate10PaletteContext(c1, c2, c3, c4) {
     }
   }
 
+  const accentSwatch = String(p3 || p1).trim();
+  /** Job-title pill: accent (or primary when accent === primary for vivid reference). */
+  let pillBg = unifyVividAccent ? barColor : accentSwatch;
+  if (!unifyVividAccent && wcagContrastRatio(pillBg, bg) < 1.15) {
+    pillBg = mixHexPair(accentSwatch, barColor, 0.42);
+  }
+
+  /** Body copy / name / contact lines — driven by the palette text stop, readable on `bg`. */
+  const bodyInk = enforceContrastOnSurface(p4, bg, 4.25);
+  const nameOnDark = bodyInk;
+  const mutedBase = mixHexPair(bodyInk, mixHexWithWhite(bodyInk, 0.22), 0.28);
+  /** Keep contact copy on the text swatch only — accent must not bleed into body lines. */
+  const contactMutedB = mixHexPair(mutedBase, mixHexWithWhite(bodyInk, 0.12), 0.1);
+  const contactAddr = mixHexPair(mutedBase, mixHexWithWhite(bodyInk, 0.08), 0.08);
+
   const pillL = relativeLuminance(pillBg);
   const pillText =
-    pillL < 0.48
-      ? '#ffffff'
-      : pickDarkestReadable([p4, p2, bg, mixHexWithBlack(pillBg, 0.92)], 0.55);
+    pillL < 0.48 ? '#ffffff' : enforceContrastOnSurface(p4, pillBg, 4.5);
 
   const pillBorder = mixHexPair(pillBg, mixHexWithBlack(pillBg, pillL > 0.52 ? 0.2 : 0.38), 0.28);
 
-  const iconDefaultSilver = mixHexPair('#c5cec7', mixHexWithWhite(p2, 0.2), 0.42);
-  const iconTint = unifyVividAccent ? barColor : L3 > 0.42 ? p3 : iconDefaultSilver;
+  /** Row icons follow accent (lifted for contrast on the dark shell). */
+  const iconTint = unifyVividAccent ? barColor : enforceContrastOnSurface(accentSwatch, bg, 3);
   const ic = contactStrokeIconDataUrisCompact(iconTint);
 
   const barL = relativeLuminance(barColor);
@@ -883,12 +1087,9 @@ function buildTemplate10PaletteContext(c1, c2, c3, c4) {
       : '#ffffff';
   const brandSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M6 0L0 2.8v5.4C0 11.2 2.7 13.8 6 14c3.3-.2 6-2.8 6-5.8V2.8L6 0z" fill="${brandMarkFill}"/><path d="M8.2 5.1L5.4 8.4 3.8 6.8l-.9.9 2.5 2.5L9.1 6 8.2 5.1z" fill="${brandMarkGlyph}"/></svg>`;
 
-  const mutedBase = mixHexPair('#a5a5a5', mixHexWithWhite(p4, 0.1), 0.24);
-  const contactMutedB = mixHexPair(mutedBase, mixHexWithWhite(p3, 0.18), 0.14);
-  const contactAddr = mixHexPair(mutedBase, mixHexWithWhite(p2, 0.12), 0.12);
-
-  const nameOnDark = bannerHeadlineOnDark(p4);
-  const taglineC = mixHexPair('#a3a3a3', mixHexWithWhite(p3, 0.32), 0.28);
+  /** Small label line under logo — slight accent tint so it moves with “labels & icons”. */
+  const accentReadable = unifyVividAccent ? barColor : enforceContrastOnSurface(accentSwatch, bg, 3);
+  const taglineC = mixHexPair(mutedBase, mixHexWithWhite(accentReadable, 0.22), 0.28);
 
   return {
     t10_bg: bg,
@@ -911,42 +1112,33 @@ function buildTemplate10PaletteContext(c1, c2, c3, c4) {
 }
 
 /**
- * Layout 11 — reference card: **#81cc27** field, **#0c0c0d** contact card, **#5d9021** row dividers,
- * **white** stroke icons, **light gray** row copy, **dark gray** intro + role, thin gray rule, faint “Hello!”.
+ * Layout 11 — hero field uses **editor primary (c1)** so it matches CTA / palette “Background 1”.
+ * Contact card uses secondary (c2); hero copy uses {@link paletteTextOnSurface} so type stays readable on light or dark primaries (no snap back to reference lime).
  */
 function buildTemplate11PaletteContext(c1, c2, c3, c4) {
   const limeRef = '#81cc27';
-  const lime = String(c1 || limeRef).trim();
   const cardRef = '#0c0c0d';
   const cardBlack = String(c2 || cardRef).trim();
   const lightCopyRef = '#e8e8e8';
   const lightCopy = String(c3 || lightCopyRef).trim();
   const inkRef = '#1a1d15';
   const ink = String(c4 || inkRef).trim();
-  /** Row hairlines — darker green (reference), not the same as the lime field. */
-  const rowGreenRef = '#5d9021';
 
-  /** Keep the banner reading as “lime” even when the palette primary drifts. */
-  let bg = lime;
-  const Lbg = relativeLuminance(bg);
-  if (Lbg < 0.35 || Lbg > 0.72) bg = mixHexPair(lime, limeRef, 0.55);
+  /** Same slot as `color_1` / CTA tint primary — user’s blue (or lime default) is shown as-is. */
+  const bg = String(c1 || limeRef).trim();
 
-  const nameColor = pickDarkestReadable([ink, '#0c0c0d', '#1a1d15', mixHexWithBlack(bg, 0.92)], 0.42);
-  /** Description — smaller dark gray on lime (softer than the name). */
-  const introColor = mixHexPair('#4a5244', mixHexWithBlack(ink, 0.12), 0.55);
-  /** Job title under rule — medium dark gray. */
-  const roleColor = mixHexPair('#3d4538', mixHexWithBlack(ink, 0.06), 0.52);
-  /** Thin separator under intro — subtle gray. */
-  const dividerColor = mixHexPair('#6b7280', mixHexWithBlack(ink, 0.25), 0.4);
-  const helloColor = '#ffffff';
-  /** Small label top-right — faint on lime. */
-  const cornerColor = mixHexPair('#5a6554', mixHexWithBlack(bg, 0.48), 0.5);
-  /** Decorative “Hello!” bottom-left — very low contrast on lime. */
+  const nameColor = paletteTextOnSurface(ink, bg, 4.5);
+  const introColor = paletteTextOnSurface(mixHexPair('#4a5244', ink, 0.55), bg, 3);
+  const roleColor = paletteTextOnSurface(mixHexPair('#3d4538', ink, 0.52), bg, 3);
+  const dividerColor = mixHexPair(mixHexWithWhite(bg, 0.42), mixHexWithBlack(bg, 0.12), 0.5);
+  const helloColor = paletteTextOnSurface('#ffffff', bg, 3);
+  const cornerColor = paletteTextOnSurface(mixHexPair('#5a6554', mixHexWithBlack(bg, 0.35), 0.5), bg, 3);
   const faintHelloColor = mixHexPair(bg, mixHexWithWhite(bg, 0.38), 0.68);
 
   const cardFill =
     relativeLuminance(cardBlack) < 0.12 && relativeLuminance(cardBlack) > 0.01 ? cardBlack : cardRef;
-  const gutterColor = mixHexPair(rowGreenRef, mixHexWithBlack(bg, 0.55), 0.35);
+  /** Hairlines between contact rows — neutral on the dark card (not forced green from old lime layout). */
+  const gutterColor = mixHexWithWhite(cardFill, 0.14);
   /** Body lines in the black card — light gray / off-white. */
   const contactText = mixHexPair(lightCopyRef, lightCopy, 0.5);
   const ic = contactStrokeIconDataUrisCompact('#ffffff');
@@ -1075,15 +1267,18 @@ function buildTemplate14PaletteContext(c1, c2, c3, c4) {
   const orange = String(c1 || '#F27121').trim();
   const canvas = String(c2 || '#EDEAE6').trim();
   const footer = String(c3 || '#FFFFFF').trim();
-  const ink = String(c4 || '#0A0A0A').trim();
+  const textSwatch = String(c4 || '#0A0A0A').trim();
+  /** Name / contacts / job: text swatch vs canvas. Footer label follows that resolved ink so it matches the card (not raw `c4` on vivid `c3` when barely passing WCAG). */
+  const bodyInk = paletteTextOnSurface(textSwatch, canvas, 4.5);
+  const footerInk = paletteTextOnSurface(bodyInk, footer, 4.5);
   const rgb = template14PrimaryRgbForGlow(orange);
   /** Off-white canvas + peach glows (top-left, mid-right, lower-right) + soft horizontal wash — match reference card. */
   const canvasStyle = `background-color:${canvas};background-image:radial-gradient(ellipse 125% 100% at 5% 14%, rgba(${rgb},0.32) 0%, transparent 52%),radial-gradient(ellipse 95% 85% at 88% 50%, rgba(${rgb},0.2) 0%, transparent 48%),radial-gradient(ellipse 110% 90% at 96% 99%, rgba(${rgb},0.24) 0%, transparent 52%),linear-gradient(100deg,rgba(${rgb},0.07) 0%,transparent 44%,rgba(${rgb},0.09) 94%);`;
-  const ic = contactStrokeIconDataUrisCompact(ink);
-  const subtitle = mixHexWithWhite(ink, 0.36);
+  const ic = contactStrokeIconDataUrisCompact(bodyInk);
+  const subtitle = companyMutedColor(textSwatch, orange, canvas);
   const phBg = mixHexPair('#ffd8c4', orange, 0.42);
   const oSoft = mixHexWithWhite(orange, 0.42);
-  const inkFaint = mixHexWithWhite(ink, 0.78);
+  const inkFaint = mixHexWithWhite(bodyInk, 0.78);
   /** Thin header strip + name-row rule + footer bars — inline SVG for broad client support. */
   const topbarSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="552" height="5" viewBox="0 0 552 5"><rect width="92" height="4" y="0.5" rx="2" fill="${orange}" opacity="0.72"/><rect x="100" width="10" height="4" y="0.5" rx="1.5" fill="${oSoft}" opacity="0.9"/><rect x="116" width="10" height="4" y="0.5" rx="1.5" fill="${oSoft}" opacity="0.65"/><rect x="132" width="10" height="4" y="0.5" rx="1.5" fill="${oSoft}" opacity="0.45"/><rect x="148" width="404" height="1" y="2" fill="${inkFaint}" opacity="0.35"/></svg>`;
   let ruleDots = '';
@@ -1096,7 +1291,8 @@ function buildTemplate14PaletteContext(c1, c2, c3, c4) {
   return {
     t14_orange: orange,
     t14_footer_bg: footer,
-    t14_text: ink,
+    t14_text: bodyInk,
+    t14_footer_text: footerInk,
     t14_subtitle: subtitle,
     t14_canvas_style: canvasStyle,
     t14_divider_color: mixHexPair(canvas, orange, 0.88),
@@ -1108,17 +1304,20 @@ function buildTemplate14PaletteContext(c1, c2, c3, c4) {
     t14_icon_globe: ic.globe,
     t14_icon_phone: ic.phone,
     t14_photo_placeholder_bg: phBg,
-    t14_photo_placeholder_color: ink,
+    t14_photo_placeholder_color: bodyInk,
   };
 }
 
-/** Layout 15 — lime field + tab + card colors + tab fallback mark. */
+/** Layout 15 — lime = primary (c1); card + ink follow text (c4) + secondary (c2); tab icon stroke uses text. */
 function buildTemplate15PaletteContext(c1, c2, c3, c4) {
   const lime = String(c1 || '#D4FF1F').trim();
-  const ink = String(c2 || '#0a0a0a').trim();
-  const card = String(c3 || '#ffffff').trim();
-  const muted = String(c4 || '#757575').trim();
-  const phBg = mixHexPair('#e8f4b8', ink, 0.05);
+  const secondary = String(c2 || '#0a0a0a').trim();
+  const accent = String(c3 || '#b4d97a').trim();
+  const text = String(c4 || '#0a0a0a').trim();
+  const card = signatureCardSurface(text);
+  const ink = paletteTextOnSurface(text, card, 4.5);
+  const muted = companyMutedColor(text, secondary, card);
+  const phBg = mixHexPair(mixHexPair('#e8f4b8', lime, 0.35), mixHexPair(accent, secondary, 0.12), 0.4);
   const tabIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="30" viewBox="0 0 40 22"><path fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" d="M2 14 Q8 6 14 14 T26 7 T38 14"/><path fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" d="M2 18 Q8 10 14 18 T26 11 T38 18"/><path fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" d="M2 10 Q8 3 14 10 T26 3 T38 10"/></svg>`;
   return {
     t15_lime: lime,
@@ -1496,18 +1695,22 @@ function buildTemplate19PaletteContext(c1, c2, c3, c4) {
   };
 }
 
-/** Layout 20 — dark field + accent swirl (palette c1/c2/c3; no fixed green deck). */
+/** Layout 20 — dark field + accent swirl. Same roles as legend/CTA: c1 primary (dominant field), c2 secondary (depth), c3 accent, c4 unused here. */
 function buildTemplate20PaletteContext(c1, c2, c3, c4) {
-  const neon = String(c1 || '#39FF14').trim();
-  const bg0 = String(c2 || '#051a05').trim();
-  const mint = String(c3 || '#9ee89e').trim();
+  void c4; // text handled globally (`color_4` / `t20_row_color` hard-coded for contrast on dark field)
+  const bg1 = String(c1 || '#39FF14').trim();
+  const bg2 = String(c2 || '#051a05').trim();
+  const accent = String(c3 || '#9ee89e').trim();
+  const neon = bg1;
+  const bg0 = mixHexPair(mixHexWithBlack(bg1, 0.18), mixHexWithBlack(bg2, 0.12), 0.55);
+  const mint = accent;
   const meshTint = mixHexPair(neon, bg0, 0.12);
   const w = T20_CARD_WIDTH_PX;
   const h = T20_CARD_HEIGHT_PX;
   /** Radial stops follow primary + secondary so palette swaps re-tint the whole field. */
   const innerGlow = mixHexPair(mixHexWithBlack(neon, 0.36), bg0, 0.38);
   const deepRing = mixHexPair(mixHexWithBlack(neon, 0.2), bg0, 0.58);
-  const glowRgb = template14PrimaryRgbForGlow(neon);
+  const glowRgb = template14PrimaryRgbForGlow(bg1);
   const fieldSvg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">` +
     `<defs>` +
@@ -1574,6 +1777,26 @@ function buildTemplate20PaletteContext(c1, c2, c3, c4) {
     t20_photo_placeholder_color: '#ffffff',
     /** `r,g,b` for `rgba({{t20_glow_rgb}},a)` on contact icon drop-shadows — matches primary accent. */
     t20_glow_rgb: glowRgb,
+  };
+}
+
+/** Layout 21 — large shell = primary (c1), narrow bronze rail + CTA tile = secondary (c2), photo arch = accent (c3), copy = text (c4). Matches colour legend + CTA mapping. */
+function buildTemplate21PaletteContext(c1, c2, c3, c4) {
+  const shell = String(c1 || '#E5D8CD').trim();
+  const bronze = String(c2 || '#8E623B').trim();
+  const cream = String(c3 || '#F5EFE8').trim();
+  const ink = String(c4 || '#000000').trim();
+  const arrowSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">` +
+    `<path d="M3 11L11 3M11 3H5M11 3V9" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `</svg>`;
+  return {
+    t21_shell: shell,
+    t21_bronze: bronze,
+    t21_photo_inner: cream,
+    t21_ink: ink,
+    t21_divider: '#cccccc',
+    t21_arrow_uri: svgDataUri(arrowSvg),
   };
 }
 
@@ -1722,14 +1945,14 @@ function finalizeSignatureRoots(html) {
 }
 
 /**
- * Placeholder content when the user has not filled a field yet — keeps layouts (photo, logo,
- * contact rows) visible in the editor and in email output until replaced.
+ * Sample copy when `fillDemoPlaceholders` is true (gallery / marketing previews only).
+ * Editor and saved-signature HTML use empty strings for cleared fields — no demo injection.
  * Mirrors client `DEMO_SIGNATURE_DATA` in templatePreviews.js.
  */
 const DEMO_FORM_DEFAULTS = {
   fullName: 'James Doe',
   jobTitle: 'Software Engineer',
-  companyName: 'Acme Studio',
+  companyName: '',
   phone: '+(91) 9865456739',
   email: 'james.doe@example.com',
   website: 'www.example.com',
@@ -1739,14 +1962,7 @@ const DEMO_FORM_DEFAULTS = {
   signatureImageUrl: '',
 };
 
-const DEMO_PALETTE_DEFAULTS = {
-  primary: '#5768f3',
-  secondary: '#4752c4',
-  accent: '#b4b9ff',
-  text: '#0f172a',
-};
-
-/** Filled with demo text when empty so the editor still looks populated. */
+/** Filled from {@link DEMO_FORM_DEFAULTS} only when `fillDemoPlaceholders` is true. */
 const DEMO_FORM_TEXT_KEYS = [
   'fullName',
   'jobTitle',
@@ -1759,7 +1975,12 @@ const DEMO_FORM_TEXT_KEYS = [
 const DEMO_FORM_CONTACT_KEYS = ['phone', 'email', 'website', 'address'];
 
 function mergeEditorFormWithDemoDefaults(form, options = {}) {
-  const { omitLogoDemo = false, omitCompanyDemo = false } = options;
+  const {
+    omitLogoDemo = false,
+    omitCompanyDemo = false,
+    omitPhotoDemo = false,
+    fillDemoPlaceholders = false,
+  } = options;
   const f = { ...(form || {}) };
   const d = DEMO_FORM_DEFAULTS;
   for (const key of DEMO_FORM_CONTACT_KEYS) {
@@ -1776,6 +1997,13 @@ function mergeEditorFormWithDemoDefaults(form, options = {}) {
       }
       continue;
     }
+    if (omitPhotoDemo && key === 'photoUrl') {
+      const v = f[key];
+      if (v == null || (typeof v === 'string' && !String(v).trim())) {
+        f[key] = '';
+      }
+      continue;
+    }
     if (omitCompanyDemo && key === 'companyName') {
       const v = f[key];
       if (v == null || (typeof v === 'string' && !String(v).trim())) {
@@ -1785,35 +2013,41 @@ function mergeEditorFormWithDemoDefaults(form, options = {}) {
     }
     const v = f[key];
     if (v == null || (typeof v === 'string' && !String(v).trim())) {
-      f[key] = d[key];
+      f[key] = fillDemoPlaceholders ? d[key] : '';
     }
   }
   return f;
 }
 
+function coerceEnginePaletteStop(raw, fallbackHex) {
+  const s = String(raw ?? '').trim();
+  if (!s || !hexToRgb(s)) return fallbackHex;
+  return s.startsWith('#') ? s : `#${s}`;
+}
+
 function mergePaletteWithDemoDefaults(palette) {
   const p = { ...(palette || {}) };
-  const d = DEMO_PALETTE_DEFAULTS;
-  for (const key of ['primary', 'secondary', 'accent', 'text']) {
-    if (!p[key] || !String(p[key]).trim()) {
-      p[key] = d[key];
-    }
+  const d = ENGINE_PALETTE_DEFAULTS;
+  return {
+    primary: coerceEnginePaletteStop(p.primary, d.primary),
+    secondary: coerceEnginePaletteStop(p.secondary, d.secondary),
+    accent: coerceEnginePaletteStop(p.accent, d.accent),
+    text: coerceEnginePaletteStop(p.text, d.text),
+  };
+}
+
+/** When `design.colors` has 1–4 stops, they override `palette` per index; missing indices keep palette/defaults. */
+function mergePayloadPaletteWithDesignColors(palette, design) {
+  const base = { ...(palette || {}) };
+  const c = design && Array.isArray(design.colors) ? design.colors : null;
+  if (!c || c.length === 0) return base;
+  const keys = ['primary', 'secondary', 'accent', 'text'];
+  for (let i = 0; i < Math.min(4, c.length); i++) {
+    const s = String(c[i] ?? '').trim();
+    if (s) base[keys[i]] = s;
   }
-  return p;
+  return base;
 }
-
-/** Logo lockup: first word / remainder (e.g. “Globex Records”). */
-function splitCompanyLogoLines(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return { line1: '', line2: '' };
-  const parts = s.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return { line1: parts[0], line2: parts.slice(1).join(' ') };
-  return { line1: s, line2: '' };
-}
-
-/** Layout 4 — default logo when user has none (HTTPS). Card bg + icons come from {@link buildTemplate4PaletteContext}. */
-const T4_DEFAULT_BRAND_MARK =
-  'https://static.codia.ai/s/image_61472c89-03c2-459d-b9dc-362d5ea3c77d.png';
 
 function splitDisplayName(raw) {
   const parts = String(raw || '')
@@ -1948,35 +2182,42 @@ function splitPhoneDisplay(raw) {
 }
 
 /** Build Handlebars context from editor API payload: `{ templateId, form, palette, banner }`. */
-function contextFromEditorPayload(payload) {
+function contextFromEditorPayload(payload, genOptions = {}) {
+  const fillDemoPlaceholders = genOptions.fillDemoPlaceholders === true;
   const templateKey = resolveTemplateKey(payload.templateId || payload.template_id);
   const meta = TEMPLATE_META[templateKey] || TEMPLATE_META.template_1;
-  const isTemplate4 = templateKey === 'template_4';
   const isTemplate16 = templateKey === 'template_16';
   const isTemplate17 = templateKey === 'template_17';
   const isTemplate18 = templateKey === 'template_18';
   const isTemplate19 = templateKey === 'template_19';
   const isTemplate20 = templateKey === 'template_20';
-  /** Layout 4 uses its own brand mark + no logo/company demo placeholders. */
-  const omitLogoDemo = meta.has_logo === false || isTemplate4;
+  const isTemplate21 = templateKey === 'template_21';
+  const d0 = payload.design || {};
+  const showLogo = d0.showLogo !== false && d0.show_logo !== false;
+  const showPhoto = d0.showPhoto !== false && d0.show_photo !== false;
+  const omitLogoDemo = meta.has_logo === false;
+  const omitCompanyDemo = !showLogo;
   let f = mergeEditorFormWithDemoDefaults(payload.form || {}, {
     omitLogoDemo,
-    omitCompanyDemo: isTemplate4,
+    omitCompanyDemo,
+    omitPhotoDemo: !showPhoto,
+    fillDemoPlaceholders,
   });
-  if (isTemplate4) {
-    const lu = String(f.logoUrl || '').trim();
-    if (/dummyimage\.com[^\s"']*text=(?:Core|Logo)/i.test(lu)) {
-      f = { ...f, logoUrl: '' };
-    }
-  }
-  if (isTemplate16 || isTemplate17 || isTemplate18 || isTemplate19 || isTemplate20) {
+  if (
+    isTemplate16 ||
+    isTemplate17 ||
+    isTemplate18 ||
+    isTemplate19 ||
+    isTemplate20 ||
+    isTemplate21
+  ) {
     const lu16 = String(f.logoUrl || '').trim();
     if (/dummyimage\.com/i.test(lu16)) {
       f = { ...f, logoUrl: '' };
     }
   }
-  const p = mergePaletteWithDemoDefaults(payload.palette || {});
-  const d = payload.design || {};
+  const p = mergePaletteWithDemoDefaults(mergePayloadPaletteWithDesignColors(payload.palette, d0));
+  const d = d0;
   const websiteRaw = String(f.website || '').trim();
   const websiteFull = websiteRaw ? ensureHttps(websiteRaw) : '';
   const websiteDisplay = websiteRaw.replace(/^https?:\/\//i, '');
@@ -1990,8 +2231,10 @@ function contextFromEditorPayload(payload) {
   const telegramUrl = ensureHttps(String(f.telegram || '').trim());
   const mediumUrl = ensureHttps(String(f.medium || '').trim());
 
-  const photoUrl = ensureHttps(String(f.photoUrl || '').trim());
-  const logoUrl = ensureHttps(String(f.logoUrl || '').trim());
+  let photoUrl = ensureHttps(String(f.photoUrl || '').trim());
+  let logoUrl = ensureHttps(String(f.logoUrl || '').trim());
+  if (!showLogo) logoUrl = '';
+  if (!showPhoto) photoUrl = '';
 
   const linkRaw = String(f.signatureLinkUrl || '').trim();
   const wrapHref =
@@ -1999,6 +2242,8 @@ function contextFromEditorPayload(payload) {
 
   const companyRaw = String(f.companyName || '').trim();
   const companyLines = companyRaw.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+  const has_brand_row = Boolean(String(logoUrl || '').trim()) || Boolean(companyRaw);
+  const has_brand_slot = showLogo && has_brand_row;
   const t10_company_display = (companyLines[0] || companyRaw).trim();
   const t10_tagline_text =
     companyLines.length > 1
@@ -2012,24 +2257,31 @@ function contextFromEditorPayload(payload) {
   const has_t11_corner_role = Boolean(String(t11_corner_role || '').trim());
   const addrRaw = String(f.address || '').trim();
   const { address_line1, address_line2, address_line3 } = splitAddressLines(addrRaw);
+  const has_address_lines = Boolean(
+    String(address_line1 || '').trim() ||
+      String(address_line2 || '').trim() ||
+      String(address_line3 || '').trim()
+  );
   const t20AddrT20 = splitAddressTwoLinesForT20(addrRaw);
   const phoneRaw = String(f.phone || '').trim();
   const { phone_line1, phone_line2 } = splitPhoneDisplay(phoneRaw);
 
-  const c1 = p.primary || '#1e3a5f';
-  const c2 = p.secondary || '#2d6a9f';
-  const c3 = p.accent || '#a8d4f5';
-  const c4 = p.text || p.neutral || '#0f172a';
+  const D = ENGINE_PALETTE_DEFAULTS;
+  const c1 = p.primary || D.primary;
+  const c2 = p.secondary || D.secondary;
+  const c3 = p.accent || D.accent;
+  const c4 = p.text || p.neutral || D.text;
+  const theme = buildEmailTheme({ primary: c1, secondary: c2, accent: c3, text: c4 });
   const iconPrimary = contactStrokeIconDataUris(c1);
   const bodyStroke = pickContactRowIconStroke(c1, c2);
   const iconBody = contactStrokeIconDataUris(bodyStroke);
-  const title_on_card = pickDarkestReadable([c2, c1, c4], 0.52);
-  const company_muted = companyMutedColor(c4, c2);
+  const sig_card_surface = signatureCardSurface(c4);
+  const title_on_card = paletteTextOnSurface(c4, sig_card_surface, 4.5);
+  const company_muted = companyMutedColor(c4, c2, sig_card_surface);
   const divider_soft = mixHexWithWhite(c1, 0.7);
   const photo_ring_bg = photoRingBackground(c3);
-  const sig_card_surface = signatureCardSurface(c4);
   const t2_divider_color = '#d1d5db';
-  const t2_muted = template2BodyText(c4);
+  const t2_muted = template2BodyText(c4, sig_card_surface);
   const icon_l2 = contactStrokeIconDataUrisCompact(c1);
   const deco_geo_url = buildGeoDecoDataUri(c1, c2, c3);
   const deco_floral_url = buildFloralDecoDataUri(c1, c2, c3);
@@ -2063,9 +2315,6 @@ function contextFromEditorPayload(payload) {
   const has_t3_tagline = Boolean(String(websiteDisplay || '').trim());
   const emailTrim = String(f.email || '').trim();
   const t3_mailto_href = emailTrim ? `mailto:${emailTrim.replace(/^mailto:/i, '')}` : '';
-  const t4_mailto_href = t3_mailto_href;
-  const t4co = splitCompanyLogoLines(companyRaw);
-  const t4_logo_src = logoUrl || T4_DEFAULT_BRAND_MARK;
   const t6FbDisp = displayUrlWithoutScheme(facebookUrl);
   const t6WebDisp = websiteDisplay;
   const t6_row1_right_display = t6FbDisp || t6WebDisp || '';
@@ -2083,12 +2332,12 @@ function contextFromEditorPayload(payload) {
     (websiteRaw && websiteFull)
   );
 
-  const t15MutedHex = String(c4 || '#757575').trim();
+  const t15MutedHex = company_muted;
   const t15AddrParts = [address_line1, address_line2, address_line3]
     .map((x) => String(x || '').trim())
     .filter(Boolean);
   let t15_address_body_html = '';
-  if (addrRaw) {
+  if (has_address_lines) {
     const nl = addrRaw.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
     if (nl.length >= 2) {
       t15_address_body_html = nl.map((p) => escapeHtml(p)).join(' / ');
@@ -2117,7 +2366,7 @@ function contextFromEditorPayload(payload) {
     !!String(companyRaw || '').trim() && !/^core$/i.test(String(companyRaw || '').trim());
 
   const t16_lockup_upper = escapeHtml(
-    String((companyLines[0] || companyRaw || 'LOGO HERE')).trim().toUpperCase()
+    String((companyLines[0] || companyRaw || '')).trim().toUpperCase()
   );
   const telDigitsRaw = String(phoneRaw || '').replace(/[^\d+]/g, '');
   const t16_tel_href = telDigitsRaw ? `tel:${telDigitsRaw.replace(/^\+{2,}/g, '+')}` : '';
@@ -2129,36 +2378,55 @@ function contextFromEditorPayload(payload) {
     ? t18_brand_base.endsWith('.')
       ? t18_brand_base
       : `${t18_brand_base}.`
-    : 'Your brand.';
+    : '';
   /** Layout 18 contact grid: row1 = address | email, row2 = phone | website (aligned baselines). */
-  const t18_has_contact_row1 = !!addrRaw || !!emailTrim;
+  const t18_has_contact_row1 = has_address_lines || !!emailTrim;
   const t18_has_contact_row2 = !!String(phoneRaw || '').trim() || !!(websiteRaw && websiteFull);
   const t19_tel_href = t16_tel_href;
   const t19_has_contact_row1 = t18_has_contact_row1;
   const t19_has_contact_row2 = t18_has_contact_row2;
   const taglineTrim = String(f.tagline || '').trim();
+  const t21TagSplit = splitIntroTwoLines(taglineTrim);
+  const t21_brand_dot = (() => {
+    const first = String(f.fullName || '')
+      .trim()
+      .split(/\s+/)[0] || '';
+    if (!first) return '';
+    return first.endsWith('.') ? first : `${first}.`;
+  })();
+  const t21_vertical_role = String(f.jobTitle || '').trim();
+  const t21_has_vertical_role = Boolean(t21_vertical_role);
+  const t21_tagline_line1 = t21TagSplit.l1;
+  const t21_tagline_line2 = t21TagSplit.l2;
+  const t21_has_tagline = Boolean(String(t21_tagline_line1 || '').trim());
+  const t21_cta_href = String(websiteFull || wrapHref || '').trim();
+  const t21_has_cta = Boolean(t21_cta_href);
   const t20NameSplit = splitDisplayNameTwoLinesMax(f.fullName || '');
   const t20_name_line1_upper = String(t20NameSplit.line1 || '').toUpperCase();
   const t20_name_line2_upper = String(t20NameSplit.line2 || '').toUpperCase();
   const t20_has_name_line2 = Boolean(String(t20NameSplit.line2 || '').trim());
   const t20_role_text = String(f.jobTitle || '').trim().toUpperCase();
+  const t20_has_name = Boolean(
+    String(t20NameSplit.line1 || '').trim() || String(t20NameSplit.line2 || '').trim()
+  );
   const t20_tel_href = t16_tel_href;
   const has_t16_web_mail = Boolean(
     (websiteRaw && websiteFull) || String(f.email || '').trim()
   );
   return {
+    theme,
     primary_color: c1,
     secondary_color: c2,
-    name: String(f.fullName || ''),
-    title: String(f.jobTitle || ''),
+    name: String(f.fullName || '').trim(),
+    title: String(f.jobTitle || '').trim(),
     company_name: companyRaw,
     linkedin: linkedinUrl,
     medium: mediumUrl,
     twitter: twitterUrl,
     github: githubUrl,
 
-    full_name: String(f.fullName || ''),
-    job_title: String(f.jobTitle || ''),
+    full_name: String(f.fullName || '').trim(),
+    job_title: String(f.jobTitle || '').trim(),
     company: companyRaw,
     has_company: !!companyRaw,
     phone: phoneRaw,
@@ -2173,10 +2441,14 @@ function contextFromEditorPayload(payload) {
     website_full: websiteFull,
     website_url: websiteFull,
     has_website: !!(websiteRaw && websiteFull),
-    has_address: !!addrRaw,
+    has_address: has_address_lines,
+    has_brand_row,
+    has_brand_slot,
 
     photo_url: photoUrl,
     logo_url: logoUrl,
+    show_logo: showLogo,
+    show_photo: showPhoto,
 
     color_1: c1,
     color_2: c2,
@@ -2250,7 +2522,6 @@ function contextFromEditorPayload(payload) {
     has_t3_tagline,
     t3_mailto_href,
     has_mailto: !!emailTrim,
-    ...buildTemplate4PaletteContext(c1, c2, c3, c4),
     ...buildTemplate5PaletteContext(c1, c2, c3, c4),
     ...buildTemplate6PaletteContext(c1, c2, c3, c4),
     ...buildTemplate7PaletteContext(c1, c2, c3, c4),
@@ -2267,6 +2538,7 @@ function contextFromEditorPayload(payload) {
     ...buildTemplate18PaletteContext(c1, c2, c3, c4),
     ...buildTemplate19PaletteContext(c1, c2, c3, c4),
     ...buildTemplate20PaletteContext(c1, c2, c3, c4),
+    ...buildTemplate21PaletteContext(c1, c2, c3, c4),
     t13_has_name_second_line,
     t13_name_line1_upper,
     t13_name_line2_upper,
@@ -2295,12 +2567,22 @@ function contextFromEditorPayload(payload) {
     t19_has_contact_row2,
     t20_name_line1_upper,
     t20_name_line2_upper,
+    t20_has_name,
     t20_has_name_line2,
     t20_address_line1: t20AddrT20.line1,
     t20_address_line2: t20AddrT20.line2,
     t20_has_address_line2: t20AddrT20.hasLine2,
     t20_role_text,
     t20_tel_href,
+    t21_brand_dot,
+    t21_vertical_role,
+    t21_has_vertical_role,
+    t21_tagline_line1,
+    t21_tagline_line2,
+    t21_has_tagline,
+    t21_cta_href,
+    t21_has_cta,
+    t21_tel_href: t16_tel_href,
     has_t16_web_mail,
     t10_company_display,
     has_t10_tagline: Boolean(t10_tagline_text),
@@ -2318,11 +2600,6 @@ function contextFromEditorPayload(payload) {
     t6_row1_right_href,
     has_t6_row1_right,
     has_t6_sparkles: true,
-    t4_logo_src,
-    t4_company_line1: t4co.line1,
-    t4_company_line2: t4co.line2,
-    has_t4_company_line2: Boolean(String(t4co.line2 || '').trim()),
-    t4_mailto_href,
     ...t3,
 
     apply_brand_palette_to_cta_banners: d.apply_brand_palette_to_cta_banners === true,
@@ -2332,7 +2609,7 @@ function contextFromEditorPayload(payload) {
 /**
  * Build context from DB-style row: { fields, design, social_links, show_badge, signature_link }
  */
-function contextFromSignatureRecord(data) {
+function contextFromSignatureRecord(data, genOptions = {}) {
   const fields = data.fields || {};
   const design = data.design || {};
   const social = data.social_links || {};
@@ -2362,38 +2639,50 @@ function contextFromSignatureRecord(data) {
     entireSignatureClickable: Boolean(String(data.signature_link || bf.signatureLinkUrl || '').trim()),
   };
 
+  const D0 = ENGINE_PALETTE_DEFAULTS;
   const colors = Array.isArray(design.colors) ? design.colors : [];
   const pal = design.palette || {};
   const bundlePal = bundle?.palette || {};
   const palette = {
-    primary: colors[0] || pal.primary || bundlePal.primary,
-    secondary: colors[1] || pal.secondary || bundlePal.secondary,
-    accent: colors[2] || pal.accent || bundlePal.accent,
-    text: colors[3] || pal.text || bundlePal.text,
+    primary: colors[0] || pal.primary || bundlePal.primary || D0.primary,
+    secondary: colors[1] || pal.secondary || bundlePal.secondary || D0.secondary,
+    accent: colors[2] || pal.accent || bundlePal.accent || D0.accent,
+    text: colors[3] || pal.text || bundlePal.text || D0.text,
   };
 
-  return contextFromEditorPayload({
-    templateId: resolveRowTemplateSlug(data),
-    form,
-    palette,
-    design: {
-      font: design.font,
-      apply_brand_palette_to_cta_banners: design.apply_brand_palette_to_cta_banners,
+  return contextFromEditorPayload(
+    {
+      templateId: resolveRowTemplateSlug(data),
+      form,
+      palette,
+      design: {
+        colors: design.colors,
+        font: design.font,
+        apply_brand_palette_to_cta_banners: design.apply_brand_palette_to_cta_banners,
+        showLogo: design.showLogo,
+        show_logo: design.show_logo,
+        showPhoto: design.showPhoto,
+        show_photo: design.show_photo,
+      },
     },
-  });
+    genOptions
+  );
 }
 
-function buildContext(payload) {
+function buildContext(payload, genOptions = {}) {
   if (payload.form != null || payload.templateId != null) {
-    return contextFromEditorPayload({
-      templateId: payload.templateId || payload.template_id,
-      form: payload.form,
-      palette: payload.palette,
-      design: payload.design,
-      banner: payload.banner,
-    });
+    return contextFromEditorPayload(
+      {
+        templateId: payload.templateId || payload.template_id,
+        form: payload.form,
+        palette: payload.palette,
+        design: payload.design,
+        banner: payload.banner,
+      },
+      genOptions
+    );
   }
-  return contextFromSignatureRecord(payload);
+  return contextFromSignatureRecord(payload, genOptions);
 }
 
 /** Resolve layout slug: DB `template_id` FK first (gallery selection), then `design`, then legacy bundle (stale _bundle.templateId no longer overrides). */
@@ -2408,7 +2697,6 @@ function resolveRowTemplateSlug(row) {
     if (/^template_image$/i.test(s)) return 'template_1';
     if (/^template_2$/i.test(s)) return 'template_2';
     if (/^template_3$/i.test(s)) return 'template_3';
-    if (/^template_4$/i.test(s)) return 'template_4';
     if (/^template_5$/i.test(s)) return 'template_5';
     if (/^template_6$/i.test(s)) return 'template_6';
     if (/^template_7$/i.test(s)) return 'template_7';
@@ -2425,6 +2713,7 @@ function resolveRowTemplateSlug(row) {
     if (/^template_18$/i.test(s)) return 'template_18';
     if (/^template_19$/i.test(s)) return 'template_19';
     if (/^template_20$/i.test(s)) return 'template_20';
+    if (/^template_21$/i.test(s)) return 'template_21';
     if (/^template_\d+$/i.test(s)) return 'template_1';
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)) {
       return uuidToTemplateSlug(s);
@@ -2482,11 +2771,12 @@ export function rowToGeneratePayload(row) {
   const colors = Array.isArray(design.colors) ? design.colors : [];
   const pal = design.palette || {};
   const bundlePal = bundle?.palette || {};
+  const D = ENGINE_PALETTE_DEFAULTS;
   const palette = {
-    primary: colors[0] || pal.primary || bundlePal.primary || '#2563eb',
-    secondary: colors[1] || pal.secondary || bundlePal.secondary || '#1e40af',
-    accent: colors[2] || pal.accent || bundlePal.accent || '#64748b',
-    text: colors[3] || pal.text || bundlePal.text || '#0f172a',
+    primary: colors[0] || pal.primary || bundlePal.primary || D.primary,
+    secondary: colors[1] || pal.secondary || bundlePal.secondary || D.secondary,
+    accent: colors[2] || pal.accent || bundlePal.accent || D.accent,
+    text: colors[3] || pal.text || bundlePal.text || D.text,
   };
 
   const templateId = resolveRowTemplateSlug(row);
@@ -2501,6 +2791,7 @@ export function rowToGeneratePayload(row) {
     secondary_field_3: b.secondary_field_3,
     secondary_field_4: b.secondary_field_4,
     secondary_field_5: b.secondary_field_5,
+    secondary_field_6: b.secondary_field_6,
     secondary_preset_id: b.secondary_preset_id,
     secondary_banner_image_url: b.secondary_banner_image_url,
     secondary_cta_strip_logo_url: b.secondary_cta_strip_logo_url,
@@ -2524,12 +2815,13 @@ export function rowToGeneratePayload(row) {
       preset_id: pid,
       href: bannerCfg.link_url || bannerCfg.href,
       link_url: bannerCfg.link_url || bannerCfg.href,
-      text: bannerCfg.text || 'Learn more',
+      text: String(bannerCfg.text ?? '').trim(),
       field_1: bannerCfg.field_1,
       field_2: bannerCfg.field_2,
       field_3: bannerCfg.field_3,
       field_4: bannerCfg.field_4,
       field_5: bannerCfg.field_5,
+      field_6: bannerCfg.field_6,
       banner_image_url: bannerCfg.banner_image_url,
       image_url: bannerCfg.image_url,
       cta_strip_logo_url: bannerCfg.cta_strip_logo_url,
@@ -2549,12 +2841,13 @@ export function rowToGeneratePayload(row) {
       preset_id: pid,
       href: bundle.banner.href || bundle.banner.link_url,
       link_url: bundle.banner.link_url || bundle.banner.href,
-      text: bundle.banner.text || 'Learn more',
+      text: String(bundle.banner.text ?? '').trim(),
       field_1: bundle.banner.field_1,
       field_2: bundle.banner.field_2,
       field_3: bundle.banner.field_3,
       field_4: bundle.banner.field_4,
       field_5: bundle.banner.field_5,
+      field_6: bundle.banner.field_6,
       banner_image_url: bundle.banner.banner_image_url,
       image_url: bundle.banner.image_url,
       cta_strip_logo_url: bundle.banner.cta_strip_logo_url,
@@ -2569,24 +2862,27 @@ export function rowToGeneratePayload(row) {
     form,
     palette,
     design: {
+      colors: design.colors,
       font: design.font,
       apply_brand_palette_to_cta_banners: design.apply_brand_palette_to_cta_banners,
+      showLogo: design.showLogo !== false && design.show_logo !== false,
+      showPhoto: design.showPhoto !== false && design.show_photo !== false,
     },
     banner,
   };
 }
 
 const WEBINAR_BANNER_DEFAULTS = {
-  field_1: 'Digital marketing expert',
-  field_2: 'Projecting your brand into the distant.',
-  field_3: 'Call to action',
+  field_1: 'Book more clients without the hustle',
+  field_2: 'Free 15-minute fit call — we reply the same business day.',
+  field_3: 'Book free strategy call',
   field_4: '80',
   field_5: '',
 };
 
 /** Default right photo for {@link BANNER_TEMPLATES} `banner_2` when no custom image URL is set. */
 const BANNER_B2_DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&q=80&auto=format&fit=crop';
+  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80';
 
 /** Root-relative hero on the client; resolved with {@link publicAssetBaseFromEnv} for pasted HTML. */
 const BANNER_B9_DEFAULT_HERO_PATH = '/banners/online-loan-banner-hero.png';
@@ -2700,6 +2996,116 @@ function tagBannerSlotInner(html, slot) {
   return s.replace(/^<table\b/i, `<table data-sig-banner-slot="${slot}"`);
 }
 
+/** Inline `style` bodies for user-uploaded `<img>` slots (contain + center — full image visible). */
+function injectCompiledBannerImageStyles(key, banner, hbIn) {
+  if (!hbIn || typeof hbIn !== 'object') return;
+
+  if (key === 'banner_2' && hbIn.banner_b2_image) {
+    hbIn.banner_b2_image_style = buildCtaBannerImageStyleString({
+      widthPx: Number(hbIn.banner_b2_img_w) || 96,
+      heightPx: Number(hbIn.banner_b2_img_h) || 72,
+      borderRadiusPx: Number(hbIn.banner_b2_img_inner_r) || 0,
+      extra: ['box-shadow:0 2px 8px rgba(0,0,0,0.14)'],
+    });
+  }
+  if (key === 'banner_3' && hbIn.banner_side_image) {
+    hbIn.banner_side_image_style = buildCtaBannerImageStyleString({
+      widthPx: 120,
+      heightPx: 90,
+      borderRadiusPx: 8,
+    });
+  }
+  if (key === 'banner_4' && hbIn.banner_b4_scene_image) {
+    const h = Math.max(46, Number(hbIn.banner_b4_scene_h) || subscriberFlowBannerSceneHeightPx(470));
+    hbIn.banner_b4_scene_image_style = buildCtaBannerImageStyleString({
+      fluidWidth: true,
+      heightPx: h,
+      extra: ['line-height:0'],
+    });
+  }
+  if (key === 'banner_9' && hbIn.banner_b9_custom_hero && hbIn.banner_b9_hero) {
+    hbIn.banner_b9_hero_style = buildCtaBannerImageStyleString({
+      widthPx: 280,
+      heightPx: 140,
+      extra: ['min-height:90px', 'margin:0 auto', 'line-height:0'],
+    });
+  }
+  if (key === 'banner_10' && hbIn.banner_b10_logo_img) {
+    hbIn.banner_b10_logo_style = buildCtaBannerImageStyleString({
+      widthPx: 200,
+      heightPx: 100,
+      extra: ['max-width:92%', 'max-height:110px'],
+    });
+  }
+  if (key === 'banner_11' && hbIn.banner_b11_has_promo && hbIn.banner_b11_promo_image) {
+    hbIn.banner_b11_promo_style = buildCtaBannerImageStyleString({
+      widthPx: 280,
+      heightPx: 140,
+      extra: ['margin:0 auto'],
+      borderRadiusPx: 12,
+    });
+  }
+  if (key === 'banner_12' && hbIn.banner_b12_has_promo && hbIn.banner_b12_promo_image) {
+    hbIn.banner_b12_promo_style = buildCtaBannerImageStyleString({
+      widthPx: 280,
+      heightPx: 90,
+      borderRadiusPx: 10,
+    });
+  }
+  if (key === 'banner_13' && hbIn.banner_b13_has_promo && hbIn.banner_b13_promo_image) {
+    hbIn.banner_b13_promo_style = buildCtaBannerImageStyleString({
+      widthPx: 220,
+      heightPx: 140,
+      borderRadiusPx: 10,
+    });
+  }
+}
+
+function sanitizeBanner8Hex(hex, fallback) {
+  const s = String(hex || '').trim();
+  return /^#[0-9a-fA-F]{6}$/.test(s) ? s : fallback;
+}
+
+function buildBanner8HeadlineHtmlFromRaw(field3, navyHex, goldHex) {
+  const nn = sanitizeBanner8Hex(navyHex, '#0B1D36');
+  const gg = sanitizeBanner8Hex(goldHex, '#F4B93A');
+  const raw = String(field3 ?? '').trim();
+  if (!raw) return '';
+  const parseLine = (line) => {
+    const i = line.indexOf('|');
+    if (i >= 0) return { n: line.slice(0, i).trim(), g: line.slice(i + 1).trim() };
+    return { n: line.trim(), g: '' };
+  };
+  const lines = raw
+    .split(/\r?\n/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .map(parseLine)
+    .filter(({ n, g }) => n.length > 0 || g.length > 0);
+  if (lines.length === 0) return '';
+  return lines
+    .map(({ n, g }) => {
+      const ns = escapeHtml(n);
+      const gs = escapeHtml(g);
+      if (ns && gs) {
+        return `<span style="color:${nn};font-weight:800;">${ns}</span><span style="color:${gg};font-weight:800;">${gs}</span>`;
+      }
+      if (gs) return `<span style="color:${gg};font-weight:800;">${gs}</span>`;
+      if (ns) return `<span style="color:${nn};font-weight:800;">${ns}</span>`;
+      return '';
+    })
+    .filter(Boolean)
+    .join('<br>');
+}
+
+function buildBanner8RocketSvg(goldHex, whPx = 30) {
+  const g = sanitizeBanner8Hex(goldHex, '#F4B93A');
+  const w = Math.max(22, Math.round(Number(whPx) || 30));
+  const r = Math.max(10, Math.round((17 / 40) * w));
+  const sw = w >= 30 ? 2 : 1.65;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}" viewBox="0 0 44 44" fill="none" style="display:block;" aria-hidden="true"><circle cx="22" cy="22" r="${r}" stroke="${g}" stroke-width="${sw}" fill="none"/><path d="M22 11c0 0 7 6 7 11 0 2-1 3-2 3h-10c-1 0-2-1-2-3 0-5 7-11 7-11z" fill="#ffffff"/><path d="M19 25h6l-1 7h-4l-1-7z" fill="#ffffff" opacity="0.95"/><path d="M16 28l-4 1 1-3 3 2zm12 0l4 1-1-3-3 2z" fill="#ffffff" opacity="0.9"/></svg>`;
+}
+
 function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
   if (!banner) return '';
   const blankPlaceholder = Boolean(opts.blankPlaceholder);
@@ -2719,7 +3125,7 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
       const blankInnerW = Math.max(1, blankW - 8);
       /* Same pixel rail as signature / CTA shells so the dashed placeholder matches live preview width. */
       return `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="${blankW}" style="width:${blankW}px;max-width:100%;table-layout:fixed;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="padding:0 4px;margin:0;vertical-align:middle;line-height:0;font-size:0;"><table cellpadding="0" cellspacing="0" border="0" role="presentation" width="${blankInnerW}" style="width:${blankInnerW}px;max-width:100%;table-layout:fixed;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td align="center" valign="middle" style="padding:6px 10px;width:${blankInnerW}px;max-width:100%;height:${blankH}px;min-height:${blankH}px;max-height:${blankH}px;box-sizing:border-box;border:2px dashed #94a3b8;background-color:#f8fafc;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.35;color:#64748b;">${escapeHtml(
-        'Upload a banner image under My information → Banner.'
+        'Upload Banner — add your image under My information (Banner).'
       )}</td></tr></table></td></tr></table>`;
     }
     const compiled = Handlebars.compile(tpl, { strict: false });
@@ -2732,6 +3138,7 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
       banner_full_image: ensureHttps(raw),
       banner_blank_linked: hasLinked,
       banner_link: hasLinked ? ensureHttps(banner.href || banner.link_url) || '#' : '#',
+      banner_blank_img_style: buildBannerBlankImgStyleString(banner, blankW, blankH),
     };
     return compiled(hbIn);
   }
@@ -2746,6 +3153,7 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     banner_rail_w_px: railPx,
     banner_link: bannerLink,
     banner_text: escapeHtml(String(banner.text ?? '')),
+    banner_has_cta: Boolean(String(banner.text ?? '').trim()),
   };
 
   const sideImg = String(banner.banner_image_url || banner.image_url || '').trim();
@@ -2758,117 +3166,217 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     hbIn.banner_brand_label = escapeHtml(brandFromField || company || 'My Brand');
     hbIn.banner_headline_html = escapeTextWithBr(w.field_1);
     hbIn.banner_subline_html = escapeTextWithBr(w.field_2);
-    hbIn.banner_text = escapeHtml(w.field_3);
+    const cta1 = String(w.field_3 ?? '').trim();
+    hbIn.banner_has_cta = Boolean(cta1);
+    hbIn.banner_text = escapeHtml(cta1);
     hbIn.banner_min_height = parseBannerMinHeightPx(w.field_4);
     const [w1, w2, w3, w4] = ctaBannerTintStops(context, 'webinar');
-    Object.assign(hbIn, webinarBannerStyleVars(w1, w2, w3, w4, railPx));
+    Object.assign(hbIn, webinarBannerStyleVars(w1, w2, w3, w4, railPx, context.theme));
   }
   if (key === 'banner_2') {
-    const headline =
-      String(banner.field_1 ?? '')
-        .trim() ||
-      String(banner.text ?? '')
-        .trim() ||
-      'Book a call today';
-    hbIn.banner_b2_headline = escapeHtml(headline);
-    const rawImg = String(banner.banner_image_url || banner.field_2 || banner.image_url || '').trim();
+    const looksLikeHttpUrl = (s) => /^https?:\/\//i.test(String(s || '').trim());
+    const f1 = String(banner.field_1 ?? '').trim();
+    const f2 = String(banner.field_2 ?? '').trim();
+    const f3 = String(banner.field_3 ?? '').trim();
+    const f4 = String(banner.field_4 ?? '').trim();
+    const f5 = String(banner.field_5 ?? '').trim();
+    const legacyText = String(banner.text ?? '').trim();
+
+    let yellowLine = f2;
+    if (!yellowLine || looksLikeHttpUrl(yellowLine)) yellowLine = 'strategy call';
+
+    let whiteBlock = f1;
+    if (!whiteBlock) {
+      if (legacyText && /strategy\s+call/i.test(legacyText)) {
+        const idx = legacyText.toLowerCase().indexOf('strategy');
+        let before = idx > 0 ? legacyText.slice(0, idx).trimEnd() : 'Book your free';
+        if (!/\n/.test(before) && /\bfree\b/i.test(before)) {
+          before = before.replace(/\s+free\s*$/i, '\nfree');
+        }
+        whiteBlock = before || 'Book your\nfree';
+      } else if (legacyText && legacyText.length > 3 && !/^BOOK\s*NOW$/i.test(legacyText)) {
+        whiteBlock = legacyText;
+      } else {
+        whiteBlock = 'Book your\nfree';
+      }
+    }
+
+    hbIn.banner_b2_title_white_html = escapeTextWithBr(whiteBlock);
+    hbIn.banner_b2_title_yellow = escapeHtml(yellowLine);
+    hbIn.banner_b2_subtitle_html = escapeTextWithBr(
+      f3 || 'Get expert advice. Discover opportunities.\nGrow your business.'
+    );
+
+    let ctaLabel = f4;
+    if (!ctaLabel) {
+      if (
+        legacyText &&
+        legacyText.length <= 22 &&
+        !/strategy|book your|discover|opportunities|grow your business/i.test(legacyText)
+      ) {
+        ctaLabel = legacyText;
+      } else {
+        ctaLabel = 'BOOK NOW';
+      }
+    }
+    if (ctaLabel.length > 36) ctaLabel = 'BOOK NOW';
+    hbIn.banner_b2_cta_label = escapeHtml(ctaLabel.toUpperCase());
+    hbIn.banner_text = hbIn.banner_b2_cta_label;
+
+    const rawImg =
+      String(banner.banner_image_url || banner.image_url || '').trim() ||
+      (looksLikeHttpUrl(f5) ? f5 : '') ||
+      (looksLikeHttpUrl(f2) ? f2 : '');
     hbIn.banner_b2_image =
       rawImg.length > 0 ? ensureHttps(rawImg) : BANNER_B2_DEFAULT_IMAGE;
-    const [b1, b2, b3, b4] = ctaBannerTintStops(context, 'bookCall');
-    Object.assign(hbIn, bookCallBannerStyleVars(b1, b2, b3, b4));
+
+    Object.assign(hbIn, bookCallBannerStyleVars(railPx, context));
   }
   if (key === 'banner_3') {
     const left =
       String(banner.field_1 ?? '')
-        .trim() || 'Download my Resume';
+        .trim() || 'Download your free lead magnet (PDF)';
     hbIn.banner_b3_left_text = escapeHtml(left);
-    hbIn.banner_text = escapeHtml(String(banner.text ?? '').trim() || 'Download');
+    hbIn.banner_text = escapeHtml(String(banner.text ?? '').trim() || 'Get it now');
+    const themeObj = context && typeof context.theme === 'object' ? context.theme : {};
+    const pillBg = String(themeObj.surface_light || '#ffffff').trim() || '#ffffff';
+    const c1 = String(context.color_1 || '#2563eb').trim();
+    const c3 = String(context.color_3 || '#64748b').trim();
+    hbIn.banner_b3_pill_bg = pillBg;
+    hbIn.banner_b3_cta_ink = paletteTextOnSurface(c1, pillBg, 4.5);
+    hbIn.banner_b3_cta_border = paletteTextOnSurface(mixHexPair(c3, c1, 0.35), pillBg, 3);
   }
   if (key === 'banner_4') {
-    const label = String(banner.field_1 ?? '').trim() || 'Need a call?';
-    hbIn.banner_4_label = escapeHtml(label);
-    hbIn.banner_text = escapeHtml(String(banner.text ?? '').trim() || 'Pick a slot now');
+    const sceneH = subscriberFlowBannerSceneHeightPx(railPx);
+    hbIn.banner_b4_scene_h = String(sceneH);
+    const sceneRaw = String(banner.banner_image_url || banner.image_url || '').trim();
+    hbIn.banner_b4_scene_image = sceneRaw ? ensureHttps(sceneRaw) : '';
+    hbIn.banner_b4_scene_svg = hbIn.banner_b4_scene_image ? '' : buildSubscriberFlowSceneSvg(sceneH);
+
+    const rawHead = String(banner.field_1 ?? '').trim();
+    let field3 = String(banner.field_3 ?? '').trim();
+    let parts = rawHead
+      ? rawHead
+          .split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0)
+      : [];
+
+    if (parts.length === 1 && !field3) {
+      const split = splitBanner4EmDashSubline(parts[0]);
+      if (split) {
+        parts = [split.headlinePart];
+        field3 = split.subPart;
+      }
+    }
+
+    const usingDefaultHeadline = parts.length === 0;
+    let lines = usingDefaultHeadline ? ['Turn subscribers', 'into'] : parts.slice();
+    const accentRaw = String(banner.field_2 ?? '').trim();
+    const accentForDedupe = accentRaw || (usingDefaultHeadline ? 'buyers.' : '');
+    if (accentForDedupe) {
+      lines = stripRedundantAccentFromLines(lines, accentForDedupe);
+    }
+    lines = normalizeBanner4HeadlineBreak(lines);
+    if (lines.length === 0) {
+      lines = ['Turn subscribers', 'into'];
+    }
+
+    const accentPhrase = accentRaw || (usingDefaultHeadline ? 'buyers.' : '');
+    let plainHtml;
+    if (lines.length >= 2) {
+      plainHtml =
+        lines
+          .slice(0, -1)
+          .map((ln) => escapeHtml(ln))
+          .join('<br>') +
+        '<br>' +
+        escapeHtml(lines[lines.length - 1]) +
+        ' ';
+    } else {
+      plainHtml = `${escapeHtml(lines[0])} `;
+    }
+    hbIn.banner_b4_title_plain_html = plainHtml;
+    hbIn.banner_b4_accent_html = escapeHtml(accentPhrase);
+    hbIn.banner_b4_sub_html = escapeHtml(
+      field3 || 'Email marketing that engages, nurtures, and converts.'
+    );
+    const cta4 = String(banner.text ?? '').trim() || 'Start free trial';
+    hbIn.banner_text = escapeHtml(cta4);
     const [n1, n2, n3, n4] = ctaBannerTintStops(context, 'needCall');
+    Object.assign(hbIn, subscriberFlowBannerLayoutVars(railPx));
     Object.assign(hbIn, needCallBannerStyleVars(n1, n2, n3, n4));
   }
-  if (key === 'banner_5') {
-    const personRaw = String(banner.banner_image_url || banner.image_url || '').trim();
-    hbIn.banner_b5_has_person = personRaw.length > 0;
-    hbIn.banner_b5_person = personRaw ? ensureHttps(personRaw) : '';
-    const company = String(context.company_name || '').trim();
-    hbIn.banner_b5_brand = escapeHtml(String(banner.field_5 ?? '').trim() || company || 'MINDSCOPE');
-    const headlineRaw =
-      String(banner.field_1 ?? '').trim() || 'Applicant Tracking\nSystem & Recruiting CRM';
-    hbIn.banner_b5_headline_html = escapeTextWithBr(headlineRaw);
-    hbIn.banner_b5_tagline_pre = escapeHtml(String(banner.field_2 ?? '').trim() || 'Make Hiring ');
-    hbIn.banner_b5_tagline_accent = escapeHtml(String(banner.field_3 ?? '').trim() || 'Easy!');
-    hbIn.banner_b5_fineprint = escapeHtml(
-      String(banner.field_4 ?? '').trim() || 'No credit card required'
-    );
-    const cta = String(banner.text ?? '').trim() || 'Try For Free!';
-    hbIn.banner_b5_cta = escapeHtml(cta);
-    hbIn.banner_text = hbIn.banner_b5_cta;
-    hbIn.banner_b5_min_h = personRaw.length > 0 ? 94 : 78;
-  }
-  if (key === 'banner_6') {
-    const panelRaw =
-      String(banner.field_1 ?? '').trim() ||
-      "The industry's leading email marketing solution.";
-    hbIn.banner_b6_panel = escapeHtml(panelRaw);
-    const cta = String(banner.text ?? '').trim() || 'Get Started';
-    hbIn.banner_b6_cta = escapeHtml(cta);
-    hbIn.banner_text = hbIn.banner_b6_cta;
-    const scene = String(banner.banner_image_url || banner.image_url || '').trim();
-    hbIn.banner_b6_scene_image = scene ? ensureHttps(scene) : '';
-  }
-  if (key === 'banner_7') {
-    hbIn.banner_b7_brand_small = escapeHtml(String(banner.field_1 ?? '').trim() || 'explore');
-    hbIn.banner_b7_logo_word = escapeHtml(String(banner.field_2 ?? '').trim() || 'log');
-    hbIn.banner_b7_headline = escapeHtml(String(banner.field_3 ?? '').trim() || 'Explore Your');
-    hbIn.banner_b7_world = escapeHtml(String(banner.field_4 ?? '').trim() || 'WORLD');
-    hbIn.banner_b7_url = escapeHtml(String(banner.field_5 ?? '').trim() || 'www.example.com');
-    const cta7 = String(banner.text ?? '').trim() || 'Learn More';
-    hbIn.banner_b7_cta = escapeHtml(cta7);
-    hbIn.banner_text = hbIn.banner_b7_cta;
-    const railLogo = String(banner.cta_strip_logo_url || '').trim();
-    const heroImg = String(banner.cta_strip_hero_url || '').trim();
-    const railSrc = railLogo ? resolveCtaStripUploadUrl(railLogo) : '';
-    const heroSrc = heroImg ? resolveCtaStripUploadUrl(heroImg) : '';
-    hbIn.banner_b7_rail_logo_html = railSrc
-      ? `<img src="${railSrc}" alt="" style="display:block;width:100%;max-width:110px;height:auto;max-height:30px;margin:0 0 4px 0;object-fit:contain;object-position:left center;border:0;line-height:0;" />`
-      : '';
-    hbIn.banner_b7_rail_decor = EXPLORE_WORLD_B7_RAIL_DECOR_SVG;
-    hbIn.banner_b7_center_accent = EXPLORE_WORLD_B7_CENTER_ACCENT_SVG;
-    hbIn.banner_b7_traveler_inner = heroSrc
-      ? `<img src="${heroSrc}" alt="" width="58" style="display:block;width:58px;max-width:58px;height:auto;border:0;vertical-align:bottom;line-height:0;" />`
-      : EXPLORE_WORLD_TRAVELER_SVG;
-  }
   if (key === 'banner_8') {
-    hbIn.banner_b8_logo_small = escapeHtml(String(banner.field_1 ?? '').trim() || 'Mighty');
-    hbIn.banner_b8_logo_main = escapeHtml(String(banner.field_2 ?? '').trim() || 'LOGO');
-    hbIn.banner_b8_headline = escapeHtml(String(banner.field_3 ?? '').trim() || 'Boost and Improve');
-    hbIn.banner_b8_subline = escapeHtml(String(banner.field_4 ?? '').trim() || 'Your Immune System');
-    const cta8 = String(banner.text ?? '').trim() || 'Click Here';
-    hbIn.banner_b8_cta = escapeHtml(cta8);
+    const railRef8 = Math.max(280, Math.min(720, Number(railPx) || 600));
+    const sc8 = Math.min(1.04, Math.max(0.7, railRef8 / 600));
+    const pv = Math.max(4, Math.round(6 * sc8));
+    const ph = Math.max(6, Math.round(8 * sc8));
+    const pb = Math.max(4, pv - 1);
+    const shellMinH = Math.max(54, Math.round(66 * sc8));
+    const midPh = Math.max(14, Math.round(22 * sc8));
+    const markW = Math.max(24, Math.round(28 * sc8));
+    const markH = Math.max(26, Math.round(markW * 1.09));
+    const rocketWh = Math.max(22, Math.round(26 * sc8));
+    const fsHead = Math.max(11, Math.round(13 * sc8));
+    const fsSub = Math.max(7, Math.round(8 * sc8));
+    const fsBlur = Math.max(6, Math.round(6.5 * sc8 * 10) / 10);
+    const fsCta = Math.max(6, Math.round(7.5 * sc8 * 10) / 10);
+    const fsArrow = Math.max(7, Math.round(8.5 * sc8 * 10) / 10);
+    const fsLogo = Math.max(8, Math.round(9 * sc8));
+    const ctaPv = Math.max(3, Math.round(4 * sc8));
+    const ctaPh = Math.max(7, Math.round(10 * sc8));
+    const shellR = Math.max(8, Math.round(11 * sc8));
+    const logoMt = Math.max(3, Math.round(4 * sc8));
+
+    hbIn.banner_b8_scale = sc8;
+    hbIn.banner_b8_shell_min_h = String(shellMinH);
+    hbIn.banner_b8_shell_radius = String(shellR);
+    hbIn.banner_b8_mid_ph = String(midPh);
+    hbIn.banner_b8_pad_left = `${pv}px ${ph}px ${pb}px`;
+    hbIn.banner_b8_pad_mid = `${pv}px ${Math.max(8, Math.round(11 * sc8))}px ${pv}px ${Math.max(9, Math.round(12 * sc8))}px`;
+    hbIn.banner_b8_pad_right = `${Math.max(4, pv - 1)}px ${Math.max(7, Math.round(9 * sc8))}px ${Math.max(5, pv)}px ${Math.max(6, Math.round(8 * sc8))}px`;
+    hbIn.banner_b8_fs_headline = String(fsHead);
+    hbIn.banner_b8_fs_sub = String(fsSub);
+    hbIn.banner_b8_fs_blurb = String(fsBlur);
+    hbIn.banner_b8_fs_cta = String(fsCta);
+    hbIn.banner_b8_fs_cta_arrow = String(fsArrow);
+    hbIn.banner_b8_fs_logo_main = String(fsLogo);
+    hbIn.banner_b8_cta_pad_v = String(ctaPv);
+    hbIn.banner_b8_cta_pad_h = String(ctaPh);
+    hbIn.banner_b8_dots_pad_t = String(Math.max(3, Math.round(4 * sc8)));
+    hbIn.banner_b8_logo_main_mt = `${logoMt}px`;
+    hbIn.banner_b8_rocket_wh = String(rocketWh);
+    hbIn.banner_b8_rocket_cell_w = String(rocketWh + Math.max(6, Math.round(8 * sc8)));
+
+    const f2b = String(banner.field_2 ?? '').trim();
+    hbIn.banner_b8_logo_main = f2b ? escapeHtml(f2b) : '';
+    hbIn.banner_b8_has_logo_main = Boolean(f2b);
+    const f4b = String(banner.field_4 ?? '').trim();
+    hbIn.banner_b8_subline = f4b ? escapeHtml(f4b) : '';
+    hbIn.banner_b8_has_subline = Boolean(f4b);
+    const f6b = String(banner.field_6 ?? '').trim();
+    hbIn.banner_b8_right_blurb = f6b ? escapeHtml(f6b) : '';
+    hbIn.banner_b8_has_blurb = Boolean(f6b);
+    const cta8 = String(banner.text ?? '').trim() || 'Explore now';
+    hbIn.banner_b8_cta = escapeHtml(cta8.toUpperCase());
     hbIn.banner_text = hbIn.banner_b8_cta;
     const leafBrandImg = String(banner.cta_strip_logo_url || '').trim();
-    const sceneImg = String(banner.cta_strip_hero_url || '').trim();
     const leafSrc = leafBrandImg ? resolveCtaStripUploadUrl(leafBrandImg) : '';
-    const sceneSrc = sceneImg ? resolveCtaStripUploadUrl(sceneImg) : '';
+    const imgMb = Math.max(2, Math.round(markH * 0.08));
     hbIn.banner_b8_leaf_inner = leafSrc
-      ? `<img src="${leafSrc}" alt="" style="display:block;margin:0 auto;max-width:100%;width:auto;height:auto;max-height:120px;object-fit:contain;object-position:center;border:0;line-height:normal;vertical-align:middle;" />`
-      : BOOST_LOGO_LEAF_SVG;
-    hbIn.banner_b8_scene_inner = sceneSrc
-      ? `<img src="${sceneSrc}" alt="" style="display:block;width:100%;max-width:100%;height:auto;max-height:96px;object-fit:contain;object-position:center;border:0;vertical-align:middle;line-height:0;margin:0 auto;" />`
-      : BOOST_WELLNESS_SCENE_SVG;
+      ? `<img src="${leafSrc}" alt="" style="${buildCtaBannerImageStyleString({
+          widthPx: markW,
+          heightPx: markH,
+          extra: [`margin:0 auto ${imgMb}px`, 'display:block', 'line-height:0'],
+        })}" />`
+      : boostLogoMarkSvg(markW, markH);
   }
   if (key === 'banner_9') {
-    hbIn.banner_b9_line1 = escapeHtml(
-      String(banner.field_1 ?? '').trim() || 'Online půjčka pro'
-    );
-    hbIn.banner_b9_line2 = escapeHtml(String(banner.field_2 ?? '').trim() || 'každého');
-    hbIn.banner_b9_brand = escapeHtml(String(banner.field_3 ?? '').trim() || 'REVOLIO');
-    const cta9 = String(banner.text ?? '').trim() || 'CHCI PŮJČIT';
+    hbIn.banner_b9_line1 = escapeHtml(String(banner.field_1 ?? '').trim() || 'Fast funding');
+    hbIn.banner_b9_line2 = escapeHtml(String(banner.field_2 ?? '').trim() || 'for your next move');
+    hbIn.banner_b9_brand = escapeHtml(String(banner.field_3 ?? '').trim() || 'YOUR BRAND');
+    const cta9 = String(banner.text ?? '').trim() || 'Get pre-approved';
     hbIn.banner_b9_cta = escapeHtml(cta9);
     hbIn.banner_text = hbIn.banner_b9_cta;
     const railN = Number(railPx);
@@ -2889,13 +3397,13 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
       : '';
   }
   if (key === 'banner_10') {
-    hbIn.banner_b10_business = escapeHtml(String(banner.field_1 ?? '').trim() || 'BUSINESS');
-    hbIn.banner_b10_banner = escapeHtml(String(banner.field_2 ?? '').trim() || 'BANNER');
-    hbIn.banner_b10_design = escapeHtml(String(banner.field_3 ?? '').trim() || 'DESIGN');
-    hbIn.banner_b10_company = escapeHtml(String(banner.field_5 ?? '').trim() || 'COMPANY');
+    hbIn.banner_b10_business = escapeHtml(String(banner.field_1 ?? '').trim() || 'LIMITED');
+    hbIn.banner_b10_banner = escapeHtml(String(banner.field_2 ?? '').trim() || 'SPOTS');
+    hbIn.banner_b10_design = escapeHtml(String(banner.field_3 ?? '').trim() || 'THIS MONTH');
+    hbIn.banner_b10_company = escapeHtml(String(banner.field_5 ?? '').trim() || 'YOUR BRAND');
     const b10Logo = String(banner.banner_image_url || banner.image_url || '').trim();
     hbIn.banner_b10_logo_img = b10Logo ? ensureHttps(b10Logo) : '';
-    const cta10 = String(banner.text ?? '').trim() || 'LEARN MORE';
+    const cta10 = String(banner.text ?? '').trim() || 'See pricing';
     hbIn.banner_b10_cta = escapeHtml(cta10);
     hbIn.banner_text = hbIn.banner_b10_cta;
     const railB10 = Number(railPx);
@@ -2907,8 +3415,8 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     hbIn.banner_b10_fs_logo = Math.max(5, Math.round(5.5 * sc10 * 10) / 10);
   }
   if (key === 'banner_11') {
-    const t11 = String(banner.field_1 ?? '').trim() || 'Leave us a review';
-    const s11 = String(banner.field_2 ?? '').trim() || 'on Trustpilot';
+    const t11 = String(banner.field_1 ?? '').trim() || 'Loved working with us?';
+    const s11 = String(banner.field_2 ?? '').trim() || 'Leave a quick Google review — it helps others find us.';
     hbIn.banner_b11_title = escapeHtml(t11);
     hbIn.banner_b11_subtitle = escapeHtml(s11);
     hbIn.banner_b11_a_title = escapeHtml(s11 ? `${t11} — ${s11}` : t11);
@@ -2916,14 +3424,17 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const railB11 = Number(railPx);
     const railRef11 = Number.isFinite(railB11) && railB11 > 0 ? railB11 : 600;
     const sc11 = Math.min(1.08, Math.max(0.72, railRef11 / 600));
-    hbIn.banner_b11_min_h = Math.max(100, Math.round(130 * sc11));
+    const promo11 = String(banner.banner_image_url || banner.image_url || '').trim();
+    hbIn.banner_b11_has_promo = promo11.length > 0;
+    hbIn.banner_b11_promo_image = promo11 ? ensureHttps(promo11) : '';
+    hbIn.banner_b11_min_h = Math.max(100, Math.round((promo11 ? 152 : 130) * sc11));
     hbIn.banner_b11_fs_title = Math.max(15, Math.round(20 * sc11));
     hbIn.banner_b11_fs_sub = Math.max(11, Math.round(14 * sc11));
     hbIn.banner_b11_art_w = Math.max(240, Math.round(340 * sc11));
   }
   if (key === 'banner_12') {
-    const t12 = String(banner.field_1 ?? '').trim() || 'SEO Whitepaper';
-    const s12 = String(banner.field_2 ?? '').trim() || 'Free top 10 SEO tips PDF';
+    const t12 = String(banner.field_1 ?? '').trim() || 'Free SEO checklist';
+    const s12 = String(banner.field_2 ?? '').trim() || 'PDF: 10 fixes that lift rankings this week';
     hbIn.banner_b12_title = escapeHtml(t12);
     hbIn.banner_b12_subtitle = escapeHtml(s12);
     hbIn.banner_b12_a_title = escapeHtml(s12 ? `${t12} — ${s12}` : t12);
@@ -2931,16 +3442,19 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const railB12 = Number(railPx);
     const railRef12 = Number.isFinite(railB12) && railB12 > 0 ? railB12 : 640;
     const sc12 = Math.min(1.06, Math.max(0.78, railRef12 / 640));
-    hbIn.banner_b12_min_h = Math.max(52, Math.round(72 * sc12));
+    const promo12 = String(banner.banner_image_url || banner.image_url || '').trim();
+    hbIn.banner_b12_has_promo = promo12.length > 0;
+    hbIn.banner_b12_promo_image = promo12 ? ensureHttps(promo12) : '';
+    hbIn.banner_b12_min_h = Math.max(52, Math.round((promo12 ? 96 : 72) * sc12));
     hbIn.banner_b12_fs_title = Math.max(11, Math.round(15 * sc12));
     hbIn.banner_b12_fs_sub = Math.max(9, Math.round(12.5 * sc12 * 10) / 10);
     hbIn.banner_b12_grid_w = Math.max(160, Math.round(440 * sc12));
   }
   if (key === 'banner_13') {
     const headlineRaw =
-      String(banner.field_1 ?? '').trim() || 'A better\nfuture awaits';
+      String(banner.field_1 ?? '').trim() || 'Ready to grow\nyour business?';
     hbIn.banner_b13_title_html = escapeTextWithBr(headlineRaw);
-    const cta13 = String(banner.text ?? '').trim() || 'Book a call';
+    const cta13 = String(banner.text ?? '').trim() || 'Book free strategy call';
     hbIn.banner_b13_cta = escapeHtml(cta13);
     hbIn.banner_text = hbIn.banner_b13_cta;
     const plainHead = headlineRaw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
@@ -2948,24 +3462,47 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     const railB13 = Number(railPx);
     const railRef13 = Number.isFinite(railB13) && railB13 > 0 ? railB13 : 640;
     const sc13 = Math.min(1.06, Math.max(0.78, railRef13 / 640));
-    hbIn.banner_b13_min_h = Math.max(64, Math.round(90 * sc13));
+    const promo13 = String(banner.banner_image_url || banner.image_url || '').trim();
+    hbIn.banner_b13_has_promo = promo13.length > 0;
+    hbIn.banner_b13_promo_image = promo13 ? ensureHttps(promo13) : '';
+    hbIn.banner_b13_min_h = Math.max(64, Math.round((promo13 ? 100 : 90) * sc13));
     hbIn.banner_b13_fs_title = Math.max(14, Math.round(19 * sc13));
     hbIn.banner_b13_fs_cta = Math.max(12, Math.round(15 * sc13));
     hbIn.banner_b13_fs_arrow = Math.max(14, Math.round(18 * sc13));
-    hbIn.banner_b13_decor_w = Math.max(72, Math.min(140, Math.round(120 * sc13)));
+    hbIn.banner_b13_decor_w = Math.max(72, Math.min(160, Math.round((promo13 ? 200 : 120) * sc13)));
   }
+
+  injectCompiledBannerImageStyles(key, banner, hbIn);
 
   Object.assign(
     hbIn,
     premiumCtaTokensForBanner(
       key,
-      context.apply_brand_palette_to_cta_banners === true,
+      true,
       context.color_1,
       context.color_2,
       context.color_3,
       context.color_4
     )
   );
+  if (key === 'banner_8') {
+    const navy = sanitizeBanner8Hex(hbIn.banner_b8_headline_navy, '#0B1D36');
+    const gold = sanitizeBanner8Hex(hbIn.banner_b8_gold, '#F4B93A');
+    const sc8 = Number(hbIn.banner_b8_scale) || 0.85;
+    const f3b = String(banner.field_3 ?? '').trim();
+    const headlineHtml = f3b ? buildBanner8HeadlineHtmlFromRaw(banner.field_3, navy, gold) : '';
+    hbIn.banner_b8_headline_html = headlineHtml;
+    hbIn.banner_b8_has_headline = headlineHtml.length > 0;
+    hbIn.banner_b8_rocket_svg = buildBanner8RocketSvg(gold, Number(hbIn.banner_b8_rocket_wh) || 26);
+    hbIn.banner_b8_subline_mt =
+      hbIn.banner_b8_has_headline && hbIn.banner_b8_has_subline
+        ? `${Math.max(3, Math.round(5 * sc8))}px`
+        : '0';
+    hbIn.banner_b8_cta_mt = hbIn.banner_b8_has_blurb
+      ? `${Math.max(5, Math.round(7 * sc8))}px`
+      : `${Math.max(4, Math.round(5 * sc8))}px`;
+    hbIn.banner_b8_mid_has_copy = Boolean(hbIn.banner_b8_has_headline || hbIn.banner_b8_has_subline);
+  }
   return compiled(hbIn);
 }
 
@@ -3019,11 +3556,24 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
     field_3: editorBanner.field_3,
     field_4: editorBanner.field_4,
     field_5: editorBanner.field_5,
+    field_6: editorBanner.field_6,
     banner_image_url: editorBanner.banner_image_url,
     image_url: editorBanner.image_url,
     cta_strip_logo_url: editorBanner.cta_strip_logo_url,
     cta_strip_icon_url: editorBanner.cta_strip_icon_url,
     cta_strip_hero_url: editorBanner.cta_strip_hero_url,
+    banner_image_fit: editorBanner.banner_image_fit,
+    banner_image_pos_x: editorBanner.banner_image_pos_x,
+    banner_image_pos_y: editorBanner.banner_image_pos_y,
+    banner_image_zoom: editorBanner.banner_image_zoom,
+    cta_strip_logo_fit: editorBanner.cta_strip_logo_fit,
+    cta_strip_logo_pos_x: editorBanner.cta_strip_logo_pos_x,
+    cta_strip_logo_pos_y: editorBanner.cta_strip_logo_pos_y,
+    cta_strip_logo_zoom: editorBanner.cta_strip_logo_zoom,
+    cta_strip_hero_fit: editorBanner.cta_strip_hero_fit,
+    cta_strip_hero_pos_x: editorBanner.cta_strip_hero_pos_x,
+    cta_strip_hero_pos_y: editorBanner.cta_strip_hero_pos_y,
+    cta_strip_hero_zoom: editorBanner.cta_strip_hero_zoom,
   };
   const primaryInner = tagBannerSlotInner(
     compileBannerInnerHtml(context, primaryBanner, stripW, { blankPlaceholder }),
@@ -3054,11 +3604,24 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
       field_3: editorBanner.secondary_field_3,
       field_4: editorBanner.secondary_field_4,
       field_5: editorBanner.secondary_field_5,
+      field_6: editorBanner.secondary_field_6,
       banner_image_url: editorBanner.secondary_banner_image_url,
       image_url: editorBanner.secondary_banner_image_url,
       cta_strip_logo_url: editorBanner.secondary_cta_strip_logo_url,
       cta_strip_icon_url: editorBanner.secondary_cta_strip_icon_url,
       cta_strip_hero_url: editorBanner.secondary_cta_strip_hero_url,
+      banner_image_fit: editorBanner.secondary_banner_image_fit,
+      banner_image_pos_x: editorBanner.secondary_banner_image_pos_x,
+      banner_image_pos_y: editorBanner.secondary_banner_image_pos_y,
+      banner_image_zoom: editorBanner.secondary_banner_image_zoom,
+      cta_strip_logo_fit: editorBanner.secondary_cta_strip_logo_fit,
+      cta_strip_logo_pos_x: editorBanner.secondary_cta_strip_logo_pos_x,
+      cta_strip_logo_pos_y: editorBanner.secondary_cta_strip_logo_pos_y,
+      cta_strip_logo_zoom: editorBanner.secondary_cta_strip_logo_zoom,
+      cta_strip_hero_fit: editorBanner.secondary_cta_strip_hero_fit,
+      cta_strip_hero_pos_x: editorBanner.secondary_cta_strip_hero_pos_x,
+      cta_strip_hero_pos_y: editorBanner.secondary_cta_strip_hero_pos_y,
+      cta_strip_hero_zoom: editorBanner.secondary_cta_strip_hero_zoom,
     };
     const secHtml = compileBannerInnerHtml(context, secondaryBanner, stripW, { blankPlaceholder });
     if (secHtml) {
@@ -3091,10 +3654,11 @@ export async function generateSignatureHtml(payload, options = {}) {
     forPaste = false,
     includePreviewSlots = false,
     persistIncompleteBlank = false,
+    fillDemoPlaceholders = false,
   } = options;
 
   const templateId = payload.templateId || payload.template_id || 'template_1';
-  const context = buildContext(payload);
+  const context = buildContext(payload, { fillDemoPlaceholders });
   const tpl = getTemplateHtml(templateId);
   const compiled = Handlebars.compile(tpl, { strict: false });
   let html = compiled(context);

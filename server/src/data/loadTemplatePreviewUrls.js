@@ -15,8 +15,6 @@ let cacheMtime = null;
 const DEFAULT_TEMPLATE_PREVIEW_PATHS = {
   template_1: '/template-previews/template_1.svg',
   template_2: '/template-previews/template_2.png',
-  template_4:
-    'https://static.codia.ai/s/image_caba0333-a82b-443e-9903-6458245ac81f.png',
   template_5: '/template-previews/template_5.png',
   template_6: '/template-previews/template_6.png',
 };

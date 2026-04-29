@@ -1,9 +1,6 @@
 import {
   BANNER_SLUG_TO_UUID,
   BLANK_IMAGE_BANNER_UUID,
-  MINDSCOPE_BANNER_UUID,
-  MAILCHIMP_BANNER_UUID,
-  EXPLORE_WORLD_BANNER_UUID,
   BOOST_IMPROVE_BANNER_UUID,
   ONLINE_LOAN_BANNER_UUID,
   LEAVE_REVIEW_BANNER_UUID,
@@ -15,9 +12,6 @@ import {
 const BANNER_CATALOG_ORDER = [
   BANNER_SLUG_TO_UUID.webinar,
   BANNER_SLUG_TO_UUID['book-call'],
-  MINDSCOPE_BANNER_UUID,
-  MAILCHIMP_BANNER_UUID,
-  EXPLORE_WORLD_BANNER_UUID,
   BOOST_IMPROVE_BANNER_UUID,
   ONLINE_LOAN_BANNER_UUID,
   LEAVE_REVIEW_BANNER_UUID,
@@ -40,27 +34,6 @@ const CANONICAL_FALLBACKS = Object.freeze({
     id: BANNER_SLUG_TO_UUID['book-call'],
     name: 'Book a call',
     tier: 'free',
-    is_active: true,
-    html_structure: '<!-- engine -->',
-  },
-  [String(MINDSCOPE_BANNER_UUID).toLowerCase()]: {
-    id: MINDSCOPE_BANNER_UUID,
-    name: 'Mindscope ATS',
-    tier: 'pro',
-    is_active: true,
-    html_structure: '<!-- engine -->',
-  },
-  [String(MAILCHIMP_BANNER_UUID).toLowerCase()]: {
-    id: MAILCHIMP_BANNER_UUID,
-    name: 'Campaign strip',
-    tier: 'pro',
-    is_active: true,
-    html_structure: '<!-- engine -->',
-  },
-  [String(EXPLORE_WORLD_BANNER_UUID).toLowerCase()]: {
-    id: EXPLORE_WORLD_BANNER_UUID,
-    name: 'Explore your world',
-    tier: 'pro',
     is_active: true,
     html_structure: '<!-- engine -->',
   },
@@ -132,6 +105,15 @@ export function mergeEditorBannerCatalog(rows) {
   for (const b of rows || []) {
     if (!b || b.id == null) continue;
     byId.set(String(b.id).toLowerCase(), b);
+  }
+  const needId = String(BANNER_SLUG_TO_UUID['need-call']).toLowerCase();
+  const subId = String(BANNER_SLUG_TO_UUID['subscriber-journey']).toLowerCase();
+  if (byId.has(subId)) {
+    if (!byId.has(needId)) {
+      const sub = byId.get(subId);
+      byId.set(needId, { ...sub, id: BANNER_SLUG_TO_UUID['need-call'], name: sub.name || 'Need a call' });
+    }
+    byId.delete(subId);
   }
   return BANNER_CATALOG_ORDER.map((sortId) => {
     const fromDb = byId.get(sortId);

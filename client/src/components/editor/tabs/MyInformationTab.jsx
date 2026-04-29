@@ -17,9 +17,6 @@ import {
   isBlankImageBannerPreset,
   isDownloadBannerPreset,
   isNeedCallBannerPreset,
-  isMindscopeBannerPreset,
-  isMailchimpBannerPreset,
-  isExploreWorldBannerPreset,
   isBoostImproveBannerPreset,
   isOnlineLoanBannerPreset,
   isBusinessCityBannerPreset,
@@ -223,9 +220,6 @@ export function MyInformationTab({ onToast }) {
   const isBlankBanner = isBlankImageBannerPreset(bc.preset_id, signature.banner_id);
   const isDownloadBanner = isDownloadBannerPreset(bc.preset_id, signature.banner_id);
   const isNeedCallBanner = isNeedCallBannerPreset(bc.preset_id, signature.banner_id);
-  const isMindscopeBanner = isMindscopeBannerPreset(bc.preset_id, signature.banner_id);
-  const isMailchimpBanner = isMailchimpBannerPreset(bc.preset_id, signature.banner_id);
-  const isExploreWorldBanner = isExploreWorldBannerPreset(bc.preset_id, signature.banner_id);
   const isBoostImproveBanner = isBoostImproveBannerPreset(bc.preset_id, signature.banner_id);
   const isOnlineLoanBanner = isOnlineLoanBannerPreset(bc.preset_id, signature.banner_id);
   const isBusinessCityBanner = isBusinessCityBannerPreset(bc.preset_id, signature.banner_id);
@@ -237,9 +231,6 @@ export function MyInformationTab({ onToast }) {
     !isBlankBanner &&
     !isDownloadBanner &&
     !isNeedCallBanner &&
-    !isMindscopeBanner &&
-    !isMailchimpBanner &&
-    !isExploreWorldBanner &&
     !isBoostImproveBanner &&
     !isOnlineLoanBanner &&
     !isBusinessCityBanner &&
@@ -253,9 +244,6 @@ export function MyInformationTab({ onToast }) {
     !isBlankBanner &&
     !isDownloadBanner &&
     !isNeedCallBanner &&
-    !isMindscopeBanner &&
-    !isMailchimpBanner &&
-    !isExploreWorldBanner &&
     !isBoostImproveBanner &&
     !isOnlineLoanBanner &&
     !isBusinessCityBanner &&
@@ -271,15 +259,6 @@ export function MyInformationTab({ onToast }) {
   const isSecondaryNeedCall =
     Boolean(bc.secondary_banner_id) &&
     isNeedCallBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
-  const isSecondaryMindscope =
-    Boolean(bc.secondary_banner_id) &&
-    isMindscopeBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
-  const isSecondaryMailchimp =
-    Boolean(bc.secondary_banner_id) &&
-    isMailchimpBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
-  const isSecondaryExploreWorld =
-    Boolean(bc.secondary_banner_id) &&
-    isExploreWorldBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
   const isSecondaryBoostImprove =
     Boolean(bc.secondary_banner_id) &&
     isBoostImproveBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
@@ -304,9 +283,6 @@ export function MyInformationTab({ onToast }) {
     !isSecondaryBlank &&
     !isSecondaryDownload &&
     !isSecondaryNeedCall &&
-    !isSecondaryMindscope &&
-    !isSecondaryMailchimp &&
-    !isSecondaryExploreWorld &&
     !isSecondaryBoostImprove &&
     !isSecondaryOnlineLoan &&
     !isSecondaryBusinessCity &&
@@ -354,12 +330,11 @@ export function MyInformationTab({ onToast }) {
       if (!file) return;
       setUploadKind('bannerImg');
       try {
-        const mailchimpSlot = isMailchimpBannerPreset(bc.preset_id, signature?.banner_id);
-        const mindscopeSlot = isMindscopeBannerPreset(bc.preset_id, signature?.banner_id);
+        const sceneSlot = isNeedCallBannerPreset(bc.preset_id, signature?.banner_id);
         const businessCitySlot = isBusinessCityBannerPreset(bc.preset_id, signature?.banner_id);
         const { data } = await uploadAPI.uploadBannerImage(
           file,
-          mailchimpSlot || mindscopeSlot
+          sceneSlot
             ? { mode: 'scene' }
             : businessCitySlot
               ? { mode: 'mark' }
@@ -400,18 +375,15 @@ export function MyInformationTab({ onToast }) {
       if (!file) return;
       setUploadKind('bannerImg2');
       try {
-        const mailchimpSlot2 =
+        const sceneSlot2 =
           Boolean(bc.secondary_banner_id) &&
-          isMailchimpBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
-        const mindscopeSlot2 =
-          Boolean(bc.secondary_banner_id) &&
-          isMindscopeBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
+          isNeedCallBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
         const businessCitySlot2 =
           Boolean(bc.secondary_banner_id) &&
           isBusinessCityBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
         const { data } = await uploadAPI.uploadBannerImage(
           file,
-          mailchimpSlot2 || mindscopeSlot2
+          sceneSlot2
             ? { mode: 'scene' }
             : businessCitySlot2
               ? { mode: 'mark' }
@@ -528,8 +500,6 @@ export function MyInformationTab({ onToast }) {
               isSecondaryWebinar={isSecondaryWebinar}
               isSecondaryBlank={isSecondaryBlank}
               isSecondaryBookCall={isSecondaryBookCall}
-              isSecondaryMailchimp={isSecondaryMailchimp}
-              isSecondaryExploreWorld={isSecondaryExploreWorld}
               isSecondaryBoostImprove={isSecondaryBoostImprove}
               isSecondaryOnlineLoan={isSecondaryOnlineLoan}
               isSecondaryBusinessCity={isSecondaryBusinessCity}
@@ -574,9 +544,6 @@ export function MyInformationTab({ onToast }) {
             isWebinarBanner={isWebinarBanner}
             isBlankBanner={isBlankBanner}
             isBookCallBanner={isBookCallBanner}
-            isMindscopeBanner={isMindscopeBanner}
-            isMailchimpBanner={isMailchimpBanner}
-            isExploreWorldBanner={isExploreWorldBanner}
             isBoostImproveBanner={isBoostImproveBanner}
             isOnlineLoanBanner={isOnlineLoanBanner}
             isBusinessCityBanner={isBusinessCityBanner}
@@ -833,18 +800,14 @@ export function MyInformationTab({ onToast }) {
                         htmlFor="fields-company"
                         className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                       >
-                        {layoutSlug === 'template_4' ? 'Company (two lines in lockup)' : 'Company / organization'}
+                        Company / organization
                       </label>
                       <textarea
                         id="fields-company"
-                        rows={layoutSlug === 'template_4' ? 3 : 2}
+                        rows={2}
                         value={f.company || f.companyName || ''}
                         onChange={(e) => updateField('fields.company', e.target.value)}
-                        placeholder={
-                          layoutSlug === 'template_4'
-                            ? 'Line 1 and line 2 appear next to your logo mark.'
-                            : 'Shown when this layout includes a company line or wordmark area.'
-                        }
+                        placeholder="Shown when this layout includes a company line or wordmark area."
                         className="w-full resize-y rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-shadow duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus-visible:border-blue-500 focus-visible:shadow-[0_0_0_3px_rgba(37,99,235,0.22)]"
                       />
                     </div>
@@ -931,12 +894,24 @@ export function MyInformationTab({ onToast }) {
 
           {!isImageTpl && templateShowsPhotoSlot(signature) ? (
           <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              Photo
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              Profile photo (optional)
             </h2>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              Your headshot or avatar in the template. Turn off to remove portrait and initials from HTML
+              (no empty boxes) — layout reflows like when no photo is uploaded.
+            </p>
+            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3">
+              <Toggle
+                id="editor-show-photo"
+                label="Show profile photo in signature"
+                checked={signature.design?.showPhoto !== false && signature.design?.show_photo !== false}
+                onChange={(v) => updateField('design.showPhoto', v)}
+              />
+            </div>
             <div
               {...photoDrop.getRootProps()}
-              className="relative flex aspect-square max-h-[200px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/90 text-center transition-colors hover:border-[#3b5bdb] hover:bg-slate-50"
+              className="relative mt-4 flex min-h-[128px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/90 px-4 py-6 text-center transition-colors hover:border-[#3b5bdb]"
             >
               <input {...photoDrop.getInputProps()} />
               {uploadKind === 'photo' && (
@@ -952,21 +927,43 @@ export function MyInformationTab({ onToast }) {
                     <HiArrowUpTray className="h-5 w-5" aria-hidden />
                   </span>
                   <span className="mt-2 text-xs font-medium text-slate-600">Upload photo</span>
-                  <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max {gate.limit('media_upload_limit_mb')}MB</span>
+                  <span className="mt-1 text-[10px] text-slate-400">
+                    PNG, JPG, WebP · max {gate.limit('media_upload_limit_mb')}MB
+                  </span>
                 </>
               )}
             </div>
+            {photoUrl ? (
+              <button
+                type="button"
+                className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
+                onClick={() => updateField('fields.photo_url', '')}
+              >
+                Remove profile photo
+              </button>
+            ) : null}
           </section>
           ) : null}
 
           {showLogoSection && (
             <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                Company logo
+                Brand logo (optional)
               </h2>
               <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
-                Shown only on layouts that include a logo area (matches the template you picked).
+                Optional mark if you use one. Turn off to remove logo areas from HTML (no empty boxes).
               </p>
+              <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3">
+                <Toggle
+                  id="editor-show-logo"
+                  label="Show logo in signature"
+                  checked={signature.design?.showLogo !== false && signature.design?.show_logo !== false}
+                  onChange={(v) => updateField('design.showLogo', v)}
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Turn off to drop logo columns and marks from the HTML (no empty placeholders).
+                </p>
+              </div>
               <div
                 {...logoDrop.getRootProps()}
                 className="relative mt-4 flex min-h-[128px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/90 px-4 py-6 text-center transition-colors hover:border-[#3b5bdb]"
@@ -1035,9 +1032,6 @@ export function MyInformationTab({ onToast }) {
               isWebinarBanner={isWebinarBanner}
               isBlankBanner={isBlankBanner}
               isBookCallBanner={isBookCallBanner}
-              isMindscopeBanner={isMindscopeBanner}
-              isMailchimpBanner={isMailchimpBanner}
-              isExploreWorldBanner={isExploreWorldBanner}
               isBoostImproveBanner={isBoostImproveBanner}
               isOnlineLoanBanner={isOnlineLoanBanner}
               isBusinessCityBanner={isBusinessCityBanner}
@@ -1075,8 +1069,6 @@ export function MyInformationTab({ onToast }) {
                   isSecondaryWebinar={isSecondaryWebinar}
                   isSecondaryBlank={isSecondaryBlank}
                   isSecondaryBookCall={isSecondaryBookCall}
-                  isSecondaryMailchimp={isSecondaryMailchimp}
-                  isSecondaryExploreWorld={isSecondaryExploreWorld}
                   isSecondaryBoostImprove={isSecondaryBoostImprove}
                   isSecondaryOnlineLoan={isSecondaryOnlineLoan}
                   isSecondaryBusinessCity={isSecondaryBusinessCity}

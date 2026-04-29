@@ -12,10 +12,8 @@ const BANNER_KEY_BY_SLUG = {
   download: 'banner_3',
   webinar: 'banner_1',
   'need-call': 'banner_4',
+  'subscriber-journey': 'banner_4',
   blank: 'banner_blank',
-  'mindscope-ats': 'banner_5',
-  'mailchimp-campaign': 'banner_6',
-  'explore-world-banner': 'banner_7',
   'boost-improve-banner': 'banner_8',
   'online-loan-banner': 'banner_9',
   'leave-review-banner': 'banner_11',
@@ -71,25 +69,21 @@ async function seedBanners() {
           ? 'Webinar'
           : slug === 'need-call'
             ? 'Need a call'
-            : slug === 'blank'
-              ? 'Image only'
-              : slug === 'mindscope-ats'
-                ? 'Mindscope ATS'
-                : slug === 'mailchimp-campaign'
-                  ? 'Campaign strip'
-                  : slug === 'explore-world-banner'
-                    ? 'Explore your world'
-                    : slug === 'boost-improve-banner'
-                      ? 'Boost & improve'
-                      : slug === 'online-loan-banner'
-                        ? 'Online loan'
-                        : slug === 'leave-review-banner'
-                          ? 'Leave a review'
-                          : slug === 'seo-whitepaper-banner'
-                            ? 'SEO whitepaper'
-                            : slug === 'green-gradient-cta-banner'
-                              ? 'Green gradient CTA'
-                              : 'Book a call';
+            : slug === 'subscriber-journey'
+              ? 'Subscriber journey'
+              : slug === 'blank'
+                ? 'Image only'
+                : slug === 'boost-improve-banner'
+                  ? 'Boost & improve'
+                  : slug === 'online-loan-banner'
+                    ? 'Online loan'
+                    : slug === 'leave-review-banner'
+                      ? 'Leave a review'
+                      : slug === 'seo-whitepaper-banner'
+                        ? 'SEO whitepaper'
+                        : slug === 'green-gradient-cta-banner'
+                          ? 'Green gradient CTA'
+                          : 'Book a call';
     const { error } = await supabaseAdmin.from('banners').upsert(
       {
         id: uuid,
@@ -97,9 +91,6 @@ async function seedBanners() {
         html_structure: html,
         tier:
           slug === 'webinar' ||
-          slug === 'mindscope-ats' ||
-          slug === 'mailchimp-campaign' ||
-          slug === 'explore-world-banner' ||
           slug === 'boost-improve-banner' ||
           slug === 'online-loan-banner' ||
           slug === 'leave-review-banner' ||

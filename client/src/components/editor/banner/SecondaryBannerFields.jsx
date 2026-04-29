@@ -1,13 +1,11 @@
 import { HiArrowUpTray } from 'react-icons/hi2';
 import { EDITOR_BLANK_BANNER_ASPECT_RATIO } from '../../../data/templatePreviews.js';
+import { buildCtaBannerImageStyleObject } from '../../../lib/ctaBannerImageStyle.js';
 import { Input } from '../../ui/Input.jsx';
 import { CtaStripAssetUploadRows } from './CtaStripAssetUploadRows.jsx';
 import {
   isDownloadBannerPreset,
   isNeedCallBannerPreset,
-  isMindscopeBannerPreset,
-  isMailchimpBannerPreset,
-  isExploreWorldBannerPreset,
   isBoostImproveBannerPreset,
   isOnlineLoanBannerPreset,
   isBusinessCityBannerPreset,
@@ -31,8 +29,6 @@ export function SecondaryBannerFields({
   isSecondaryWebinar,
   isSecondaryBlank,
   isSecondaryBookCall,
-  isSecondaryMailchimp = false,
-  isSecondaryExploreWorld = false,
   isSecondaryBoostImprove = false,
   isSecondaryOnlineLoan = false,
   isSecondaryBusinessCity = false,
@@ -42,23 +38,21 @@ export function SecondaryBannerFields({
   idPrefix = 'myinfo-2',
   blankStripRailPx = null,
 }) {
+  const blankPreviewRail =
+    typeof blankStripRailPx === 'number' && blankStripRailPx > 0 ? blankStripRailPx : 280;
+  const blankStripPreviewH = Math.max(48, Math.round((blankPreviewRail * 72) / 560));
+  const blankSecPreviewStyle = buildCtaBannerImageStyleObject({
+    fluidWidth: true,
+    heightPx: blankStripPreviewH,
+    extra: ['min-width:100%', `max-width:${blankPreviewRail}px`],
+  });
+
   const isSecondaryDownload =
     Boolean(bc.secondary_banner_id) &&
     isDownloadBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
   const isSecondaryNeedCall =
     Boolean(bc.secondary_banner_id) &&
     isNeedCallBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
-  const isSecondaryMindscope =
-    Boolean(bc.secondary_banner_id) &&
-    isMindscopeBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id);
-  const isSecondaryMailchimpResolved =
-    isSecondaryMailchimp ||
-    (Boolean(bc.secondary_banner_id) &&
-      isMailchimpBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id));
-  const isSecondaryExploreWorldResolved =
-    isSecondaryExploreWorld ||
-    (Boolean(bc.secondary_banner_id) &&
-      isExploreWorldBannerPreset(bc.secondary_preset_id, bc.secondary_banner_id));
   const isSecondaryBoostImproveResolved =
     isSecondaryBoostImprove ||
     (Boolean(bc.secondary_banner_id) &&
@@ -90,9 +84,6 @@ export function SecondaryBannerFields({
     !isSecondaryBlank &&
     !isSecondaryDownload &&
     !isSecondaryNeedCall &&
-    !isSecondaryMindscope &&
-    !isSecondaryMailchimpResolved &&
-    !isSecondaryExploreWorldResolved &&
     !isSecondaryBoostImproveResolved &&
     !isSecondaryOnlineLoanResolved &&
     !isSecondaryBusinessCityResolved &&
@@ -102,19 +93,16 @@ export function SecondaryBannerFields({
   const h = `${idPrefix}-headline`;
   const s = `${idPrefix}-subtext`;
   const showFieldsDivider =
-    !isSecondaryExploreWorldResolved &&
     !isSecondaryBoostImproveResolved &&
     !isSecondaryOnlineLoanResolved &&
     !isSecondaryLeaveReviewResolved &&
     !isSecondarySeoWhitepaperResolved &&
     !isSecondaryGreenGradientCtaResolved &&
     (isSecondaryWebinar ||
-      isSecondaryMindscope ||
       isSecondaryBlank ||
       isSecondaryBookCall ||
       isSecondaryDownload ||
       isSecondaryNeedCall ||
-      isSecondaryMailchimpResolved ||
       isSecondaryBusinessCityResolved ||
       isSecondarySimple);
 
@@ -131,18 +119,15 @@ export function SecondaryBannerFields({
       />
       {isSecondaryDownload ||
       isSecondaryNeedCall ||
-      isSecondaryMailchimpResolved ||
       isSecondaryBusinessCityResolved ? (
         <div className="space-y-2">
           <span className={bannerLabelClass}>
             {isSecondaryBusinessCityResolved ? 'Optional logo' : 'Optional banner image'}
           </span>
           <p className="text-[11px] leading-relaxed text-slate-500">
-            {isSecondaryMailchimpResolved
-              ? 'Image fills the left scene rail at 70px height (same strip size as the default art).'
-              : isSecondaryBusinessCityResolved
-                ? 'Top-right logo (replaces the yellow hex + COMPANY block). Fits the corner with compact sizing.'
-                : 'Small thumbnail to the left of the text on this strip (same resize rules as the primary slot).'}
+            {isSecondaryBusinessCityResolved
+              ? 'Top-right logo (replaces the yellow hex + COMPANY block). Fits the corner with compact sizing.'
+              : 'Left promo thumb about 120×90; the whole image stays visible in the slot.'}
           </p>
           <div
             {...secondaryBannerImgDrop.getRootProps()}
@@ -156,30 +141,26 @@ export function SecondaryBannerFields({
             {uploadKind === 'bannerImg2' ? (
               <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
             ) : String(bc.secondary_banner_image_url || '').trim() ? (
-              isSecondaryMailchimpResolved ? (
-                <div
-                  className="w-full max-w-full overflow-hidden rounded-lg bg-[#1a1210]"
-                  style={{ height: 70 }}
-                >
-                  <img
-                    src={bc.secondary_banner_image_url}
-                    alt=""
-                    className="block h-[70px] w-full object-cover object-center object-bottom"
-                  />
-                </div>
-              ) : isSecondaryBusinessCityResolved ? (
+              isSecondaryBusinessCityResolved ? (
                 <div className="flex min-h-[72px] w-full max-w-[200px] items-center justify-end rounded-lg bg-[#1a1a2e] px-3 py-2">
                   <img
                     src={bc.secondary_banner_image_url}
                     alt=""
-                    className="max-h-14 max-w-full object-contain"
+                    style={buildCtaBannerImageStyleObject({
+                      widthPx: 180,
+                      heightPx: 56,
+                    })}
                   />
                 </div>
               ) : (
                 <img
                   src={bc.secondary_banner_image_url}
                   alt=""
-                  className="max-h-28 max-w-full rounded-lg object-contain"
+                  className="max-w-full rounded-lg"
+                  style={buildCtaBannerImageStyleObject({
+                    widthPx: 120,
+                    heightPx: 90,
+                  })}
                 />
               )
             ) : (
@@ -207,7 +188,8 @@ export function SecondaryBannerFields({
         <div className="space-y-2">
           <span className={bannerLabelClass}>Center hero image</span>
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Defaults to the built-in illustration. Upload a wide photo to replace the center (max 720×93px).
+            Defaults to the built-in illustration. Upload a wide promo (about 280×140); the full image stays visible in
+            the center column.
           </p>
           <div
             {...secondaryBannerImgDrop.getRootProps()}
@@ -224,7 +206,11 @@ export function SecondaryBannerFields({
               <img
                 src={bc.secondary_banner_image_url}
                 alt=""
-                className="max-h-28 max-w-full rounded-lg object-contain"
+                className="max-w-full rounded-lg"
+                style={buildCtaBannerImageStyleObject({
+                  widthPx: 280,
+                  heightPx: 140,
+                })}
               />
             ) : (
               <>
@@ -252,28 +238,28 @@ export function SecondaryBannerFields({
               label="Headline line 1"
               labelClassName={bannerLabelClass}
               value={bc.secondary_field_1 ?? ''}
-              placeholder="Online půjčka pro"
+              placeholder="Fast funding"
               onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
             />
             <Input
               label="Headline line 2"
               labelClassName={bannerLabelClass}
               value={bc.secondary_field_2 ?? ''}
-              placeholder="každého"
+              placeholder="for your next move"
               onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
             />
             <Input
               label="Brand name (wordmark)"
               labelClassName={bannerLabelClass}
               value={bc.secondary_field_3 ?? ''}
-              placeholder="REVOLIO"
+              placeholder="YOUR BRAND"
               onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
             />
             <Input
               label="Button label"
               labelClassName={bannerLabelClass}
               value={bc.secondary_text ?? ''}
-              placeholder="CHCI PŮJČIT"
+              placeholder="Get pre-approved"
               onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
             />
           </div>
@@ -288,111 +274,45 @@ export function SecondaryBannerFields({
             label="Small upper label"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_1 ?? ''}
-            placeholder="BUSINESS"
+            placeholder="LIMITED"
             onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
           />
           <Input
             label="Accent headline (gold)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_2 ?? ''}
-            placeholder="BANNER"
+            placeholder="SPOTS"
             onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
           />
           <Input
             label="Headline (dark)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_3 ?? ''}
-            placeholder="DESIGN"
+            placeholder="THIS MONTH"
             onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
           />
           <Input
             label="Fallback badge text (when no logo)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_5 ?? ''}
-            placeholder="COMPANY"
+            placeholder="YOUR BRAND"
             onChange={(e) => mergeBannerCfg({ secondary_field_5: e.target.value })}
           />
           <Input
             label="Button label"
             labelClassName={bannerLabelClass}
             value={bc.secondary_text ?? ''}
-            placeholder="LEARN MORE"
+            placeholder="See pricing"
             onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
           />
         </div>
       ) : isSecondaryLeaveReviewResolved ? (
         <div className="space-y-4">
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Set the review link above; the illustration and arrow are built into the strip.
+            Set the review link above. Optionally upload a promo image (about 280×140) to replace the center
+            illustration.
           </p>
-          <Input
-            label="Title"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_1 ?? ''}
-            placeholder="Leave us a review"
-            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-          />
-          <Input
-            label="Subtitle"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_2 ?? ''}
-            placeholder="on Trustpilot"
-            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
-          />
-        </div>
-      ) : isSecondarySeoWhitepaperResolved ? (
-        <div className="space-y-4">
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Set the PDF or landing URL above; the grid and arrow are built into the strip.
-          </p>
-          <Input
-            label="Title"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_1 ?? ''}
-            placeholder="SEO Whitepaper"
-            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-          />
-          <Input
-            label="Subtitle"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_2 ?? ''}
-            placeholder="Free top 10 SEO tips PDF"
-            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
-          />
-        </div>
-      ) : isSecondaryGreenGradientCtaResolved ? (
-        <div className="space-y-4">
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Set your link above; the logo mark, decorative shapes, and arrow are built into the strip.
-          </p>
-          <div className="w-full">
-            <label htmlFor={`${idPrefix}-b13-headline`} className={bannerLabelClass}>
-              Headline
-            </label>
-            <textarea
-              id={`${idPrefix}-b13-headline`}
-              rows={3}
-              className={TEXTAREA_CLASS}
-              value={bc.secondary_field_1 ?? ''}
-              placeholder={'A better\nfuture awaits'}
-              onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-            />
-          </div>
-          <Input
-            label="Button label"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_text ?? ''}
-            placeholder="Book a call"
-            onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
-          />
-        </div>
-      ) : null}
-      {isSecondaryMindscope ? (
-        <div className="space-y-2">
-          <span className={bannerLabelClass}>Optional right-column photo</span>
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Fits inside the right panel (scene upload, not a 720×93 strip). Re-upload if the preview still looks like a thin bar.
-          </p>
+          <span className={bannerLabelClass}>Promo image (optional)</span>
           <div
             {...secondaryBannerImgDrop.getRootProps()}
             className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
@@ -405,13 +325,15 @@ export function SecondaryBannerFields({
             {uploadKind === 'bannerImg2' ? (
               <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
             ) : String(bc.secondary_banner_image_url || '').trim() ? (
-              <div className="flex min-h-[132px] w-full max-w-md items-center justify-center rounded-lg bg-slate-50 py-3">
-                <img
-                  src={bc.secondary_banner_image_url}
-                  alt=""
-                  className="max-h-52 max-w-full rounded-lg object-contain"
-                />
-              </div>
+              <img
+                src={bc.secondary_banner_image_url}
+                alt=""
+                className="max-w-full rounded-lg"
+                style={buildCtaBannerImageStyleObject({
+                  widthPx: 280,
+                  heightPx: 140,
+                })}
+              />
             ) : (
               <>
                 <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
@@ -426,14 +348,157 @@ export function SecondaryBannerFields({
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
               onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
             >
-              Remove banner image
+              Remove promo image
             </button>
           ) : null}
+          <Input
+            label="Title"
+            labelClassName={bannerLabelClass}
+            value={bc.secondary_field_1 ?? ''}
+            placeholder="Loved working with us?"
+            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+          />
+          <Input
+            label="Subtitle"
+            labelClassName={bannerLabelClass}
+            value={bc.secondary_field_2 ?? ''}
+            placeholder="Leave a quick Google review — it helps others find us."
+            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+          />
+        </div>
+      ) : isSecondarySeoWhitepaperResolved ? (
+        <div className="space-y-4">
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Set the PDF or landing URL above. Optionally upload a wide promo image (about 280×90) to replace the grid
+            art.
+          </p>
+          <span className={bannerLabelClass}>Promo image (optional)</span>
+          <div
+            {...secondaryBannerImgDrop.getRootProps()}
+            className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
+              secondaryBannerImgDrop.isDragActive
+                ? 'border-[#3b5bdb] bg-blue-50/80'
+                : 'border-slate-300/80 bg-white hover:border-[#3b5bdb]/50'
+            }`}
+          >
+            <input {...secondaryBannerImgDrop.getInputProps()} />
+            {uploadKind === 'bannerImg2' ? (
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
+            ) : String(bc.secondary_banner_image_url || '').trim() ? (
+              <img
+                src={bc.secondary_banner_image_url}
+                alt=""
+                className="max-w-full rounded-lg"
+                style={buildCtaBannerImageStyleObject({
+                  widthPx: 280,
+                  heightPx: 90,
+                })}
+              />
+            ) : (
+              <>
+                <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
+                <span className="mt-2 text-xs font-medium text-slate-600">Drop image or click</span>
+                <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
+              </>
+            )}
+          </div>
+          {String(bc.secondary_banner_image_url || '').trim() ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
+              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+            >
+              Remove promo image
+            </button>
+          ) : null}
+          <Input
+            label="Title"
+            labelClassName={bannerLabelClass}
+            value={bc.secondary_field_1 ?? ''}
+            placeholder="Free SEO checklist"
+            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+          />
+          <Input
+            label="Subtitle"
+            labelClassName={bannerLabelClass}
+            value={bc.secondary_field_2 ?? ''}
+            placeholder="PDF: 10 fixes that lift rankings this week"
+            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+          />
+        </div>
+      ) : isSecondaryGreenGradientCtaResolved ? (
+        <div className="space-y-4">
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Set your link above. Optionally upload a promo image (about 220×140) to replace the decorative shapes beside
+            the CTA.
+          </p>
+          <span className={bannerLabelClass}>Promo image (optional)</span>
+          <div
+            {...secondaryBannerImgDrop.getRootProps()}
+            className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
+              secondaryBannerImgDrop.isDragActive
+                ? 'border-[#3b5bdb] bg-blue-50/80'
+                : 'border-slate-300/80 bg-white hover:border-[#3b5bdb]/50'
+            }`}
+          >
+            <input {...secondaryBannerImgDrop.getInputProps()} />
+            {uploadKind === 'bannerImg2' ? (
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
+            ) : String(bc.secondary_banner_image_url || '').trim() ? (
+              <img
+                src={bc.secondary_banner_image_url}
+                alt=""
+                className="max-w-full rounded-lg"
+                style={buildCtaBannerImageStyleObject({
+                  widthPx: 220,
+                  heightPx: 140,
+                })}
+              />
+            ) : (
+              <>
+                <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
+                <span className="mt-2 text-xs font-medium text-slate-600">Drop image or click</span>
+                <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
+              </>
+            )}
+          </div>
+          {String(bc.secondary_banner_image_url || '').trim() ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
+              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+            >
+              Remove promo image
+            </button>
+          ) : null}
+          <div className="w-full">
+            <label htmlFor={`${idPrefix}-b13-headline`} className={bannerLabelClass}>
+              Headline
+            </label>
+            <textarea
+              id={`${idPrefix}-b13-headline`}
+              rows={3}
+              className={TEXTAREA_CLASS}
+              value={bc.secondary_field_1 ?? ''}
+              placeholder={'Ready to grow\nyour business?'}
+              onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+            />
+          </div>
+          <Input
+            label="Button label"
+            labelClassName={bannerLabelClass}
+            value={bc.secondary_text ?? ''}
+            placeholder="Book free strategy call"
+            onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
+          />
         </div>
       ) : null}
       {isSecondaryBlank ? (
         <div className="space-y-2">
           <span className={bannerLabelClass}>Banner image</span>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Fixed banner size (same width as your signature); the whole image is shown inside the strip—no crop.
+          </p>
           <div
             {...secondaryBannerImgDrop.getRootProps()}
             className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
@@ -456,11 +521,7 @@ export function SecondaryBannerFields({
                     : {}),
                 }}
               >
-                <img
-                  src={bc.secondary_banner_image_url}
-                  alt=""
-                  className="h-full w-full min-h-0 min-w-0 rounded-lg object-cover object-center"
-                />
+                <img src={bc.secondary_banner_image_url} alt="" className="rounded-lg" style={blankSecPreviewStyle} />
               </div>
             ) : (
               <>
@@ -500,7 +561,7 @@ export function SecondaryBannerFields({
               rows={3}
               className={TEXTAREA_CLASS}
               value={bc.secondary_field_1 ?? ''}
-              placeholder={'Digital marketing expert'}
+              placeholder={'Book more clients without the hustle'}
               onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
             />
           </div>
@@ -513,7 +574,7 @@ export function SecondaryBannerFields({
               rows={3}
               className={TEXTAREA_CLASS}
               value={bc.secondary_field_2 ?? ''}
-              placeholder={'Projecting your brand into the distant.'}
+              placeholder={'Free 15-minute fit call — we reply the same business day.'}
               onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
             />
           </div>
@@ -521,182 +582,153 @@ export function SecondaryBannerFields({
             label="Button label"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_3 ?? bc.secondary_text ?? ''}
-            placeholder="Call to action"
+            placeholder="Book free strategy call"
             onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
-          />
-        </div>
-      ) : isSecondaryMailchimpResolved ? (
-        <div className="space-y-4">
-          <Input
-            label="Panel copy"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_1 ?? ''}
-            placeholder={"The industry's leading email marketing solution."}
-            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-          />
-          <Input
-            label="Button label"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_text ?? ''}
-            placeholder="Get Started"
-            onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
-          />
-        </div>
-      ) : isSecondaryExploreWorldResolved ? (
-        <div className="space-y-4">
-          <CtaStripAssetUploadRows presetKind="explore" secondary mergeBannerCfg={mergeBannerCfg} bc={bc} />
-          <Input
-            label="Small brand line (left rail)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_1 ?? ''}
-            placeholder="explore"
-            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-          />
-          <Input
-            label="Large word (left rail)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_2 ?? ''}
-            placeholder="log"
-            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
-          />
-          <Input
-            label="Headline (white)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_3 ?? ''}
-            placeholder="Explore Your"
-            onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
-          />
-          <Input
-            label="Accent word (gold)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_4 ?? ''}
-            placeholder="WORLD"
-            onChange={(e) => mergeBannerCfg({ secondary_field_4: e.target.value })}
-          />
-          <Input
-            label="URL line (display only)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_5 ?? ''}
-            placeholder="www.example.com"
-            onChange={(e) => mergeBannerCfg({ secondary_field_5: e.target.value })}
-          />
-          <Input
-            label="Button label"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_text ?? ''}
-            placeholder="Learn More"
-            onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
           />
         </div>
       ) : isSecondaryBoostImproveResolved ? (
         <div className="space-y-4">
           <CtaStripAssetUploadRows presetKind="boost" secondary mergeBannerCfg={mergeBannerCfg} bc={bc} />
           <Input
-            label="Small logo label (upper)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_1 ?? ''}
-            placeholder="Mighty"
-            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
-          />
-          <Input
-            label="Logo word"
+            label="Logo word (gold)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_2 ?? ''}
-            placeholder="LOGO"
+            placeholder="BRAND"
             onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
           />
-          <Input
-            label="Headline"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_3 ?? ''}
-            placeholder="Boost and Improve"
-            onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
-          />
-          <Input
-            label="Subline"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_4 ?? ''}
-            placeholder="Your Immune System"
-            onChange={(e) => mergeBannerCfg({ secondary_field_4: e.target.value })}
-          />
-          <Input
-            label="Button label"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_text ?? ''}
-            placeholder="Click Here"
-            onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
-          />
-        </div>
-      ) : isSecondaryMindscope ? (
-        <div className="space-y-4">
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            Use line breaks in the headline for a second line. If the brand line is empty, your{' '}
-            <span className="font-semibold">Company</span> name from My information is used.
+          <p className="text-[11px] leading-relaxed text-slate-400">
+            Clear to hide the gold word; the left column shows only the mark.
           </p>
-          <Input
-            label="Brand line"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_5 ?? ''}
-            placeholder="MINDSCOPE"
-            onChange={(e) => mergeBannerCfg({ secondary_field_5: e.target.value })}
-          />
-          <div className="w-full">
-            <label htmlFor={h} className={bannerLabelClass}>
-              Headline
-            </label>
+          <div>
+            <label className={`block ${bannerLabelClass}`}>Headline (center)</label>
             <textarea
-              id={h}
-              rows={3}
               className={TEXTAREA_CLASS}
-              value={bc.secondary_field_1 ?? ''}
-              placeholder={'Applicant Tracking\nSystem & Recruiting CRM'}
-              onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+              rows={3}
+              value={bc.secondary_field_3 ?? ''}
+              placeholder={'Better|Solutions.\nStronger|Results.'}
+              onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
             />
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+              Each line: before <code className="text-slate-600">|</code> is navy; after is gold. Clear the field to hide
+              the headline.
+            </p>
           </div>
           <Input
-            label="Tagline (before highlight)"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_2 ?? ''}
-            placeholder="Make Hiring "
-            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
-          />
-          <Input
-            label="Highlight"
-            labelClassName={bannerLabelClass}
-            value={bc.secondary_field_3 ?? ''}
-            placeholder="Easy!"
-            onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
-          />
-          <Input
-            label="Fine print (under button)"
+            label="Supporting line (next to gold bar)"
             labelClassName={bannerLabelClass}
             value={bc.secondary_field_4 ?? ''}
-            placeholder="No credit card required"
+            placeholder="Smart solutions for every department."
             onChange={(e) => mergeBannerCfg({ secondary_field_4: e.target.value })}
           />
+          <p className="text-[11px] leading-relaxed text-slate-400 -mt-2">Clear to hide the gold bar row.</p>
+          <Input
+            label='Right column blurb (white, small) — demo below'
+            labelClassName={bannerLabelClass}
+            value={bc.secondary_field_6 ?? ''}
+            placeholder="Explore smart solutions designed for impact. See how teams align strategy, execution, and measurement to ship outcomes faster."
+            onChange={(e) => mergeBannerCfg({ secondary_field_6: e.target.value })}
+          />
+          <p className="text-[11px] leading-relaxed text-slate-400 -mt-2">
+            Demo copy fills the right rail. Clear to hide; the rocket centers above the button.
+          </p>
           <Input
             label="Button label"
             labelClassName={bannerLabelClass}
             value={bc.secondary_text ?? ''}
-            placeholder="Try For Free!"
+            placeholder="Explore now"
             onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
           />
         </div>
       ) : isSecondaryBookCall ? (
         <div className="space-y-4">
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Same layout as the main book-a-call strip: white + yellow headline, subtitle, button, wide photo.
+          </p>
+          <div>
+            <label htmlFor={`${idPrefix}-sec-book-head-white`} className={bannerLabelClass}>
+              Headline — white text (line breaks)
+            </label>
+            <textarea
+              id={`${idPrefix}-sec-book-head-white`}
+              rows={2}
+              className={TEXTAREA_CLASS}
+              placeholder={'Book your\nfree'}
+              value={bc.secondary_field_1 ?? ''}
+              onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+            />
+          </div>
           <Input
-            label="Headline"
+            label="Headline — yellow accent"
             labelClassName={bannerLabelClass}
-            placeholder="Book a call today"
+            placeholder="strategy call"
+            value={bc.secondary_field_2 ?? ''}
+            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+          />
+          <div>
+            <label htmlFor={`${idPrefix}-sec-book-sub`} className={bannerLabelClass}>
+              Subtitle
+            </label>
+            <textarea
+              id={`${idPrefix}-sec-book-sub`}
+              rows={3}
+              className={TEXTAREA_CLASS}
+              placeholder={'Get expert advice. Discover opportunities.\nGrow your business.'}
+              value={bc.secondary_field_3 ?? ''}
+              onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
+            />
+          </div>
+          <Input
+            label="Button label"
+            labelClassName={bannerLabelClass}
+            placeholder="BOOK NOW"
             value={bc.secondary_text ?? ''}
             onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
           />
+          <span className={bannerLabelClass}>Right photo (wide, about 3∶1)</span>
+          <div
+            {...secondaryBannerImgDrop.getRootProps()}
+            className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-3 py-4 transition ${
+              secondaryBannerImgDrop.isDragActive
+                ? 'border-[#3b5bdb] bg-blue-50/80'
+                : 'border-slate-300/80 bg-white hover:border-[#3b5bdb]/50'
+            }`}
+          >
+            <input {...secondaryBannerImgDrop.getInputProps()} />
+            {uploadKind === 'bannerImg2' ? (
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
+            ) : String(bc.secondary_banner_image_url || '').trim() ? (
+              <img
+                src={bc.secondary_banner_image_url}
+                alt=""
+                className="max-w-full rounded-lg"
+                style={buildCtaBannerImageStyleObject({
+                  widthPx: 160,
+                  heightPx: 55,
+                })}
+              />
+            ) : (
+              <>
+                <HiArrowUpTray className="h-5 w-5 text-slate-400" aria-hidden />
+                <span className="mt-2 text-xs font-medium text-slate-600">Drop image or click</span>
+                <span className="mt-1 text-[10px] text-slate-400">PNG, JPG, WebP · max 5MB</span>
+              </>
+            )}
+          </div>
+          {String(bc.secondary_banner_image_url || '').trim() ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
+              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+            >
+              Remove uploaded image
+            </button>
+          ) : null}
           <Input
-            label="Right image URL (optional)"
+            label="Image URL (optional, if no upload)"
             labelClassName={bannerLabelClass}
-            placeholder="https://… (defaults to a stock team photo if empty)"
-            value={bc.secondary_field_2 ?? ''}
-            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+            placeholder="https://…"
+            value={bc.secondary_field_5 ?? ''}
+            onChange={(e) => mergeBannerCfg({ secondary_field_5: e.target.value })}
           />
         </div>
       ) : isSecondaryDownload ? (
@@ -707,31 +739,51 @@ export function SecondaryBannerFields({
           <Input
             label="Headline (left)"
             labelClassName={bannerLabelClass}
-            placeholder="Download my resume"
+            placeholder="Download your free lead magnet (PDF)"
             value={bc.secondary_field_1 ?? ''}
             onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
           />
           <Input
             label="Button label"
             labelClassName={bannerLabelClass}
-            placeholder="Download"
+            placeholder="Get it now"
             value={bc.secondary_text ?? ''}
             onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
           />
         </div>
       ) : isSecondaryNeedCall ? (
         <div className="space-y-4">
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Same layout as the subscriber strip: headline lines, accent phrase, supporting line, then button.
+          </p>
+          <label className="block">
+            <span className={bannerLabelClass}>Headline (before accent)</span>
+            <textarea
+              className={`${TEXTAREA_CLASS} mt-1 min-h-[72px]`}
+              rows={3}
+              placeholder={'Turn subscribers\ninto'}
+              value={bc.secondary_field_1 ?? ''}
+              onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+            />
+          </label>
           <Input
-            label="Left text"
+            label="Accent phrase"
             labelClassName={bannerLabelClass}
-            placeholder="Need a call?"
-            value={bc.secondary_field_1 ?? ''}
-            onChange={(e) => mergeBannerCfg({ secondary_field_1: e.target.value })}
+            placeholder="buyers."
+            value={bc.secondary_field_2 ?? ''}
+            onChange={(e) => mergeBannerCfg({ secondary_field_2: e.target.value })}
+          />
+          <Input
+            label="Supporting line"
+            labelClassName={bannerLabelClass}
+            placeholder="Email marketing that engages, nurtures, and converts."
+            value={bc.secondary_field_3 ?? ''}
+            onChange={(e) => mergeBannerCfg({ secondary_field_3: e.target.value })}
           />
           <Input
             label="Button text"
             labelClassName={bannerLabelClass}
-            placeholder="Pick a slot now"
+            placeholder="Start free trial"
             value={bc.secondary_text ?? ''}
             onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
           />
@@ -745,7 +797,7 @@ export function SecondaryBannerFields({
         <Input
           label="Banner button text"
           labelClassName={bannerLabelClass}
-          placeholder="Learn more"
+          placeholder="Book free strategy call"
           value={bc.secondary_text ?? ''}
           onChange={(e) => mergeBannerCfg({ secondary_text: e.target.value })}
         />

@@ -23,6 +23,10 @@ router.post(
         req.body.includePreviewSlots === true ||
         req.body.includePreviewSlots === 'true' ||
         req.body.includePreviewSlots === 1;
+      const fillDemoPlaceholders =
+        req.body.fillDemoPlaceholders === true ||
+        req.body.fillDemoPlaceholders === 'true' ||
+        req.body.fillDemoPlaceholders === 1;
       const result = await generateSignatureHtml(
         {
           templateId: req.body.templateId,
@@ -31,7 +35,7 @@ router.post(
           design: req.body.design,
           banner: req.body.banner,
         },
-        { forPaste, includePreviewSlots }
+        { forPaste, includePreviewSlots, fillDemoPlaceholders }
       );
       if (includePreviewSlots && result && typeof result === 'object' && 'html' in result) {
         res.json({ html: result.html, previewSlots: result.previewSlots ?? null });

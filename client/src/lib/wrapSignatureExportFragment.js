@@ -1,4 +1,4 @@
-/** Default when layout is unknown — Layout 2 uses 470 via {@link bundleRailPxForSignature}. */
+/** Fallback export wrapper width when layout is unknown (see {@link bundleRailPxForSignature}). */
 export const EXPORT_WRAPPER_DEFAULT_W = 470;
 
 /**

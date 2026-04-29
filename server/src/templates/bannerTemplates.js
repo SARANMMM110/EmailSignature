@@ -2,11 +2,6 @@
  * CTA banner strips — inline CSS, table layout. Compiled with Handlebars + banner_link, colors.
  */
 
-import {
-  MAILCHIMP_SCENE_SVG,
-  MAILCHIMP_CHIMP_SVG,
-  MAILCHIMP_BANNER_SCENE_HEIGHT_PX,
-} from './mailchimpBannerAssets.js';
 import { ONLINE_LOAN_PEOPLE_SVG, REVOLIO_MARK_SVG } from './revolioOnlineLoanBannerAssets.js';
 import {
   CITY_BUSINESS_CURVE_SVG,
@@ -33,23 +28,22 @@ import {
   GREEN_GRADIENT_DECOR_SVG_OPEN,
   GREEN_GRADIENT_LOGO_SVG,
 } from './greenGradientCtaBannerAssets.js';
-
 export const BANNER_TEMPLATES = {
-  /** Webinar / CTA banner 1 — warm surface, palette-tinted blob art, brand + headline + subtext, outline pill CTA. */
+  /** Webinar / CTA banner 1 — warm surface, palette-tinted blob graphic (right), brand + headline + subtext, bold pill CTA. */
   banner_1: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td style="padding:0;border-radius:16px;-webkit-border-radius:16px;overflow:hidden;mso-border-radius-alt:16px;position:relative;background-color:{{banner_surface_bg}};min-height:{{banner_min_height}}px;">
 <img src="{{{banner_b1_blobs_uri}}}" width="{{banner_rail_w_px}}" height="{{banner_b1_blobs_h}}" alt="" role="presentation" style="display:block;border:0;line-height:0;font-size:0;width:{{banner_rail_w_px}}px;height:{{banner_b1_blobs_h}}px;position:absolute;right:0;top:0;left:auto;z-index:0;">
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;position:relative;z-index:1;">
 <tr>
-<td valign="middle" align="left" width="99%" style="width:99%;max-width:100%;padding:11px 6px 11px 16px;vertical-align:middle;text-align:left;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
+<td valign="middle" align="left" width="{{#if banner_has_cta}}99%{{else}}100%{{/if}}" style="width:{{#if banner_has_cta}}99%{{else}}100%{{/if}};max-width:100%;padding:11px 6px 11px 16px;vertical-align:middle;text-align:left;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
 <p style="margin:0 0 3px;padding:0;color:{{banner_brand_color}};font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;line-height:1.2;">{{banner_brand_label}}</p>
 <p style="margin:0 0 5px;padding:0;color:{{banner_headline_color}};font-size:17px;font-weight:800;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_headline_html}}}</p>
 <p style="margin:0;padding:0;color:{{banner_subline_color}};font-size:10px;font-weight:400;line-height:1.45;mso-line-height-rule:exactly;">{{{banner_subline_html}}}</p>
 </td>
-<td valign="middle" align="right" width="1%" style="width:1%;white-space:nowrap;padding:11px 16px 11px 8px;vertical-align:middle;text-align:right;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
-<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;border:2px solid {{banner_cta_border}};border-radius:50px;-webkit-border-radius:50px;padding:7px 16px;font-size:11px;font-weight:600;color:{{banner_cta_text}};text-decoration:none;line-height:1.2;mso-line-height-rule:exactly;background-color:rgba(255,255,255,0.92);mso-padding-alt:7px 16px;">{{{banner_text}}}</a>
-</td>
+{{#if banner_has_cta}}<td valign="middle" align="right" width="1%" style="width:1%;white-space:nowrap;padding:11px 16px 11px 8px;vertical-align:middle;text-align:right;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
+<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;border:2px solid {{banner_cta_border}};border-radius:50px;-webkit-border-radius:50px;padding:8px 18px;font-size:12px;font-weight:800;color:{{banner_cta_text}};text-decoration:none;line-height:1.2;mso-line-height-rule:exactly;background-color:{{banner_cta_pill_bg}};mso-padding-alt:8px 18px;box-shadow:0 1px 2px rgba(15,23,42,0.08);">{{{banner_text}}}</a>
+</td>{{/if}}
 </tr>
 </table>
 </td>
@@ -57,19 +51,60 @@ export const BANNER_TEMPLATES = {
 </table>`,
 
   /**
-   * Book-a-call CTA — mint→sage gradient, Montserrat headline, forest arrow, right photo (email-safe tables).
-   * Headline: {@link appendBanner} sets `banner_b2_headline`; image: `banner_b2_image` (optional default).
+   * Book-a-call CTA — `banner_b2_row_h` = compact strip height (banner 1 text row scale, ~92px @ 560px rail).
+   * Three columns: copy (left), yellow pill CTA (center), doodle + photo (right) so the middle is not empty.
+   * {@link compileBannerInnerHtml} sets `banner_b2_*` + `banner_b2_image`.
    */
   banner_2: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="padding:0;border-radius:22px;-webkit-border-radius:22px;overflow:hidden;mso-line-height-rule:exactly;">
+<td style="padding:0;border-radius:{{banner_b2_radius}}px;-webkit-border-radius:{{banner_b2_radius}}px;overflow:hidden;mso-border-radius-alt:{{banner_b2_radius}}px;background-color:{{banner_b2_grad_end}};background-image:linear-gradient(135deg,{{banner_b2_grad_start}} 0%,{{banner_b2_grad_end}} 100%);box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;background-color:{{banner_b2_grad_end}};background-image:linear-gradient(90deg,{{banner_b2_grad_start}} 0%,{{banner_b2_grad_end}} 100%);">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:{{banner_b2_row_h}}px;mso-line-height-rule:exactly;">
 <tr>
-<td valign="middle" style="padding:14px 8px 14px 18px;vertical-align:middle;font-family:'Montserrat',Arial,Helvetica,{{font_family}},sans-serif;font-size:15px;font-weight:500;color:{{banner_b2_title_color}};line-height:1.3;mso-line-height-rule:exactly;">{{banner_b2_headline}}</td>
-<td valign="middle" width="32" style="width:32px;padding:10px 4px;vertical-align:middle;text-align:center;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:22px;font-weight:400;color:{{banner_b2_arrow_color}};line-height:1;mso-line-height-rule:exactly;">&#8594;</td>
-<td valign="middle" align="right" style="padding:10px 16px 10px 6px;vertical-align:middle;text-align:right;line-height:0;font-size:0;width:34%;max-width:160px;">
-<img src="{{{banner_b2_image}}}" alt="" width="136" style="display:block;border:0;border-radius:10px;-webkit-border-radius:10px;width:136px;max-width:100%;height:auto;max-height:96px;object-fit:cover;vertical-align:middle;">
+<td width="40%" valign="middle" style="width:40%;max-width:40%;vertical-align:middle;padding:{{banner_b2_pad_t}}px {{banner_b2_pad_l}}px {{banner_b2_pad_t}}px {{banner_b2_pad_l}}px;overflow:hidden;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
+<tr><td style="padding:0 0 2px 0;">
+<table cellpadding="0" cellspacing="{{banner_b2_dot_gap}}" border="0" role="presentation" style="border-collapse:separate;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<tr>
+<td style="width:{{banner_b2_dot}}px;height:{{banner_b2_dot}}px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b2_dot_fill}};">&nbsp;</td>
+<td style="width:{{banner_b2_dot}}px;height:{{banner_b2_dot}}px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b2_dot_fill}};">&nbsp;</td>
+<td style="width:{{banner_b2_dot}}px;height:{{banner_b2_dot}}px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b2_dot_fill}};">&nbsp;</td>
+<td style="width:{{banner_b2_dot}}px;height:{{banner_b2_dot}}px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b2_dot_fill}};">&nbsp;</td>
+</tr>
+</table>
+</td></tr>
+<tr><td style="padding:0;">
+<p style="margin:0;padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b2_fs_title}}px;line-height:1.12;font-weight:800;letter-spacing:-0.25px;color:{{banner_b2_title_line_color}};mso-line-height-rule:exactly;">{{{banner_b2_title_white_html}}} <span style="color:{{banner_b2_title_accent}};">{{{banner_b2_title_yellow}}}</span></p>
+<p style="margin:{{banner_b2_gap_sub}}px 0 0 0;padding:0;max-width:520px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b2_fs_sub}}px;line-height:1.22;font-weight:400;color:{{banner_b2_subtitle_color}};mso-line-height-rule:exactly;">{{{banner_b2_subtitle_html}}}</p>
+</td></tr>
+</table>
+</td>
+<td width="24%" valign="middle" align="center" style="width:24%;max-width:24%;min-width:108px;vertical-align:middle;text-align:center;padding:{{banner_b2_pad_t}}px 4px;mso-line-height-rule:exactly;">
+<table cellpadding="0" cellspacing="0" border="0" align="center" role="presentation" style="border-collapse:collapse;margin:0 auto;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<tr>
+<td align="center" style="background-color:{{banner_b2_btn_bg}};border:2px solid {{banner_b2_btn_border}};border-radius:{{banner_b2_btn_r}}px;-webkit-border-radius:{{banner_b2_btn_r}}px;padding:{{banner_b2_btn_py}}px {{banner_b2_btn_px}}px;box-shadow:0 1px 2px rgba(15,23,42,0.08);text-align:center;mso-padding-alt:{{banner_b2_btn_py}}px {{banner_b2_btn_px}}px;">
+<table cellpadding="0" cellspacing="0" border="0" role="presentation" align="center" style="border-collapse:collapse;margin:0 auto;"><tr>
+<td valign="middle" style="padding:0 {{banner_b2_cal_pad_r}}px 0 0;vertical-align:middle;line-height:0;">{{{banner_b2_cal_html}}}</td>
+<td valign="middle" style="padding:0;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b2_fs_btn}}px;font-weight:800;color:{{banner_b2_btn_ink}};text-transform:uppercase;letter-spacing:0.03em;line-height:1.2;mso-line-height-rule:exactly;white-space:nowrap;">{{{banner_b2_cta_label}}}</td>
+<td valign="middle" style="padding:0 0 0 {{banner_b2_cal_pad_r}}px;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b2_fs_btn}}px;font-weight:400;color:{{banner_b2_btn_ink}};line-height:1;mso-line-height-rule:exactly;">&#8594;</td>
+</tr></table>
+</td>
+</tr>
+</table>
+</td>
+<td width="36%" valign="middle" style="width:36%;max-width:36%;vertical-align:middle;padding:{{banner_b2_pad_t}}px {{banner_b2_pad_side_right}}px {{banner_b2_pad_t}}px 2px;text-align:right;">
+<table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="border-collapse:collapse;margin-left:auto;">
+<tr>
+<td valign="bottom" style="vertical-align:bottom;padding:0 2px 2px 0;line-height:0;font-size:0;">
+<img src="{{{banner_b2_doodle_uri}}}" width="{{banner_b2_doodle_w}}" height="{{banner_b2_doodle_h}}" alt="" style="display:block;border:0;width:{{banner_b2_doodle_w}}px;height:{{banner_b2_doodle_h}}px;-ms-interpolation-mode:bicubic;">
+</td>
+<td valign="middle" style="vertical-align:middle;line-height:0;font-size:0;">
+<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;border:{{banner_b2_img_border}}px solid {{banner_b2_img_border_rgba}};border-radius:{{banner_b2_img_outer_r}}px;-webkit-border-radius:{{banner_b2_img_outer_r}}px;"><tr><td style="padding:1px;line-height:0;font-size:0;">
+<img src="{{{banner_b2_image}}}" alt="" width="{{banner_b2_img_w}}" height="{{banner_b2_img_h}}" style="{{{banner_b2_image_style}}}">
+</td></tr></table>
+</td>
+</tr>
+</table>
 </td>
 </tr>
 </table>
@@ -84,218 +119,90 @@ export const BANNER_TEMPLATES = {
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
 <tr>
 {{#if banner_side_image}}
-<td valign="middle" style="width:44px;padding:0 10px 0 0;line-height:0;vertical-align:middle;"><img src="{{{banner_side_image}}}" alt="" width="40" height="40" style="display:block;width:40px;height:40px;max-width:100%;border:0;border-radius:7px;object-fit:cover;vertical-align:middle;"></td>
+<td valign="middle" style="width:128px;min-width:96px;padding:0 12px 0 0;line-height:0;vertical-align:middle;"><img src="{{{banner_side_image}}}" alt="" width="120" height="90" style="{{{banner_side_image_style}}}"></td>
 {{/if}}
-<td width="60%" valign="middle" style="color:#ffffff;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:12px;font-weight:700;vertical-align:middle;">{{{banner_b3_left_text}}}</td>
-<td width="40%" valign="middle" align="right" style="vertical-align:middle;"><a href="{{{banner_link}}}" style="background-color:#ffffff;color:{{color_1}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:11px;font-weight:700;text-decoration:none;padding:5px 12px;border-radius:18px;display:inline-block;">{{{banner_text}}}</a></td>
+<td width="60%" valign="middle" style="color:{{color_4}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:12px;font-weight:700;vertical-align:middle;">{{{banner_b3_left_text}}}</td>
+<td width="40%" valign="middle" align="right" style="vertical-align:middle;"><a href="{{{banner_link}}}" style="background-color:{{banner_b3_pill_bg}};color:{{banner_b3_cta_ink}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:12px;font-weight:800;text-decoration:none;padding:7px 14px;border-radius:18px;display:inline-block;border:1px solid {{banner_b3_cta_border}};">{{{banner_text}}}</a></td>
 </tr>
 </table>
 </td></tr>
 </table>`,
 
+  /**
+   * Subscriber funnel strip — S-curve seam, lavender rail + journey, navy panel (wider **48%** text rail),
+   * `#3b82f6` accent, subline + CTA gradient from palette, subtle shell border.
+   */
   banner_4: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-<tr><td style="background-color:{{color_1}};padding:9px 12px;border-radius:6px;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-<tr>
-{{#if banner_side_image}}
-<td valign="middle" style="width:40px;padding:0 8px 0 0;line-height:0;vertical-align:middle;"><img src="{{{banner_side_image}}}" alt="" width="32" height="32" style="display:block;width:32px;height:32px;max-width:100%;border:0;border-radius:5px;object-fit:cover;vertical-align:middle;"></td>
-{{/if}}
-<td width="50%" valign="middle"><p style="margin:0;color:{{banner_4_left_text}};font-family:Arial,sans-serif;font-size:12px;font-weight:700;">{{{banner_4_label}}}</p></td>
-<td width="50%" valign="middle" align="right"><a href="{{{banner_link}}}" style="background-color:{{banner_4_btn_bg}};color:{{banner_4_btn_text}};font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-decoration:none;padding:6px 13px;border-radius:5px;display:inline-block;border:1px solid {{banner_4_btn_border}};">{{{banner_text}}}</a></td>
-</tr>
-</table>
-</td></tr>
-</table>`,
-
-  /**
-   * Mindscope CTA “template 2” — 728×90 reference as email-safe tables: gradient + dot grid, 115px logo rail
-   * (15-dot pattern), Montserrat-style type, green outline CTA, check + fine print, optional photo or
-   * illustration + mini form card (`banner_b5_person` when set).
-   */
-  banner_5: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td style="padding:0;line-height:0;font-size:0;">
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:{{banner_b5_min_h}}px;background-color:{{banner_b5_row_bg}};background-image:linear-gradient(110deg,{{banner_b5_row_g1}} 0%,{{banner_b5_row_g2}} 40%,{{banner_b5_row_g3}} 70%,{{banner_b5_row_g4}} 100%),radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:auto,18px 18px;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;border-radius:{{banner_b4_shell_radius}}px;-webkit-border-radius:{{banner_b4_shell_radius}}px;overflow:hidden;border:{{banner_b4_shell_border}};mso-line-height-rule:exactly;box-shadow:0 8px 20px rgba(0,0,0,0.10);">
 <tr>
-<td valign="middle" align="center" width="100" style="width:100px;max-width:100px;min-width:88px;background-color:{{banner_b5_rail_bg}};border-right:1px solid rgba(255,255,255,0.08);padding:6px 8px;">
-<table role="presentation" align="center" cellpadding="0" cellspacing="2" border="0" style="border-collapse:separate;border-spacing:2px;margin:0 auto 5px;">
-<tr>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b5_dot}};">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b5_dot}};">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:#ffffff;">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td>
-</tr><tr>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b5_dot}};">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b5_dot}};">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td>
-</tr><tr>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b5_dot}};">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:#ffffff;">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.25);">&nbsp;</td><td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b5_dot}};">&nbsp;</td>
-</tr>
-</table>
-<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-weight:800;font-size:11px;color:#ffffff;letter-spacing:0.08em;text-transform:uppercase;line-height:1.2;text-align:center;mso-line-height-rule:exactly;">{{{banner_b5_brand}}}</p>
-</td>
-<td valign="middle" style="padding:0 12px;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-<tr>
-<td valign="middle" style="font-family:'Montserrat',Arial,Helvetica,sans-serif;padding-right:12px;">
-<p style="margin:0 0 2px;padding:0;font-size:13px;font-weight:700;color:#ffffff;line-height:1.25;mso-line-height-rule:exactly;">{{{banner_b5_headline_html}}}</p>
-<p style="margin:0;padding:0;font-size:15px;font-weight:900;color:#ffffff;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b5_tagline_pre}}}<span style="color:{{banner_b5_accent}};">{{{banner_b5_tagline_accent}}}</span></p>
-</td>
-<td valign="middle" align="center" style="white-space:nowrap;">
-<table cellpadding="0" cellspacing="0" border="0" align="center" role="presentation" style="border-collapse:collapse;">
-<tr><td align="center" style="padding:0;">
-<span style="display:inline-block;border:2px solid {{banner_b5_cta_stroke}};border-radius:4px;padding:5px 12px;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-weight:700;font-size:12px;color:{{banner_b5_cta_fill}};letter-spacing:0.03em;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b5_cta}}}</span>
-</td></tr>
-<tr><td align="center" style="padding:4px 0 0 0;">
-<table cellpadding="0" cellspacing="0" border="0" align="center" role="presentation" style="border-collapse:collapse;"><tr>
-<td valign="middle" width="15" style="width:15px;padding:0 5px 0 0;vertical-align:middle;line-height:0;">
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:13px;height:13px;border-radius:50%;background-color:{{banner_b5_cta_fill}};"><tr><td align="center" valign="middle" style="padding:2px;line-height:0;">
-<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 10 10" fill="none" style="display:block;"><polyline points="2,5 4,7.5 8,3" stroke="#0a1628" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</td></tr></table>
-</td>
-<td valign="middle" style="font-size:9px;color:rgba(255,255,255,0.75);font-family:'Open Sans',Arial,Helvetica,sans-serif;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b5_fineprint}}}</td>
-</tr></table>
-</td></tr>
-</table>
-</td>
-</tr>
-</table>
-</td>
-<td valign="middle" align="center" width="100" style="width:100px;max-width:100px;padding:4px 6px;vertical-align:middle;background-color:{{banner_b5_right_g1}};background-image:linear-gradient(160deg,{{banner_b5_right_g1}} 0%,{{banner_b5_right_g2}} 100%);overflow:hidden;">
-{{#if banner_b5_has_person}}
-<img src="{{{banner_b5_person}}}" alt="" width="92" style="display:block;border:0;width:92px;max-width:100%;height:auto;max-height:94px;object-fit:contain;object-position:center;vertical-align:middle;">
-{{else}}
-<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" style="border-collapse:collapse;min-height:74px;height:74px;"><tr>
-<td valign="bottom" align="center" style="padding:0 0 0 2px;vertical-align:bottom;line-height:0;">
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;"><tr><td style="line-height:0;font-size:0;">
-<svg xmlns="http://www.w3.org/2000/svg" width="72" height="74" viewBox="0 0 85 88" fill="none" style="display:block;max-width:72px;height:auto;"><ellipse cx="52" cy="18" rx="13" ry="15" fill="#f5c5a3"/><ellipse cx="52" cy="10" rx="13" ry="8" fill="#4a3728"/><path d="M 30 88 C 30 60, 38 50, 52 48 C 66 50, 74 60, 74 88 Z" fill="#1e3a6e"/><path d="M 44 48 L 52 58 L 60 48" stroke="#ffffff" stroke-width="1.5" fill="none"/><rect x="47" y="30" width="10" height="12" rx="4" fill="#f5c5a3"/><path d="M 30 65 Q 52 52 74 65" fill="#1e3a6e"/></svg>
-</td></tr></table>
-</td>
-<td valign="bottom" align="right" style="padding:0 6px 8px 0;vertical-align:bottom;width:56px;">
-<table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="width:52px;background-color:#ffffff;border-radius:3px;border-collapse:separate;padding:4px 6px 4px 6px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-<tr><td style="height:3px;line-height:0;font-size:0;background-color:#dde3ee;border-radius:2px;">&nbsp;</td></tr>
-<tr><td style="padding-top:3px;"><table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" style="border-collapse:collapse;"><tr><td width="65%" style="width:65%;height:3px;line-height:0;font-size:0;background-color:#dde3ee;border-radius:2px;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>
-<tr><td style="padding-top:3px;height:3px;line-height:0;font-size:0;background-color:#dde3ee;border-radius:2px;">&nbsp;</td></tr>
-<tr><td style="padding-top:3px;"><table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" style="border-collapse:collapse;"><tr><td width="65%" style="width:65%;height:3px;line-height:0;font-size:0;background-color:#dde3ee;border-radius:2px;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>
-<tr><td style="padding-top:4px;height:8px;line-height:0;font-size:0;background-color:{{banner_b5_cta_fill}};border-radius:2px;">&nbsp;</td></tr>
-</table>
-</td>
-</tr></table>
-{{/if}}
-</td>
-</tr>
-</table>
-</a>
-</td></tr>
-</table>`,
-
-  /**
-   * Mailchimp-inspired campaign strip — left illustrated SVG scene, dark panel + yellow CTA + mascot
-   * (`banner_6`). Copy: `field_1` panel line, `text` button label.
-   */
-  banner_6:
-    `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-<tr><td style="padding:0;line-height:0;font-size:0;">
-<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;">
-<tr>
-<td width="57%" valign="top" align="left" style="width:57%;min-width:160px;vertical-align:top;padding:0;margin:0;height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;max-height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;line-height:0;font-size:0;background-color:{{banner_b6_left_bg}};overflow:hidden;">{{#if banner_b6_scene_image}}<img src="{{{banner_b6_scene_image}}}" alt="" width="415" height="${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}" style="display:block;width:100%;height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;max-height:${MAILCHIMP_BANNER_SCENE_HEIGHT_PX}px;border:0;object-fit:cover;object-position:center bottom;">{{else}}` +
-    MAILCHIMP_SCENE_SVG +
-    `{{/if}}</td>
-<td width="43%" valign="middle" style="width:43%;vertical-align:middle;background-color:{{banner_b6_right_bg}};padding:0;">
+<td width="52%" valign="top" align="left" style="width:52%;min-width:150px;vertical-align:top;padding:0;margin:0;height:{{banner_b4_scene_h}}px;max-height:{{banner_b4_scene_h}}px;line-height:0;font-size:0;background-color:{{banner_b4_left_fallback_bg}};overflow:hidden;">{{#if banner_b4_scene_image}}<img src="{{{banner_b4_scene_image}}}" alt="" width="624" height="{{banner_b4_scene_h}}" style="{{{banner_b4_scene_image_style}}}">{{else}}{{{banner_b4_scene_svg}}}{{/if}}</td>
+<td width="48%" valign="middle" style="width:48%;vertical-align:middle;background-color:{{banner_b4_right_bg_solid}};background-image:{{banner_b4_right_bg_image}};padding:{{banner_b4_pad_top}}px {{banner_b4_pad_right}}px {{banner_b4_pad_bottom}}px {{banner_b4_pad_left}}px;mso-line-height-rule:exactly;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
-<td valign="middle" style="padding:6px 4px 6px 10px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;color:{{banner_b6_panel_text}};line-height:1.3;mso-line-height-rule:exactly;">{{{banner_b6_panel}}}</td>
-<td valign="middle" align="right" style="padding:6px 4px 6px 2px;white-space:nowrap;vertical-align:middle;">
-<span style="display:inline-block;background-color:{{banner_b6_cta_bg}};border-radius:3px;padding:5px 9px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;color:{{banner_b6_cta_text}};line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b6_cta}}}</span>
+<td valign="middle" style="padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;mso-line-height-rule:exactly;">
+<p style="margin:0;padding:0;color:{{banner_b4_title_color}};font-size:{{banner_b4_fs_title}}px;font-weight:800;line-height:1.05;letter-spacing:-0.6px;mso-line-height-rule:exactly;">{{{banner_b4_title_plain_html}}}<span style="color:{{banner_b4_accent}};font-weight:800;">{{{banner_b4_accent_html}}}</span></p>
+<p style="margin:{{banner_b4_sub_margin_t}}px 0 0 0;padding:0;max-width:420px;color:{{banner_b4_sub_color}};font-size:{{banner_b4_fs_sub}}px;font-weight:400;line-height:1.5;mso-line-height-rule:exactly;">{{{banner_b4_sub_html}}}</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;margin:{{banner_b4_cta_margin_t}}px 0 0 0;"><tr><td align="right" style="padding:0;mso-line-height-rule:exactly;">
+<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;"><tr><td style="padding:0;border-radius:{{banner_b4_cta_radius}}px;-webkit-border-radius:{{banner_b4_cta_radius}}px;background-color:{{banner_b4_cta_bg_mid}};background-image:linear-gradient(90deg,{{banner_b4_cta_g1}} 0%,{{banner_b4_cta_g2}} 100%);box-shadow:0 12px 18px rgba(0,0,0,0.18);mso-padding-alt:0;">
+<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;"><tr>
+<td valign="middle" style="padding:{{banner_b4_cta_pad_v}}px {{banner_b4_cta_pad_h}}px;vertical-align:middle;line-height:0;font-size:0;">
+<svg xmlns="http://www.w3.org/2000/svg" width="{{banner_b4_rocket_wh}}" height="{{banner_b4_rocket_wh}}" viewBox="0 0 24 24" fill="none" style="display:block;"><path d="M12 2.5c1.2 3.2 2 6.4 2 9.5a2 2 0 11-4 0c0-3.1.8-6.3 2-9.5z" fill="{{banner_b4_cta_rocket_fill}}"/><path d="M10 20h4l-1-4h-2l-1 4zM8 14l-4 1 1.2 2.8L8 14zm8 0l4 1-1.2 2.8L16 14z" fill="{{banner_b4_cta_rocket_fill}}" opacity="0.9"/></svg>
 </td>
-<td valign="middle" width="38" style="width:38px;padding:4px 8px 4px 0;vertical-align:middle;line-height:0;font-size:0;">` +
-    MAILCHIMP_CHIMP_SVG +
-    `</td>
+<td valign="middle" style="padding:{{banner_b4_cta_pad_v}}px 4px {{banner_b4_cta_pad_v}}px 0;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b4_fs_cta}}px;font-weight:700;color:{{banner_b4_cta_ink}};line-height:1.2;mso-line-height-rule:exactly;">{{{banner_text}}}</td>
+<td valign="middle" style="padding:{{banner_b4_cta_pad_v}}px {{banner_b4_cta_pad_h}}px {{banner_b4_cta_pad_v}}px 2px;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b4_fs_arrow}}px;font-weight:700;color:{{banner_b4_cta_ink}};line-height:1;">&#8594;</td>
 </tr></table>
+</td></tr></table>
+</td></tr></table>
 </td>
-</tr>
-</table>
+</tr></table>
+</td></tr></table>
 </a>
 </td></tr>
 </table>`,
 
   /**
-   * “Explore your world” travel CTA — navy + gold border, logo rail, headline + accent, pill CTA + URL line.
-   * Built-in decor: `banner_b7_rail_decor`, `banner_b7_center_accent`. Optional uploads: `banner_b7_rail_logo_html`, `banner_b7_traveler_inner`.
-   */
-  banner_7:
-    `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-<tr><td style="padding:0;line-height:0;font-size:0;">
-<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;border:2px solid {{banner_b7_border}};background-color:{{banner_b7_shell_bg}};mso-line-height-rule:exactly;">
-<tr>
-<td valign="middle" width="17%" style="width:17%;max-width:120px;vertical-align:middle;background-color:{{banner_b7_rail_bg}};border-right:2px solid {{banner_b7_border}};padding:5px 7px;">
-{{{banner_b7_rail_logo_html}}}
-<p style="margin:0 0 2px 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:8px;font-weight:400;color:#ffffff;letter-spacing:0.06em;text-transform:lowercase;line-height:1.15;mso-line-height-rule:exactly;text-align:left;">{{{banner_b7_brand_small}}}</p>
-<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:18px;font-weight:900;color:#ffffff;line-height:1;letter-spacing:-0.02em;mso-line-height-rule:exactly;text-align:left;">{{{banner_b7_logo_word}}}</p>
-<p style="margin:4px 0 0 0;padding:0;line-height:0;font-size:0;mso-line-height-rule:exactly;">{{{banner_b7_rail_decor}}}</p>
-</td>
-<td valign="middle" style="vertical-align:middle;padding:5px 10px 5px 8px;background-color:{{banner_b7_mid_bg}};">
-<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;width:100%;">
-<tr>
-<td valign="middle" width="30" style="width:30px;max-width:30px;padding:0 8px 0 0;line-height:0;font-size:0;vertical-align:middle;">{{{banner_b7_center_accent}}}</td>
-<td valign="middle" style="vertical-align:middle;padding:0;">
-<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;color:#ffffff;letter-spacing:0.02em;line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b7_headline}}}</p>
-<p style="margin:1px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:17px;font-weight:900;color:{{banner_b7_world_color}};line-height:1;letter-spacing:0.02em;text-transform:uppercase;mso-line-height-rule:exactly;">{{{banner_b7_world}}}</p>
-</td>
-</tr>
-</table>
-</td>
-<td valign="middle" align="center" style="vertical-align:middle;padding:5px 8px 5px 6px;white-space:nowrap;">
-<span style="display:inline-block;background-color:{{banner_b7_cta_bg}};border-radius:3px;padding:5px 11px;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;color:{{banner_b7_cta_text}};letter-spacing:0.02em;line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b7_cta}}}</span>
-<p style="margin:3px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:8px;font-weight:500;color:{{banner_b7_url}};letter-spacing:0.03em;line-height:1.2;text-align:center;mso-line-height-rule:exactly;">{{{banner_b7_url}}}</p>
-</td>
-<td valign="bottom" width="58" style="width:58px;max-width:15%;vertical-align:bottom;padding:0;line-height:0;text-align:right;">{{{banner_b7_traveler_inner}}}</td>
-</tr>
-</table>
-</a>
-</td></tr>
-</table>`,
-
-  /**
-   * Wellness / juice “Boost and Improve” strip (`banner_8`): dark logo rail + illustrated scene + green CTA.
-   * Optional uploads: `banner_b8_leaf_inner`, `banner_b8_scene_inner`.
+   * Corporate “Boost” strip (`banner_8`): compact row; `compileBannerInnerHtml` sets `banner_b8_*` layout from signature rail width (`banner_rail_w_px`).
    */
   banner_8:
     `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td style="padding:0;line-height:0;font-size:0;">
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;line-height:normal;font-size:14px;mso-line-height-rule:exactly;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:100px;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;border-radius:{{banner_b8_shell_radius}}px;-webkit-border-radius:{{banner_b8_shell_radius}}px;overflow:hidden;border:1px solid {{banner_b8_shell_border}};mso-line-height-rule:exactly;min-height:{{banner_b8_shell_min_h}}px;">
 <tr>
-<td valign="middle" width="18%" style="width:18%;min-width:108px;max-width:140px;vertical-align:middle;background-color:{{banner_b8_left_bg}};padding:0;text-align:center;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-<tr><td align="center" valign="middle" height="120" style="padding:12px 8px 8px;min-height:120px;height:auto;line-height:normal;font-size:14px;mso-line-height-rule:exactly;vertical-align:middle;">
-{{{banner_b8_leaf_inner}}}
-</td></tr>
-<tr><td align="center" valign="top" style="padding:0 8px 10px;line-height:1.2;font-size:7px;mso-line-height-rule:exactly;">
-<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:7px;font-weight:600;color:{{banner_b8_logo_muted}};letter-spacing:0.1em;text-transform:uppercase;line-height:1.25;mso-line-height-rule:exactly;">{{{banner_b8_logo_small}}}</p>
-<p style="margin:4px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;color:#ffffff;letter-spacing:0.05em;text-transform:uppercase;line-height:1.15;mso-line-height-rule:exactly;">{{{banner_b8_logo_main}}}</p>
-</td></tr>
-</table>
+<td valign="middle" width="21%" style="width:21%;min-width:104px;max-width:168px;vertical-align:middle;text-align:center;background-color:{{banner_b8_left_bg}};background-image:{{{banner_b8_left_bg_image}}};background-size:10px 10px;border-right:3px solid {{banner_b8_gold}};padding:{{banner_b8_pad_left}};mso-line-height-rule:exactly;">
+<div style="margin:0 auto;line-height:0;">{{{banner_b8_leaf_inner}}}</div>
+{{#if banner_b8_has_logo_main}}<p style="margin:{{banner_b8_logo_main_mt}};padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b8_fs_logo_main}}px;font-weight:800;color:{{banner_b8_gold}};letter-spacing:0.06em;text-transform:uppercase;line-height:1.1;mso-line-height-rule:exactly;">{{{banner_b8_logo_main}}}</p>{{/if}}
 </td>
-<td valign="middle" width="47%" style="width:47%;min-width:140px;min-height:100px;vertical-align:middle;padding:4px 0;line-height:0;font-size:0;background:{{banner_b8_scene_grad}};">{{{banner_b8_scene_inner}}}</td>
-<td valign="middle" width="35%" style="width:35%;vertical-align:middle;background-color:{{banner_b8_right_bg}};padding:8px 12px 10px 14px;position:relative;">
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr><td style="padding:0 0 6px 0;">
-<p style="margin:0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:13px;font-weight:800;color:{{banner_b8_headline_color}};line-height:1.1;letter-spacing:0.01em;mso-line-height-rule:exactly;">{{{banner_b8_headline}}}</p>
-<p style="margin:3px 0 0 0;padding:0;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:10px;font-weight:500;color:{{banner_b8_sub_color}};letter-spacing:0.02em;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b8_subline}}}</p>
+<td valign="middle" width="46%" style="width:46%;min-width:160px;vertical-align:middle;background-color:{{banner_b8_mid_bg}};background-image:{{{banner_b8_mid_bg_image}}};background-size:{{{banner_b8_mid_bg_size}}};background-repeat:repeat,no-repeat;padding:{{banner_b8_pad_mid}};mso-line-height-rule:exactly;">
+{{#if banner_b8_has_headline}}<p style="margin:0;padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b8_fs_headline}}px;font-weight:800;line-height:1.08;letter-spacing:-0.02em;text-transform:none;mso-line-height-rule:exactly;">{{{banner_b8_headline_html}}}</p>{{/if}}
+{{#if banner_b8_has_subline}}<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;margin-top:{{banner_b8_subline_mt}};mso-line-height-rule:exactly;"><tr>
+<td width="3" style="width:3px;background-color:{{banner_b8_gold}};font-size:0;line-height:0;">&nbsp;</td>
+<td style="padding:0 0 0 8px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b8_fs_sub}}px;font-weight:500;color:{{banner_b8_mid_sub_color}};line-height:1.32;letter-spacing:0.01em;mso-line-height-rule:exactly;">{{{banner_b8_subline}}}</td>
+</tr></table>{{/if}}
+{{#unless banner_b8_mid_has_copy}}<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr><td style="min-height:{{banner_b8_mid_ph}}px;font-size:0;line-height:0;">&nbsp;</td></tr></table>{{/unless}}
+</td>
+<td valign="middle" width="33%" style="width:33%;min-width:148px;vertical-align:middle;background-color:{{banner_b8_right_bg}};background-image:{{{banner_b8_right_bg_image}}};background-size:10px 10px;padding:{{banner_b8_pad_right}};mso-line-height-rule:exactly;">
+{{#if banner_b8_has_blurb}}<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
+<td valign="middle" width="{{banner_b8_rocket_cell_w}}" style="width:{{banner_b8_rocket_cell_w}}px;padding:0 6px 0 0;vertical-align:middle;line-height:0;font-size:0;">{{{banner_b8_rocket_svg}}}</td>
+<td valign="middle" style="padding:0;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b8_fs_blurb}}px;font-weight:500;color:{{banner_b8_right_blurb_color}};line-height:1.34;letter-spacing:0.02em;mso-line-height-rule:exactly;">{{{banner_b8_right_blurb}}}</td>
+</tr></table>{{else}}<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr><td align="center" valign="middle" style="padding:0 0 4px 0;line-height:0;font-size:0;">{{{banner_b8_rocket_svg}}}</td></tr></table>{{/if}}
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;margin-top:{{banner_b8_cta_mt}};"><tr><td style="padding:0;">
+<span style="display:inline-block;background-color:{{banner_b8_cta_bg}};border-radius:4px;padding:{{banner_b8_cta_pad_v}}px {{banner_b8_cta_pad_h}}px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b8_fs_cta}}px;font-weight:800;color:{{banner_b8_cta_text}};letter-spacing:0.08em;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b8_cta}}}&nbsp;<span style="color:{{banner_b8_cta_text}};font-size:{{banner_b8_fs_cta_arrow}}px;font-weight:800;">&#8594;</span></span>
 </td></tr>
-<tr><td style="padding:0;">
-<span style="display:inline-block;background-color:{{banner_b8_cta_bg}};border-radius:3px;padding:5px 11px;font-family:'Montserrat',Arial,Helvetica,sans-serif;font-size:9px;font-weight:700;color:#ffffff;letter-spacing:0.06em;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b8_cta}}}</span>
-</td></tr>
-<tr><td align="right" style="padding:8px 0 0 0;line-height:0;font-size:0;">
+<tr><td align="right" style="padding:{{banner_b8_dots_pad_t}}px 0 0 0;line-height:0;font-size:0;">
 <table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="border-collapse:collapse;"><tr>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:#ffffff;">&nbsp;</td>
-<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.4);">&nbsp;</td>
-<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.4);">&nbsp;</td>
-<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.4);">&nbsp;</td>
-<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
-<td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:rgba(255,255,255,0.4);">&nbsp;</td>
+<td style="width:4px;height:4px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b8_dot_hi}};">&nbsp;</td>
+<td style="width:3px;font-size:0;line-height:0;">&nbsp;</td>
+<td style="width:4px;height:4px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b8_dot_lo}};">&nbsp;</td>
+<td style="width:3px;font-size:0;line-height:0;">&nbsp;</td>
+<td style="width:4px;height:4px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b8_dot_lo}};">&nbsp;</td>
+<td style="width:3px;font-size:0;line-height:0;">&nbsp;</td>
+<td style="width:4px;height:4px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b8_dot_lo}};">&nbsp;</td>
+<td style="width:3px;font-size:0;line-height:0;">&nbsp;</td>
+<td style="width:4px;height:4px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b8_dot_lo}};">&nbsp;</td>
 </tr></table>
-</td></tr>
-</table>
+</td></tr></table>
 </td>
 </tr>
 </table>
@@ -315,12 +222,12 @@ export const BANNER_TEMPLATES = {
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:90px;">
 <tr>
 <td valign="middle" width="32%" style="width:32%;max-width:210px;vertical-align:middle;background-color:{{banner_b9_surface}};padding:0 8px 0 24px;mso-padding-alt:0 8px 0 24px;">
-<p style="margin:0;padding:0;font-family:'Arial Black',Arial,Helvetica,sans-serif;font-size:{{banner_b9_fs_h}}px;font-weight:900;line-height:1.15;color:#1a1a1a;letter-spacing:-0.3px;text-transform:none;mso-line-height-rule:exactly;">{{{banner_b9_line1}}}</p>
-<p style="margin:0;padding:0;font-family:'Arial Black',Arial,Helvetica,sans-serif;font-size:{{banner_b9_fs_h}}px;font-weight:900;line-height:1.15;color:#1a1a1a;letter-spacing:-0.3px;text-transform:none;mso-line-height-rule:exactly;">{{{banner_b9_line2}}}</p>
+<p style="margin:0;padding:0;font-family:'Arial Black',Arial,Helvetica,Roboto,{{font_family}},sans-serif;font-size:{{banner_b9_fs_h}}px;font-weight:900;line-height:1.15;color:{{banner_b9_headline_color}};letter-spacing:-0.3px;text-transform:none;mso-line-height-rule:exactly;">{{{banner_b9_line1}}}</p>
+<p style="margin:0;padding:0;font-family:'Arial Black',Arial,Helvetica,Roboto,{{font_family}},sans-serif;font-size:{{banner_b9_fs_h}}px;font-weight:900;line-height:1.15;color:{{banner_b9_headline_color}};letter-spacing:-0.3px;text-transform:none;mso-line-height-rule:exactly;">{{{banner_b9_line2}}}</p>
 </td>
 <td valign="bottom" width="44%" align="center" style="width:44%;vertical-align:bottom;background-color:{{banner_b9_surface}};padding:0;line-height:0;font-size:0;">
 {{#if banner_b9_custom_hero}}
-<img src="{{{banner_b9_hero}}}" alt="" width="180" height="95" style="display:block;height:95px;width:auto;max-width:100%;margin:0 auto;border:0;vertical-align:bottom;line-height:0;">
+<img src="{{{banner_b9_hero}}}" alt="" width="280" height="140" style="{{{banner_b9_hero_style}}}">
 {{else}}
 ` +
     ONLINE_LOAN_PEOPLE_SVG +
@@ -331,10 +238,10 @@ export const BANNER_TEMPLATES = {
 <td valign="middle" style="padding:0 4px 0 0;line-height:0;vertical-align:middle;">` +
     REVOLIO_MARK_SVG +
     `</td>
-<td valign="middle" style="padding:0;vertical-align:middle;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b9_fs_b}}px;font-weight:800;color:#444444;letter-spacing:1px;text-transform:uppercase;line-height:1;mso-line-height-rule:exactly;">{{{banner_b9_brand}}}</td>
+<td valign="middle" style="padding:0;vertical-align:middle;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b9_fs_b}}px;font-weight:800;color:{{banner_b9_brand_color}};letter-spacing:1px;text-transform:uppercase;line-height:1;mso-line-height-rule:exactly;">{{{banner_b9_brand}}}</td>
 </tr></table>
 <table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="border-collapse:collapse;margin:6px 0 0 auto;"><tr><td style="padding:0;line-height:0;">
-<span style="display:inline-block;background-color:{{banner_b9_cta_bg}};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:{{banner_b9_fs_cta}}px;letter-spacing:0.8px;text-transform:uppercase;line-height:1;padding:10px 20px;mso-padding-alt:10px 20px;border-radius:6px;-webkit-border-radius:6px;mso-line-height-rule:exactly;">{{{banner_b9_cta}}}</span>
+<span style="display:inline-block;background-color:{{banner_b9_cta_bg}};color:{{banner_b9_cta_text}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-weight:800;font-size:{{banner_b9_fs_cta}}px;letter-spacing:0.8px;text-transform:uppercase;line-height:1;padding:10px 20px;mso-padding-alt:10px 20px;border-radius:6px;-webkit-border-radius:6px;mso-line-height-rule:exactly;">{{{banner_b9_cta}}}</span>
 </td></tr></table>
 </td>
 </tr>
@@ -353,12 +260,12 @@ export const BANNER_TEMPLATES = {
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;color:inherit;outline:none;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:90px;">
 <tr>
-<td valign="middle" width="41%" style="width:41%;max-width:310px;vertical-align:middle;background-color:#ffffff;border-radius:0 36px 36px 0;-webkit-border-radius:0 36px 36px 0;padding:0;mso-border-radius-alt:0 36px 36px 0;">
+<td valign="middle" width="41%" style="width:41%;max-width:310px;vertical-align:middle;background-color:{{banner_b10_card_bg}};border-radius:0 36px 36px 0;-webkit-border-radius:0 36px 36px 0;padding:0;mso-border-radius-alt:0 36px 36px 0;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
 <td valign="middle" style="padding:12px 8px 12px 18px;mso-padding-alt:12px 8px 12px 18px;">
-<p style="margin:0 0 1px 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_bus}}px;font-weight:700;color:{{banner_b10_dark}};letter-spacing:1.5px;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b10_business}}}</p>
-<p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_title}}px;font-weight:900;color:{{banner_b10_accent}};text-transform:uppercase;letter-spacing:0.5px;line-height:1;mso-line-height-rule:exactly;">{{{banner_b10_banner}}}</p>
-<p style="margin:0 0 5px 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_title}}px;font-weight:900;color:{{banner_b10_dark}};text-transform:uppercase;letter-spacing:0.5px;line-height:1;mso-line-height-rule:exactly;">{{{banner_b10_design}}}</p>
+<p style="margin:0 0 1px 0;padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b10_fs_bus}}px;font-weight:700;color:{{banner_b10_line_color}};letter-spacing:1.5px;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b10_business}}}</p>
+<p style="margin:0;padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b10_fs_title}}px;font-weight:900;color:{{banner_b10_accent}};text-transform:uppercase;letter-spacing:0.5px;line-height:1;mso-line-height-rule:exactly;">{{{banner_b10_banner}}}</p>
+<p style="margin:0 0 5px 0;padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b10_fs_title}}px;font-weight:900;color:{{banner_b10_line_color}};text-transform:uppercase;letter-spacing:0.5px;line-height:1;mso-line-height-rule:exactly;">{{{banner_b10_design}}}</p>
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin:0 0 7px 0;"><tr>
 <td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b10_dot1}};">&nbsp;</td>
 <td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
@@ -368,7 +275,7 @@ export const BANNER_TEMPLATES = {
 <td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>
 <td style="width:5px;height:5px;line-height:0;font-size:0;border-radius:50%;background-color:{{banner_b10_dot2}};">&nbsp;</td>
 </tr></table>
-<span style="display:inline-block;background-color:{{banner_b10_dark}};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_cta}}px;font-weight:700;letter-spacing:1px;text-transform:uppercase;line-height:1;padding:4px 10px;mso-padding-alt:4px 10px;border-radius:2px;-webkit-border-radius:2px;mso-line-height-rule:exactly;">{{{banner_b10_cta}}}</span>
+<span style="display:inline-block;background-color:{{banner_b10_dark}};color:{{banner_b10_cta_ink}};font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b10_fs_cta}}px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;line-height:1;padding:6px 12px;mso-padding-alt:6px 12px;border-radius:3px;-webkit-border-radius:3px;mso-line-height-rule:exactly;">{{{banner_b10_cta}}}</span>
 </td>
 <td valign="middle" width="6" style="width:6px;padding:0 6px 0 0;vertical-align:middle;">
 <span style="display:inline-block;width:4px;height:60px;line-height:0;font-size:0;border-radius:2px;background:{{banner_b10_bar_grad}};">&nbsp;</span>
@@ -378,19 +285,19 @@ export const BANNER_TEMPLATES = {
 <td valign="middle" width="6%" style="width:6%;min-width:36px;max-width:44px;vertical-align:middle;background-color:{{banner_b10_dark}};padding:0;line-height:0;font-size:0;text-align:center;">` +
     CITY_BUSINESS_CURVE_SVG +
     `</td>
-<td valign="bottom" width="53%" style="width:53%;vertical-align:bottom;background-color:{{banner_b10_dark}};background-image:linear-gradient(160deg,#5a6e80 0%,#8a9eac 40%,#6b7f8e 70%,#4a5a68 100%);padding:0;line-height:0;font-size:0;">
+<td valign="bottom" width="53%" style="width:53%;vertical-align:bottom;background-color:{{banner_b10_dark}};background-image:{{banner_b10_right_bg_image}};padding:0;line-height:0;font-size:0;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;"><tr>
 <td align="right" valign="top" style="padding:8px 14px 4px 0;line-height:0;font-size:0;">
 {{#if banner_b10_logo_img}}
 <table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="border-collapse:collapse;"><tr><td align="right" valign="top" style="padding:0;line-height:0;">
-<img src="{{{banner_b10_logo_img}}}" alt="" width="80" height="40" style="display:block;width:80px;max-width:88px;height:auto;max-height:42px;border:0;object-fit:contain;object-position:right top;">
+<img src="{{{banner_b10_logo_img}}}" alt="" width="200" height="100" style="{{{banner_b10_logo_style}}}">
 </td></tr></table>
 {{else}}
 <table cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse;background-color:{{banner_b10_dark}};border-radius:3px;padding:5px 8px;mso-padding-alt:5px 8px;"><tr><td align="center" style="padding:0;line-height:0;">` +
     CITY_BUSINESS_LOGO_HEX_SVG +
     `</td></tr>
 <tr><td align="center" style="padding:2px 0 0 0;">
-<p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:{{banner_b10_fs_logo}}px;font-weight:700;color:#ffffff;letter-spacing:1px;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b10_company}}}</p>
+<p style="margin:0;padding:0;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;font-size:{{banner_b10_fs_logo}}px;font-weight:700;color:{{banner_b10_logo_ink}};letter-spacing:1px;text-transform:uppercase;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b10_company}}}</p>
 </td></tr></table>
 {{/if}}
 </td></tr>
@@ -415,20 +322,24 @@ export const BANNER_TEMPLATES = {
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" title="{{{banner_b11_a_title}}}" style="text-decoration:none;display:block;color:inherit;outline:none;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:{{banner_b11_min_h}}px;background-color:{{banner_b11_card_bg}};border:1px solid {{banner_b11_border}};border-radius:16px;-webkit-border-radius:16px;overflow:hidden;mso-line-height-rule:exactly;">
 <tr>
-<td valign="middle" style="width:32%;max-width:220px;vertical-align:middle;padding:12px 6px 12px 18px;mso-padding-alt:12px 6px 12px 18px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,Helvetica,{{font_family}},sans-serif;">
+<td valign="middle" style="width:32%;max-width:220px;vertical-align:middle;padding:12px 6px 12px 18px;mso-padding-alt:12px 6px 12px 18px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;">
 <p style="margin:0 0 4px 0;padding:0;font-size:{{banner_b11_fs_title}}px;font-weight:800;color:{{banner_b11_title_color}};line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b11_title}}}</p>
 <p style="margin:0;padding:0;font-size:{{banner_b11_fs_sub}}px;font-weight:400;color:{{banner_b11_sub_color}};line-height:1.25;mso-line-height-rule:exactly;">{{{banner_b11_subtitle}}}</p>
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin-top:8px;"><tr><td style="padding:0;line-height:0;font-size:0;">` +
     REVIEW_WAVE_HAND_SVG +
     `</td></tr></table>
 </td>
-<td valign="bottom" style="width:52%;vertical-align:bottom;padding:0;line-height:0;font-size:0;text-align:center;">
+<td valign="middle" style="width:52%;vertical-align:middle;padding:8px 4px;line-height:0;font-size:0;text-align:center;">
+{{#if banner_b11_has_promo}}
+<img src="{{{banner_b11_promo_image}}}" alt="" width="280" height="140" style="{{{banner_b11_promo_style}}}">
+{{else}}
 <table cellpadding="0" cellspacing="0" border="0" align="center" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr><td style="padding:0;line-height:0;font-size:0;width:{{banner_b11_art_w}}px;max-width:100%;">` +
     REVIEW_STAR_SCENE_SVG_OPEN +
     `{{banner_b11_art_w}}` +
     REVIEW_STAR_SCENE_SVG_AFTER_WIDTH +
     REVIEW_STAR_SCENE_SVG_BODY +
     `</td></tr></table>
+{{/if}}
 </td>
 <td valign="middle" align="center" style="width:16%;min-width:52px;vertical-align:middle;padding:8px 16px 8px 6px;mso-padding-alt:8px 16px 8px 6px;text-align:center;line-height:0;font-size:0;">` +
     REVIEW_ARROW_CIRCLE_SVG +
@@ -449,18 +360,23 @@ export const BANNER_TEMPLATES = {
 <a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" title="{{{banner_b12_a_title}}}" style="text-decoration:none;display:block;color:inherit;outline:none;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;min-height:{{banner_b12_min_h}}px;background-color:{{banner_b12_bg}};border-radius:14px;-webkit-border-radius:14px;overflow:hidden;mso-line-height-rule:exactly;">
 <tr>
-<td valign="middle" style="width:34%;max-width:240px;vertical-align:middle;padding:10px 8px 10px 22px;mso-padding-alt:10px 8px 10px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,Helvetica,{{font_family}},sans-serif;">
-<p style="margin:0;padding:0;font-size:{{banner_b12_fs_title}}px;font-weight:700;color:#ffffff;letter-spacing:0.1px;line-height:1.3;mso-line-height-rule:exactly;">{{{banner_b12_title}}}</p>
+<td valign="middle" style="width:34%;max-width:240px;vertical-align:middle;padding:10px 8px 10px 22px;mso-padding-alt:10px 8px 10px 22px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;">
+<p style="margin:0;padding:0;font-size:{{banner_b12_fs_title}}px;font-weight:700;color:{{banner_b12_title_color}};letter-spacing:0.1px;line-height:1.3;mso-line-height-rule:exactly;">{{{banner_b12_title}}}</p>
 <p style="margin:1px 0 0 0;padding:0;font-size:{{banner_b12_fs_sub}}px;font-weight:400;color:{{banner_b12_sub}};line-height:1.35;mso-line-height-rule:exactly;">{{{banner_b12_subtitle}}}</p>
 </td>
 <td valign="middle" align="right" style="vertical-align:middle;padding:0;line-height:0;font-size:0;">
 <table cellpadding="0" cellspacing="0" border="0" align="right" role="presentation" style="border-collapse:collapse;margin-left:auto;"><tr>
-<td valign="middle" align="right" style="padding:0;line-height:0;font-size:0;">` +
+<td valign="middle" align="right" style="padding:0;line-height:0;font-size:0;">
+{{#if banner_b12_has_promo}}
+<img src="{{{banner_b12_promo_image}}}" alt="" width="280" height="90" style="{{{banner_b12_promo_style}}}">
+{{else}}
+` +
     SEO_DARK_GRID_SVG_OPEN +
     `{{banner_b12_grid_w}}` +
     SEO_DARK_GRID_SVG_AFTER_WIDTH +
     SEO_DARK_GRID_SVG_BODY +
-    `</td>
+    `{{/if}}
+</td>
 <td valign="middle" align="center" style="width:52px;min-width:48px;vertical-align:middle;padding:0 18px 0 10px;mso-padding-alt:0 18px 0 10px;line-height:0;font-size:0;">` +
     SEO_DARK_GRID_ARROW_SVG +
     `</td>
@@ -485,17 +401,22 @@ export const BANNER_TEMPLATES = {
 <td valign="middle" style="width:56px;min-width:48px;vertical-align:middle;padding:10px 8px 10px 28px;mso-padding-alt:10px 8px 10px 28px;line-height:0;font-size:0;">` +
     GREEN_GRADIENT_LOGO_SVG +
     `</td>
-<td valign="middle" style="vertical-align:middle;padding:10px 8px;mso-padding-alt:10px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,Helvetica,{{font_family}},sans-serif;">
-<p style="margin:0;padding:0;font-size:{{banner_b13_fs_title}}px;font-weight:600;color:#ffffff;line-height:1.35;letter-spacing:-0.2px;mso-line-height-rule:exactly;">{{{banner_b13_title_html}}}</p>
+<td valign="middle" style="vertical-align:middle;padding:10px 8px;mso-padding-alt:10px 8px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;">
+<p style="margin:0;padding:0;font-size:{{banner_b13_fs_title}}px;font-weight:600;color:{{banner_b13_title_color}};line-height:1.35;letter-spacing:-0.2px;mso-line-height-rule:exactly;">{{{banner_b13_title_html}}}</p>
 </td>
-<td valign="middle" align="right" style="width:{{banner_b13_decor_w}}px;max-width:35%;vertical-align:middle;padding:4px 6px 4px 0;line-height:0;font-size:0;">` +
+<td valign="middle" align="right" style="width:{{banner_b13_decor_w}}px;max-width:38%;min-width:120px;vertical-align:middle;padding:4px 6px 4px 0;line-height:0;font-size:0;">
+{{#if banner_b13_has_promo}}
+<img src="{{{banner_b13_promo_image}}}" alt="" width="220" height="140" style="{{{banner_b13_promo_style}}}">
+{{else}}
+` +
     GREEN_GRADIENT_DECOR_SVG_OPEN +
     `{{banner_b13_decor_w}}` +
     GREEN_GRADIENT_DECOR_SVG_AFTER_WIDTH +
     GREEN_GRADIENT_DECOR_SVG_BODY +
-    `</td>
-<td valign="middle" align="right" style="vertical-align:middle;white-space:nowrap;padding:10px 28px 10px 8px;mso-padding-alt:10px 28px 10px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,Helvetica,{{font_family}},sans-serif;">
-<span style="font-size:{{banner_b13_fs_cta}}px;font-weight:700;color:#ffffff;letter-spacing:0.1px;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b13_cta}}}</span><span style="font-size:{{banner_b13_fs_arrow}}px;font-weight:300;color:#ffffff;line-height:1;margin-left:10px;mso-line-height-rule:exactly;">&#8594;</span>
+    `{{/if}}
+</td>
+<td valign="middle" align="right" style="vertical-align:middle;white-space:nowrap;padding:10px 28px 10px 8px;mso-padding-alt:10px 28px 10px 8px;font-family:Arial, Helvetica, Roboto, {{font_family}}, sans-serif;">
+<span style="display:inline-block;border:2px solid {{banner_b13_cta_pill_border}};border-radius:50px;-webkit-border-radius:50px;padding:8px 16px;background-color:{{banner_b13_cta_pill_bg}};box-shadow:0 1px 2px rgba(15,23,42,0.08);mso-padding-alt:8px 16px;"><span style="font-size:{{banner_b13_fs_cta}}px;font-weight:800;color:{{banner_b13_cta_pill_text}};letter-spacing:0.2px;line-height:1.2;mso-line-height-rule:exactly;">{{{banner_b13_cta}}}</span><span style="font-size:{{banner_b13_fs_arrow}}px;font-weight:300;color:{{banner_b13_cta_pill_text}};line-height:1;margin-left:10px;mso-line-height-rule:exactly;">&#8594;</span></span>
 </td>
 </tr>
 </table>
@@ -504,13 +425,12 @@ export const BANNER_TEMPLATES = {
 </table>`,
 
   /**
-   * Image-only strip — outer table uses px rail width (not `width:100%` in style) so {@link collapseSignatureShellWidth} does not rewrite it to `width:auto`. `object-fit:cover` fills the strip height.
-   * Uploads 720×93 (`72:560` vs width 720) in `upload.js`.
+   * Image-only strip — fixed cell; `{{{banner_blank_img_style}}}` scales image with `object-fit:fill` to the strip.
    */
   banner_blank: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;table-layout:fixed;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td bgcolor="#f8fafc" style="padding:0;margin:0;line-height:0;font-size:0;width:{{banner_rail_w_px}}px;max-width:100%;height:{{banner_blank_h_px}}px;max-height:{{banner_blank_h_px}}px;overflow:hidden;vertical-align:middle;background-color:#f8fafc;">
 {{#if banner_blank_linked}}<a href="{{{banner_link}}}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;line-height:0;width:100%;max-width:100%;height:{{banner_blank_h_px}}px;max-height:{{banner_blank_h_px}}px;overflow:hidden;">{{/if}}
-<img src="{{{banner_full_image}}}" alt="" width="{{banner_rail_w_px}}" height="{{banner_blank_h_px}}" style="display:block;width:100%;min-width:100%;max-width:100%;height:{{banner_blank_h_px}}px;min-height:{{banner_blank_h_px}}px;max-height:{{banner_blank_h_px}}px;object-fit:cover;object-position:center;border:0;vertical-align:middle;-ms-interpolation-mode:bicubic;">
+<img src="{{{banner_full_image}}}" alt="" width="{{banner_rail_w_px}}" height="{{banner_blank_h_px}}" style="{{{banner_blank_img_style}}}">
 {{#if banner_blank_linked}}</a>{{/if}}
 </td></tr>
 </table>`,
@@ -534,14 +454,19 @@ export function resolveBannerKey(banner) {
   /** DB stores stable UUIDs — they do not contain the substring "webinar" / "need" / "download". */
   if (id === webinarUuid || id.includes('webinar')) return 'banner_1';
   if (id === needCallUuid || id.includes('need')) return 'banner_4';
-  if (id === 'b0000006-0000-4000-8000-000000000006' || id.includes('mindscope')) return 'banner_5';
-  if (id === 'b0000007-0000-4000-8000-000000000007' || id.includes('mailchimp')) return 'banner_6';
+  const subscriberJourneyUuid = String(BANNER_SLUG_TO_UUID['subscriber-journey']).toLowerCase();
+  if (id === subscriberJourneyUuid || id.includes('subscriber-journey')) return 'banner_4';
+  /** Retired Mindscope ATS strip (UUID `b0000006`) — render as book-a-call (`banner_2`). */
+  if (id === 'b0000006-0000-4000-8000-000000000006' || id.includes('mindscope')) return 'banner_2';
+  /** Retired Mailchimp-style strip (UUID `b0000007`) — render as subscriber funnel (`banner_4`). */
+  if (id === 'b0000007-0000-4000-8000-000000000007' || id.includes('mailchimp')) return 'banner_4';
+  /** Retired “Explore your world” strip (UUID `b0000008`) — render as book-a-call (`banner_2`). */
   if (
     id === 'b0000008-0000-4000-8000-000000000008' ||
     id.includes('explore-world') ||
     id.includes('explore-your-world')
   ) {
-    return 'banner_7';
+    return 'banner_2';
   }
   if (id === 'b0000009-0000-4000-8000-000000000009' || id.includes('boost-improve')) {
     return 'banner_8';

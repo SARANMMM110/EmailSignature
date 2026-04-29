@@ -60,7 +60,9 @@ router.post(
         if (!ALLOWED.has(key)) {
           return res.status(400).json({ message: `Unsupported template: ${rawId}` });
         }
-        htmlById[key] = await generateSignatureHtml(landingDemoPayload(key, palette));
+        htmlById[key] = await generateSignatureHtml(landingDemoPayload(key, palette), {
+          fillDemoPlaceholders: true,
+        });
       }
       res.json({ htmlById });
     } catch (e) {

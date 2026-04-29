@@ -181,6 +181,21 @@ function getFirstCellInnerString(tableOuter) {
 }
 
 /**
+ * Fingerprint for editor/dashboard dedupe: slot 1 and slot 2 shells of the same strip differ only by
+ * `data-sig-cta-slot`, `data-sig-root`, `data-sig-banner-slot`, etc. Unwrap shell → first `<td>` body,
+ * then strip all `data-sig-*` attributes and collapse whitespace.
+ */
+export function bannerSlotVisualFingerprint(html) {
+  const raw = String(html || '').trim();
+  if (!raw) return '';
+  const core = getFirstCellInnerString(raw) || raw;
+  return core
+    .replace(/\bdata-sig-[a-z0-9:-]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Split sibling root `<table data-sig-part="signature|banner">` blocks without relying on
  * `querySelectorAll` over a wrapped fragment (some engines merge sibling tables incorrectly).
  */

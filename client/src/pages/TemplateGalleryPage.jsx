@@ -7,7 +7,6 @@ import {
 } from '../components/templates/FilterSidebar.jsx';
 import { GalleryHeader } from '../components/templates/GalleryHeader.jsx';
 import { TemplateCard } from '../components/templates/TemplateCard.jsx';
-import { SupportFab } from '../components/ui/SupportFab.jsx';
 import { DEMO_SIGNATURE_DATA, demoHtmlGeneratePayload } from '../data/templatePreviews.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
@@ -16,21 +15,7 @@ import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import api, { templatesAPI, signaturesAPI } from '../lib/api.js';
 import { lockedTemplateIdsForPlan } from '../lib/templatePlanOrder.js';
 import { PLANS } from '../data/plans.js';
-import {
-  displayNameForTemplateRow,
-  TEMPLATE_10_CANONICAL_COLORS,
-  TEMPLATE_11_CANONICAL_COLORS,
-  TEMPLATE_12_CANONICAL_COLORS,
-  TEMPLATE_13_CANONICAL_COLORS,
-  TEMPLATE_14_CANONICAL_COLORS,
-  TEMPLATE_15_CANONICAL_COLORS,
-  TEMPLATE_16_CANONICAL_COLORS,
-  TEMPLATE_17_CANONICAL_COLORS,
-  TEMPLATE_18_CANONICAL_COLORS,
-  TEMPLATE_19_CANONICAL_COLORS,
-  TEMPLATE_20_CANONICAL_COLORS,
-  uuidToTemplateSlug,
-} from '../lib/templateIds.js';
+import { displayNameForTemplateRow, uuidToTemplateSlug } from '../lib/templateIds.js';
 
 export function TemplateGalleryPage() {
   const navigate = useNavigate();
@@ -250,31 +235,7 @@ export function TemplateGalleryPage() {
                     onLocked={handleLockedTemplate}
                     onSelect={handleTemplatePick}
                     busy={selectingId === t.id}
-                    paletteColors={
-                      uuidToTemplateSlug(t.id) === 'template_10'
-                        ? [...TEMPLATE_10_CANONICAL_COLORS]
-                        : uuidToTemplateSlug(t.id) === 'template_11'
-                          ? [...TEMPLATE_11_CANONICAL_COLORS]
-                          : uuidToTemplateSlug(t.id) === 'template_12'
-                            ? [...TEMPLATE_12_CANONICAL_COLORS]
-                            : uuidToTemplateSlug(t.id) === 'template_13'
-                              ? [...TEMPLATE_13_CANONICAL_COLORS]
-                              : uuidToTemplateSlug(t.id) === 'template_14'
-                                ? [...TEMPLATE_14_CANONICAL_COLORS]
-                                : uuidToTemplateSlug(t.id) === 'template_15'
-                                  ? [...TEMPLATE_15_CANONICAL_COLORS]
-                                  : uuidToTemplateSlug(t.id) === 'template_16'
-                                    ? [...TEMPLATE_16_CANONICAL_COLORS]
-                                    : uuidToTemplateSlug(t.id) === 'template_17'
-                                      ? [...TEMPLATE_17_CANONICAL_COLORS]
-                                      : uuidToTemplateSlug(t.id) === 'template_18'
-                                        ? [...TEMPLATE_18_CANONICAL_COLORS]
-                                        : uuidToTemplateSlug(t.id) === 'template_19'
-                                          ? [...TEMPLATE_19_CANONICAL_COLORS]
-                                          : uuidToTemplateSlug(t.id) === 'template_20'
-                                            ? [...TEMPLATE_20_CANONICAL_COLORS]
-                                            : galleryPreviewColors
-                    }
+                    paletteColors={galleryPreviewColors}
                     liveHtml={liveHtmlById[t.id] || ''}
                     liveLoading={loadingLivePreviews && !liveHtmlById[t.id]}
                   />
@@ -300,8 +261,6 @@ export function TemplateGalleryPage() {
           </main>
         </div>
       </div>
-
-      <SupportFab />
 
     </div>
   );
