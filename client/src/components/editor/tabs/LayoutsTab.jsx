@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { HiOutlineSquares2X2 } from 'react-icons/hi2';
 import api, { templatesAPI } from '../../../lib/api.js';
-import { demoHtmlGeneratePayload } from '../../../data/templatePreviews.js';
+import { defaultPaletteColorsForLayoutSlug, demoHtmlGeneratePayload } from '../../../data/templatePreviews.js';
 import {
   defaultTemplateFilters,
   filterTemplatesBySidebar,
@@ -9,7 +9,6 @@ import {
 } from '../../templates/FilterSidebar.jsx';
 import { TemplateCard } from '../../templates/TemplateCard.jsx';
 import { displayNameForTemplateRow, uuidToTemplateSlug } from '../../../lib/templateIds.js';
-import { resolvePaletteColorsFromDesign } from '../../../lib/resolveDesignPalette.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { usePlanGate } from '../../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
@@ -44,9 +43,6 @@ export function LayoutsTab() {
   const editorSaving = useEditorStore((s) => s.isSaving);
 
   const current = signature?.design?.templateId || signature?.template_id;
-  const paletteSwatches = resolvePaletteColorsFromDesign(signature?.design);
-  const swatchKey = paletteSwatches.join('|');
-  const galleryPalette = useMemo(() => [...paletteSwatches], [swatchKey]);
 
   const [liveHtmlById, setLiveHtmlById] = useState({});
   const [loadingLivePreviews, setLoadingLivePreviews] = useState(false);
@@ -124,7 +120,7 @@ export function LayoutsTab() {
           try {
             const { data } = await api.post(
               '/html/generate',
-              demoHtmlGeneratePayload(slug, galleryPalette, { profile, user })
+              demoHtmlGeneratePayload(slug, null, { profile, user })
             );
             const html = data?.html?.trim();
             if (html) next[t.id] = html;
@@ -141,7 +137,7 @@ export function LayoutsTab() {
     return () => {
       cancelled = true;
     };
-  }, [filteredSignatureKey, galleryPalette, filtered.length, profile, user]);
+  }, [filteredSignatureKey, filtered.length, profile, user]);
 
   const filterButtonLabel =
     filters.style.design || filters.style.minimalist || filters.logo.with || filters.logo.without
@@ -185,7 +181,7 @@ export function LayoutsTab() {
       </header>
 
       <p className="mb-5 text-[11px] leading-relaxed text-slate-500">
-        Your details and palette stay when you switch — click a card to apply the layout.
+        Previews use each layout’s reference colours (your profile details when available). Click a card to apply the layout — your palette is unchanged until you edit Palettes.
       </p>
 
       <ul className="flex flex-col gap-5">
@@ -217,7 +213,7 @@ export function LayoutsTab() {
                     if (locked) return;
                     setTemplate(t.id);
                   }}
-                  paletteColors={paletteSwatches}
+                  paletteColors={defaultPaletteColorsForLayoutSlug(t.id)}
                   liveHtml={liveHtmlById[t.id] || ''}
                   liveLoading={loadingLivePreviews && !liveHtmlById[t.id]}
                 />
