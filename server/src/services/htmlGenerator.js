@@ -2387,13 +2387,6 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const t19_has_contact_row2 = t18_has_contact_row2;
   const taglineTrim = String(f.tagline || '').trim();
   const t21TagSplit = splitIntroTwoLines(taglineTrim);
-  const t21_brand_dot = (() => {
-    const first = String(f.fullName || '')
-      .trim()
-      .split(/\s+/)[0] || '';
-    if (!first) return '';
-    return first.endsWith('.') ? first : `${first}.`;
-  })();
   const t21_vertical_role = String(f.jobTitle || '').trim();
   const t21_has_vertical_role = Boolean(t21_vertical_role);
   const t21_tagline_line1 = t21TagSplit.l1;
@@ -2574,7 +2567,6 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     t20_has_address_line2: t20AddrT20.hasLine2,
     t20_role_text,
     t20_tel_href,
-    t21_brand_dot,
     t21_vertical_role,
     t21_has_vertical_role,
     t21_tagline_line1,

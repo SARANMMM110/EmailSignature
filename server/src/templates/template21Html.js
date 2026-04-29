@@ -1,5 +1,5 @@
 /**
- * Layout 21 — 620×172 warm beige fashion rail (email-safe tables): left brand rail + vertical role,
+ * Layout 21 — 620×172 warm beige fashion rail (email-safe tables): left rail + vertical role,
  * arched photo on cream panel, serif name + company, grey divider, P/E/A contacts (vertically centered), tagline, bronze accent strip.
  */
 export const T21_CARD_WIDTH_PX = 620;
@@ -16,7 +16,6 @@ export const TEMPLATE_21_MARKUP = `<!-- T21: ${T21_W}×${T21_H} — warm beige f
 <tr>
 <td width="52" valign="top" height="${T21_H}" bgcolor="{{t21_shell}}" style="width:52px;max-width:52px;height:${T21_H}px;background-color:{{t21_shell}};padding:8px 6px 8px 10px;vertical-align:top;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" height="${T21_LEFT_INNER}" style="height:${T21_LEFT_INNER}px;border-collapse:collapse;">
-<tr><td valign="top" style="padding:0 0 4px 0;font-family:Georgia,'Times New Roman',Times,serif;font-size:10px;line-height:1.2;color:{{t21_ink}};">{{t21_brand_dot}}</td></tr>
 <tr><td valign="middle" align="center" height="${T21_ROLE_H}" style="height:${T21_ROLE_H}px;padding:0;vertical-align:middle;text-align:center;">{{#if t21_has_vertical_role}}<span style="display:inline-block;max-height:${T21_ROLE_H}px;overflow:hidden;writing-mode:vertical-rl;-webkit-writing-mode:vertical-rl;-ms-writing-mode:tb-rl;text-orientation:mixed;transform:rotate(180deg);-webkit-transform:rotate(180deg);font-family:Inter,system-ui,'Segoe UI',Roboto,Helvetica,Arial,{{font_family}},sans-serif;font-size:8px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:{{t21_ink}};line-height:1.2;">{{t21_vertical_role}}</span>{{/if}}</td></tr>
 <tr><td valign="bottom" align="center" style="padding:4px 0 0 0;text-align:center;line-height:0;font-size:0;">{{#if t21_has_cta}}<a href="{{{t21_cta_href}}}" style="text-decoration:none;">{{/if}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="26" height="26" bgcolor="{{t21_bronze}}" style="width:26px;height:26px;border-collapse:collapse;background-color:{{t21_bronze}};mso-line-height-rule:exactly;"><tr><td align="center" valign="middle" style="padding:0;line-height:0;font-size:0;"><img src="{{{t21_arrow_uri}}}" width="11" height="11" alt="" style="display:block;width:11px;height:11px;border:0;"></td></tr></table>{{#if t21_has_cta}}</a>{{/if}}</td></tr>
 </table>
