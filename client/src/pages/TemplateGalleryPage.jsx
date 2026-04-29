@@ -7,7 +7,7 @@ import {
 } from '../components/templates/FilterSidebar.jsx';
 import { GalleryHeader } from '../components/templates/GalleryHeader.jsx';
 import { TemplateCard } from '../components/templates/TemplateCard.jsx';
-import { DEMO_SIGNATURE_DATA, demoHtmlGeneratePayload } from '../data/templatePreviews.js';
+import { defaultPaletteColorsForLayoutSlug, demoHtmlGeneratePayload } from '../data/templatePreviews.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useI18n } from '../hooks/useI18n.js';
 import { usePlanGate } from '../hooks/usePlanGate.js';
@@ -31,12 +31,6 @@ export function TemplateGalleryPage() {
   const [selectingId, setSelectingId] = useState(null);
   const [liveHtmlById, setLiveHtmlById] = useState({});
   const [loadingLivePreviews, setLoadingLivePreviews] = useState(false);
-
-  /** Fixed demo palette for gallery live previews + per-card swatches (matches editor starter). */
-  const galleryPreviewColors = useMemo(
-    () => [...DEMO_SIGNATURE_DATA.design.colors],
-    []
-  );
 
   /** Avoid full skeleton when Supabase refreshes session (new `user` object, same id). */
   const templatesLoadedForUserRef = useRef(null);
@@ -126,7 +120,7 @@ export function TemplateGalleryPage() {
             /** Intro gallery: demo copy + placeholders only — account data appears after opening in the editor. */
             const { data } = await api.post(
               '/html/generate',
-              demoHtmlGeneratePayload(slug, galleryPreviewColors)
+              demoHtmlGeneratePayload(slug, null)
             );
             const html = data?.html?.trim();
             if (html) next[t.id] = html;
@@ -143,7 +137,7 @@ export function TemplateGalleryPage() {
     return () => {
       cancelled = true;
     };
-  }, [userId, filteredSignatureKey, galleryPreviewColors, filtered.length]);
+  }, [userId, filteredSignatureKey, filtered.length]);
 
   const handleTemplatePick = useCallback(
     async (template) => {
@@ -235,7 +229,7 @@ export function TemplateGalleryPage() {
                     onLocked={handleLockedTemplate}
                     onSelect={handleTemplatePick}
                     busy={selectingId === t.id}
-                    paletteColors={galleryPreviewColors}
+                    paletteColors={defaultPaletteColorsForLayoutSlug(t.id)}
                     liveHtml={liveHtmlById[t.id] || ''}
                     liveLoading={loadingLivePreviews && !liveHtmlById[t.id]}
                   />
