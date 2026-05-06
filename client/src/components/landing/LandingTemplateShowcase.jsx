@@ -89,7 +89,7 @@ export function LandingTemplateShowcase() {
           <p className="mt-6 text-center text-sm text-amber-700">{error}</p>
         ) : null}
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {LANDING_TEMPLATE_SHOWCASE.map((row) => (
             <div
               key={row.id}

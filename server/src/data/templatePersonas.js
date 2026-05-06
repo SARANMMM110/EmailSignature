@@ -16,11 +16,11 @@ export const TEMPLATE_PERSONA_TAGS = {
   template_12: ['Freelancer', 'Minimal professional'],
   template_13: ['Remote worker', 'Solopreneur'],
   template_14: ['Creator / influencer', 'Solopreneur'],
-  template_15: ['Personal brand CTA', 'Booking call'],
   template_16: ['Minimal professional', 'Remote worker'],
   template_17: ['Affiliate marketer', 'Personal brand CTA'],
   template_18: ['Solopreneur', 'Coach / consultant'],
   template_19: ['Creator / influencer', 'WhatsApp lead'],
   template_20: ['Personal brand CTA', 'Creator / influencer'],
   template_21: ['Fashion / creative', 'Personal brand'],
+  template_22: ['Editorial brand', 'Creative director'],
 };

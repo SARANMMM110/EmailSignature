@@ -1,5 +1,5 @@
 /**
- * Layout 13 — reference card: large “I’M”, yellow photo rail, bold white name,
+ * Layout 13 — reference card: large “I’M”, yellow photo rail (omitted when `sig_has_photo_column`), bold white name,
  * solid yellow arrowhead (tip up-left) beside first name line, yellow job title, white contact rows.
  * Tokens from `buildTemplate13PaletteContext` + standard `contextFromEditorPayload` fields.
  *
@@ -7,19 +7,21 @@
  */
 const T13_FONT = "'Archivo',Helvetica,Arial,sans-serif";
 
-export const TEMPLATE_13_MARKUP = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;font-family:${T13_FONT};border:0;">
+export const TEMPLATE_13_MARKUP = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="{{sig_t13_outer_width}}" style="width:{{sig_t13_outer_width}}px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;font-family:${T13_FONT};border:0;">
 <tr>
-<td width="600" valign="top" bgcolor="{{t13_shell_bg}}" style="width:600px;vertical-align:top;padding:0;border:0;border-radius:18px;-webkit-border-radius:18px;overflow:hidden;background-color:{{t13_shell_bg}};">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;border-collapse:collapse;font-family:${T13_FONT};">
+<td width="{{sig_t13_outer_width}}" valign="top" bgcolor="{{t13_shell_bg}}" style="width:{{sig_t13_outer_width}}px;vertical-align:top;padding:0;border:0;border-radius:18px;-webkit-border-radius:18px;overflow:hidden;background-color:{{t13_shell_bg}};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="{{sig_t13_outer_width}}" style="width:{{sig_t13_outer_width}}px;border-collapse:collapse;font-family:${T13_FONT};">
 <tr>
 <td width="56" valign="top" style="width:56px;max-width:56px;vertical-align:top;padding:20px 0 20px 20px;">
 <div style="font-size:16px;font-weight:700;letter-spacing:0.12em;color:{{t13_text}};line-height:1;mso-line-height-rule:exactly;">I&#8217;M</div>
 </td>
+{{#if sig_has_photo_column}}
 <td width="118" valign="bottom" align="center" style="width:118px;max-width:118px;vertical-align:bottom;padding:0 4px 0 0;text-align:center;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:0 auto;"><tr><td align="center" valign="bottom" bgcolor="{{t13_accent}}" style="padding:0;width:104px;vertical-align:bottom;background-color:{{t13_accent}};border-radius:16px 16px 0 0;-webkit-border-radius:16px 16px 0 0;">
 {{#if photo_url}}<img src="{{{photo_url}}}" width="104" height="158" alt="" style="display:block;width:104px;height:158px;border:0;object-fit:cover;object-position:center top;">{{else}}{{#if show_photo}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="104" height="158" style="width:104px;height:158px;border-collapse:collapse;"><tr><td width="104" height="158" align="center" valign="middle" bgcolor="{{t13_photo_placeholder_bg}}" style="width:104px;height:158px;background-color:{{t13_photo_placeholder_bg}};font-family:${T13_FONT};font-size:18px;font-weight:700;color:{{t13_photo_placeholder_color}};mso-line-height-rule:exactly;">{{name_initials}}</td></tr></table>{{/if}}{{/if}}
 </td></tr></table>
 </td>
+{{/if}}
 <td width="220" valign="middle" style="width:220px;max-width:220px;vertical-align:middle;padding:12px 8px 12px 4px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>
 <td valign="top" style="padding:0;line-height:0;vertical-align:top;">

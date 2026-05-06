@@ -43,14 +43,6 @@ export const TEMPLATE_14_CANONICAL_COLORS = Object.freeze([
   '#0A0A0A',
 ]);
 
-/** Layout 15 — chartreuse field + white tab/card (reference). Keep in sync with server `templateIds.js`. */
-export const TEMPLATE_15_CANONICAL_COLORS = Object.freeze([
-  '#D4FF1F',
-  '#0a0a0a',
-  '#ffffff',
-  '#757575',
-]);
-
 /** Layout 16 — 600px banner; navy #0a192f. Keep in sync with server `templateIds.js`. */
 export const TEMPLATE_16_CANONICAL_COLORS = Object.freeze([
   '#0a192f',
@@ -99,6 +91,14 @@ export const TEMPLATE_21_CANONICAL_COLORS = Object.freeze([
   '#000000',
 ]);
 
+/** Layout 22 — HTML reference palette. Keep in sync with server `templateIds.js`. */
+export const TEMPLATE_22_CANONICAL_COLORS = Object.freeze([
+  '#caa76b',
+  '#0f1b26',
+  '#f4efe8',
+  '#111111',
+]);
+
 const TEMPLATE_1_UUID = 'a0000001-0000-4000-8000-000000000001';
 const TEMPLATE_2_UUID = 'a0000002-0000-4000-8000-000000000002';
 const TEMPLATE_3_UUID = 'a0000003-0000-4000-8000-000000000003';
@@ -112,13 +112,21 @@ const TEMPLATE_11_UUID = 'a0000011-0000-4000-8000-000000000011';
 const TEMPLATE_12_UUID = 'a0000012-0000-4000-8000-000000000012';
 const TEMPLATE_13_UUID = 'a0000013-0000-4000-8000-000000000013';
 const TEMPLATE_14_UUID = 'a0000014-0000-4000-8000-000000000014';
-const TEMPLATE_15_UUID = 'a0000015-0000-4000-8000-000000000015';
 const TEMPLATE_16_UUID = 'a0000016-0000-4000-8000-000000000016';
 const TEMPLATE_17_UUID = 'a0000017-0000-4000-8000-000000000017';
 const TEMPLATE_18_UUID = 'a0000018-0000-4000-8000-000000000018';
 const TEMPLATE_19_UUID = 'a0000019-0000-4000-8000-000000000019';
 const TEMPLATE_20_UUID = 'a0000020-0000-4000-8000-000000000020';
 const TEMPLATE_21_UUID = 'a0000021-0000-4000-8000-000000000021';
+const TEMPLATE_22_UUID = 'a0000022-0000-4000-8000-000000000022';
+
+/**
+ * Catalog rows whose HTML duplicates another layout (`TEMPLATE_HTML_FALLBACK` on server).
+ * Omit from the signed-in gallery so users do not see two identical previews.
+ */
+export const GALLERY_HIDDEN_ENGINE_SLUGS = Object.freeze(
+  new Set(['template_7', 'template_8'])
+);
 
 export const UUID_TO_TEMPLATE_SLUG = {
   'a0000001-0000-4000-8000-000000000001': 'template_1',
@@ -135,13 +143,14 @@ export const UUID_TO_TEMPLATE_SLUG = {
   'a0000012-0000-4000-8000-000000000012': 'template_12',
   'a0000013-0000-4000-8000-000000000013': 'template_13',
   'a0000014-0000-4000-8000-000000000014': 'template_14',
-  'a0000015-0000-4000-8000-000000000015': 'template_15',
+  'a0000015-0000-4000-8000-000000000015': 'template_16',
   'a0000016-0000-4000-8000-000000000016': 'template_16',
   'a0000017-0000-4000-8000-000000000017': 'template_17',
   'a0000018-0000-4000-8000-000000000018': 'template_18',
   'a0000019-0000-4000-8000-000000000019': 'template_19',
   'a0000020-0000-4000-8000-000000000020': 'template_20',
   'a0000021-0000-4000-8000-000000000021': 'template_21',
+  'a0000022-0000-4000-8000-000000000022': 'template_22',
 };
 
 /** Reverse map — slug → DB `template_id` FK. */
@@ -159,13 +168,15 @@ export const TEMPLATE_SLUG_TO_UUID = {
   template_12: TEMPLATE_12_UUID,
   template_13: TEMPLATE_13_UUID,
   template_14: TEMPLATE_14_UUID,
-  template_15: TEMPLATE_15_UUID,
+  /** Retired Layout 15 — slug maps to Layout 16 UUID. */
+  template_15: TEMPLATE_16_UUID,
   template_16: TEMPLATE_16_UUID,
   template_17: TEMPLATE_17_UUID,
   template_18: TEMPLATE_18_UUID,
   template_19: TEMPLATE_19_UUID,
   template_20: TEMPLATE_20_UUID,
   template_21: TEMPLATE_21_UUID,
+  template_22: TEMPLATE_22_UUID,
   /** Retired Layout 4 — stale slugs map to Layout 1. */
   template_4: TEMPLATE_1_UUID,
 };
@@ -184,13 +195,13 @@ export const TEMPLATE_SLUG_LABELS = {
   template_12: 'Layout 12',
   template_13: 'Layout 13',
   template_14: 'Layout 14',
-  template_15: 'Layout 15',
   template_16: 'Layout 16',
   template_17: 'Layout 17',
   template_18: 'Layout 18',
   template_19: 'Layout 19',
   template_20: 'Layout 20',
   template_21: 'Layout 21',
+  template_22: 'Layout 22',
 };
 
 /** Webinar / “Banner 1” layout — matches engine `banner_1`. */
@@ -340,13 +351,14 @@ export function uuidToTemplateSlug(uuid) {
   if (/^template_12$/i.test(s)) return 'template_12';
   if (/^template_13$/i.test(s)) return 'template_13';
   if (/^template_14$/i.test(s)) return 'template_14';
-  if (/^template_15$/i.test(s)) return 'template_15';
+  if (/^template_15$/i.test(s)) return 'template_16';
   if (/^template_16$/i.test(s)) return 'template_16';
   if (/^template_17$/i.test(s)) return 'template_17';
   if (/^template_18$/i.test(s)) return 'template_18';
   if (/^template_19$/i.test(s)) return 'template_19';
   if (/^template_20$/i.test(s)) return 'template_20';
   if (/^template_21$/i.test(s)) return 'template_21';
+  if (/^template_22$/i.test(s)) return 'template_22';
   if (/^template_\d+$/i.test(s)) return 'template_1';
   return 'template_1';
 }
@@ -374,41 +386,57 @@ export function normalizeSignatureTemplateSlug(design, template_id) {
     if (/^template_12$/i.test(s)) return 'template_12';
     if (/^template_13$/i.test(s)) return 'template_13';
     if (/^template_14$/i.test(s)) return 'template_14';
-    if (/^template_15$/i.test(s)) return 'template_15';
+    if (/^template_15$/i.test(s)) return 'template_16';
     if (/^template_16$/i.test(s)) return 'template_16';
     if (/^template_17$/i.test(s)) return 'template_17';
     if (/^template_18$/i.test(s)) return 'template_18';
     if (/^template_19$/i.test(s)) return 'template_19';
     if (/^template_20$/i.test(s)) return 'template_20';
     if (/^template_21$/i.test(s)) return 'template_21';
+    if (/^template_22$/i.test(s)) return 'template_22';
     if (/^template_\d+$/i.test(s)) return 'template_1';
     if (UUID_TEMPLATE_RE.test(s)) return uuidToTemplateSlug(s);
   }
   return 'template_1';
 }
 
-/** Editor preview / export rail width: Layout 2 = 600px; Layout 1, 5 & 12 = 520px; Layout 18 = 521px; Layout 3, 13–17, 19–20 = 600px; Layout 11 & 21 = 620px. */
+/** Editor preview rail (`bundleRailPxForEngineSlug`): Layout 2/1 = 600px; 5/12 = 520; 18 = 521; 3/11/21/22 = 620; 13–17,19–20 = 600. */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
   if (s === 'template_2') return 600;
-  if (s === 'template_1' || s === 'template_5' || s === 'template_12') return 520;
+  if (s === 'template_1') return 600;
+  if (s === 'template_5' || s === 'template_12') return 520;
+  if (s === 'template_3') return 620;
   if (s === 'template_11') return 620;
   if (s === 'template_18') return 521;
   if (s === 'template_19') return 600;
   if (s === 'template_20') return 600;
   if (s === 'template_21') return 620;
+  if (s === 'template_22') return 620;
   if (s === 'template_17') return 600;
   if (s === 'template_13') return 600;
   if (s === 'template_14') return 600;
-  if (s === 'template_15') return 600;
   if (s === 'template_16') return 600;
   return 600;
 }
 
-/** @param {{ design?: { templateId?: string }, template_id?: string } | null | undefined} signature */
+/** @param {{ design?: { templateId?: string, showPhoto?: boolean, show_photo?: boolean }, template_id?: string } | null | undefined} signature */
 export function bundleRailPxForSignature(signature) {
   const slug = normalizeSignatureTemplateSlug(signature?.design, signature?.template_id);
-  return bundleRailPxForEngineSlug(slug);
+  const base = bundleRailPxForEngineSlug(slug);
+  const showPhoto =
+    signature?.design?.showPhoto !== false && signature?.design?.show_photo !== false;
+  if (slug === 'template_16' && !showPhoto) return 400;
+  if (slug === 'template_9' && !showPhoto) return 560;
+  /** Layout 11: 620px with photo rail, 452px without (168px column dropped). */
+  if (slug === 'template_11' && !showPhoto) return 452;
+  /** Layout 13: 600px with yellow photo rail, 482px without (118px rail dropped). */
+  if (slug === 'template_13' && !showPhoto) return 482;
+  /** Layout 14: 600px with orange portrait column, 462px without (138px column dropped). */
+  if (slug === 'template_14' && !showPhoto) return 462;
+  /** Layout 20: 600px with portrait gutter, 412px without (188px column dropped). */
+  if (slug === 'template_20' && !showPhoto) return 412;
+  return base;
 }
 
 export function isImageTemplateSignature() {
@@ -430,13 +458,14 @@ export function engineSlugForGalleryPreview(slug) {
   if (s === 'template_12') return 'template_12';
   if (s === 'template_13') return 'template_13';
   if (s === 'template_14') return 'template_14';
-  if (s === 'template_15') return 'template_15';
+  if (s === 'template_15') return 'template_16';
   if (s === 'template_16') return 'template_16';
   if (s === 'template_17') return 'template_17';
   if (s === 'template_18') return 'template_18';
   if (s === 'template_19') return 'template_19';
   if (s === 'template_20') return 'template_20';
   if (s === 'template_21') return 'template_21';
+  if (s === 'template_22') return 'template_22';
   return 'template_1';
 }
 
@@ -454,13 +483,13 @@ export const TEMPLATE_HAS_LOGO = {
   template_12: false,
   template_13: false,
   template_14: false,
-  template_15: true,
   template_16: true,
   template_17: false,
   template_18: false,
   template_19: false,
-  template_20: true,
+  template_20: false,
   template_21: false,
+  template_22: false,
 };
 
 /** @param {string | undefined} slugOrUuid */
@@ -478,13 +507,13 @@ export function templateSlugSupportsLogo(slugOrUuid) {
   if (s.includes('template_12')) return TEMPLATE_HAS_LOGO.template_12 !== false;
   if (s.includes('template_13')) return TEMPLATE_HAS_LOGO.template_13 !== false;
   if (s.includes('template_14')) return TEMPLATE_HAS_LOGO.template_14 !== false;
-  if (s.includes('template_15')) return TEMPLATE_HAS_LOGO.template_15 !== false;
   if (s.includes('template_16')) return TEMPLATE_HAS_LOGO.template_16 !== false;
   if (s.includes('template_17')) return TEMPLATE_HAS_LOGO.template_17 !== false;
   if (s.includes('template_18')) return TEMPLATE_HAS_LOGO.template_18 !== false;
   if (s.includes('template_19')) return TEMPLATE_HAS_LOGO.template_19 !== false;
   if (s.includes('template_20')) return TEMPLATE_HAS_LOGO.template_20 !== false;
   if (s.includes('template_21')) return TEMPLATE_HAS_LOGO.template_21 !== false;
+  if (s.includes('template_22')) return TEMPLATE_HAS_LOGO.template_22 !== false;
   if (s.includes('template_2')) return TEMPLATE_HAS_LOGO.template_2 !== false;
   return TEMPLATE_HAS_LOGO.template_1 !== false;
 }

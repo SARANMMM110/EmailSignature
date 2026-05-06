@@ -88,6 +88,8 @@ export function MyInformationTab({ onToast }) {
       try {
         const { data } = await uploadAPI.uploadPhoto(file);
         updateField('fields.photo_url', data.url);
+        updateField('design.showPhoto', true);
+        updateField('design.show_photo', true);
         onToast?.('Photo updated', 'success');
         closeCropModal();
       } catch {
@@ -937,7 +939,11 @@ export function MyInformationTab({ onToast }) {
               <button
                 type="button"
                 className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-                onClick={() => updateField('fields.photo_url', '')}
+                onClick={() => {
+                  updateField('fields.photo_url', '');
+                  updateField('design.showPhoto', false);
+                  updateField('design.show_photo', false);
+                }}
               >
                 Remove profile photo
               </button>

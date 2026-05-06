@@ -44,14 +44,6 @@ export const TEMPLATE_14_CANONICAL_COLORS = Object.freeze([
   '#0A0A0A', // text — black type + icons
 ]);
 
-/** Layout 15 — chartreuse field + white tab/card (reference). Keep in sync with client `templateIds.js`. */
-export const TEMPLATE_15_CANONICAL_COLORS = Object.freeze([
-  '#D4FF1F', // primary — lime field (reference)
-  '#0a0a0a', // secondary — black type + borders + social rail
-  '#ffffff', // accent — white tab + contact card + job pill
-  '#757575', // text — muted address/contact body
-]);
-
 /** Layout 16 — 600px banner; navy #0a192f (CSS reference). Keep in sync with client `templateIds.js`. */
 export const TEMPLATE_16_CANONICAL_COLORS = Object.freeze([
   '#0a192f', // primary — left panel, icons, name
@@ -100,6 +92,14 @@ export const TEMPLATE_21_CANONICAL_COLORS = Object.freeze([
   '#000000', // text — black ink
 ]);
 
+/** Layout 22 — HTML reference palette. Sync client `templateIds.js`. */
+export const TEMPLATE_22_CANONICAL_COLORS = Object.freeze([
+  '#caa76b', // primary — gold
+  '#0f1b26', // secondary — navy charcoal
+  '#f4efe8', // accent — cream field
+  '#111111', // text — name
+]);
+
 /** UUID → slug for HTML generation (must match client `templateIds.js`). */
 export const UUID_TO_TEMPLATE_SLUG = {
   'a0000001-0000-4000-8000-000000000001': 'template_1',
@@ -116,13 +116,14 @@ export const UUID_TO_TEMPLATE_SLUG = {
   'a0000012-0000-4000-8000-000000000012': 'template_12',
   'a0000013-0000-4000-8000-000000000013': 'template_13',
   'a0000014-0000-4000-8000-000000000014': 'template_14',
-  'a0000015-0000-4000-8000-000000000015': 'template_15',
+  'a0000015-0000-4000-8000-000000000015': 'template_16',
   'a0000016-0000-4000-8000-000000000016': 'template_16',
   'a0000017-0000-4000-8000-000000000017': 'template_17',
   'a0000018-0000-4000-8000-000000000018': 'template_18',
   'a0000019-0000-4000-8000-000000000019': 'template_19',
   'a0000020-0000-4000-8000-000000000020': 'template_20',
   'a0000021-0000-4000-8000-000000000021': 'template_21',
+  'a0000022-0000-4000-8000-000000000022': 'template_22',
 };
 
 /** Stable UUIDs — must match supabase template seed migrations (e.g. 002, 009, 010). */
@@ -139,13 +140,13 @@ const TEMPLATE_11_UUID = 'a0000011-0000-4000-8000-000000000011';
 const TEMPLATE_12_UUID = 'a0000012-0000-4000-8000-000000000012';
 const TEMPLATE_13_UUID = 'a0000013-0000-4000-8000-000000000013';
 const TEMPLATE_14_UUID = 'a0000014-0000-4000-8000-000000000014';
-const TEMPLATE_15_UUID = 'a0000015-0000-4000-8000-000000000015';
 const TEMPLATE_16_UUID = 'a0000016-0000-4000-8000-000000000016';
 const TEMPLATE_17_UUID = 'a0000017-0000-4000-8000-000000000017';
 const TEMPLATE_18_UUID = 'a0000018-0000-4000-8000-000000000018';
 const TEMPLATE_19_UUID = 'a0000019-0000-4000-8000-000000000019';
 const TEMPLATE_20_UUID = 'a0000020-0000-4000-8000-000000000020';
 const TEMPLATE_21_UUID = 'a0000021-0000-4000-8000-000000000021';
+const TEMPLATE_22_UUID = 'a0000022-0000-4000-8000-000000000022';
 
 export const TEMPLATE_SLUG_TO_UUID = {
   template_1: TEMPLATE_1_UUID,
@@ -161,13 +162,15 @@ export const TEMPLATE_SLUG_TO_UUID = {
   template_12: TEMPLATE_12_UUID,
   template_13: TEMPLATE_13_UUID,
   template_14: TEMPLATE_14_UUID,
-  template_15: TEMPLATE_15_UUID,
+  /** Retired Layout 15 — slug maps to Layout 16 UUID (same as `template_16` for new rows). */
+  template_15: TEMPLATE_16_UUID,
   template_16: TEMPLATE_16_UUID,
   template_17: TEMPLATE_17_UUID,
   template_18: TEMPLATE_18_UUID,
   template_19: TEMPLATE_19_UUID,
   template_20: TEMPLATE_20_UUID,
   template_21: TEMPLATE_21_UUID,
+  template_22: TEMPLATE_22_UUID,
   /** Retired Layout 4 (Mindscope split) — stale slugs map to Layout 1. */
   template_4: TEMPLATE_1_UUID,
   'classic-table': TEMPLATE_1_UUID,
@@ -282,13 +285,14 @@ export function uuidToTemplateSlug(uuid) {
   if (/^template_12$/i.test(s)) return 'template_12';
   if (/^template_13$/i.test(s)) return 'template_13';
   if (/^template_14$/i.test(s)) return 'template_14';
-  if (/^template_15$/i.test(s)) return 'template_15';
+  if (/^template_15$/i.test(s)) return 'template_16';
   if (/^template_16$/i.test(s)) return 'template_16';
   if (/^template_17$/i.test(s)) return 'template_17';
   if (/^template_18$/i.test(s)) return 'template_18';
   if (/^template_19$/i.test(s)) return 'template_19';
   if (/^template_20$/i.test(s)) return 'template_20';
   if (/^template_21$/i.test(s)) return 'template_21';
+  if (/^template_22$/i.test(s)) return 'template_22';
   if (/^template_\d+$/i.test(s)) return 'template_1';
   return 'template_1';
 }
@@ -355,30 +359,33 @@ export function engineSlugFromCatalogTemplateId(id) {
   if (n === 12) return 'template_12';
   if (n === 13) return 'template_13';
   if (n === 14) return 'template_14';
-  if (n === 15) return 'template_15';
+  if (n === 15) return 'template_16';
   if (n === 16) return 'template_16';
   if (n === 17) return 'template_17';
   if (n === 18) return 'template_18';
   if (n === 19) return 'template_19';
   if (n === 20) return 'template_20';
   if (n === 21) return 'template_21';
+  if (n === 22) return 'template_22';
   return 'template_1';
 }
 
-/** Bundle / preview rail: Layout 2 = 600px; Layout 1, 5 & 12 = 520px; Layout 18 = 521px; Layout 3, 13–17, 19–20 = 600px; Layout 11 & 21 = 620px (must match client editor preview). */
+/** Bundle / preview rail: Layout 2 = 600px; Layout 1 = 600px (matches compact card width); Layout 5 & 12 = 520px; Layout 18 = 521px; Layout 3 & 11 & 21 & 22 = 620px; Layout 13–17, 19–20 = 600px (must match client editor preview). */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
   if (s === 'template_2') return 600;
-  if (s === 'template_1' || s === 'template_5' || s === 'template_12') return 520;
+  if (s === 'template_1') return 600;
+  if (s === 'template_5' || s === 'template_12') return 520;
+  if (s === 'template_3') return 620;
   if (s === 'template_11') return 620;
   if (s === 'template_18') return 521;
   if (s === 'template_19') return 600;
   if (s === 'template_20') return 600;
   if (s === 'template_21') return 620;
+  if (s === 'template_22') return 620;
   if (s === 'template_17') return 600;
   if (s === 'template_13') return 600;
   if (s === 'template_14') return 600;
-  if (s === 'template_15') return 600;
   if (s === 'template_16') return 600;
   return 600;
 }

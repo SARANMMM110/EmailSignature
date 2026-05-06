@@ -16,13 +16,13 @@ import {
   TEMPLATE_12_CANONICAL_COLORS,
   TEMPLATE_13_CANONICAL_COLORS,
   TEMPLATE_14_CANONICAL_COLORS,
-  TEMPLATE_15_CANONICAL_COLORS,
   TEMPLATE_16_CANONICAL_COLORS,
   TEMPLATE_17_CANONICAL_COLORS,
   TEMPLATE_18_CANONICAL_COLORS,
   TEMPLATE_19_CANONICAL_COLORS,
   TEMPLATE_20_CANONICAL_COLORS,
   TEMPLATE_21_CANONICAL_COLORS,
+  TEMPLATE_22_CANONICAL_COLORS,
 } from '../lib/templateIds.js';
 import { requireUnderLimit } from '../middleware/planGate.js';
 import { countUserSignatures } from '../lib/planCounts.js';
@@ -309,18 +309,7 @@ router.post(
                       },
                       colors: [...TEMPLATE_14_CANONICAL_COLORS],
                     }
-                  : canonicalSlug === 'template_15'
-                    ? {
-                        templateId: canonicalSlug,
-                        palette: {
-                          primary: TEMPLATE_15_CANONICAL_COLORS[0],
-                          secondary: TEMPLATE_15_CANONICAL_COLORS[1],
-                          accent: TEMPLATE_15_CANONICAL_COLORS[2],
-                          text: TEMPLATE_15_CANONICAL_COLORS[3],
-                        },
-                        colors: [...TEMPLATE_15_CANONICAL_COLORS],
-                      }
-                    : canonicalSlug === 'template_16'
+                  : canonicalSlug === 'template_16'
                       ? {
                           templateId: canonicalSlug,
                           palette: {
@@ -386,7 +375,18 @@ router.post(
                                     },
                                     colors: [...TEMPLATE_21_CANONICAL_COLORS],
                                   }
-                                : { templateId: canonicalSlug, palette: {} };
+                                : canonicalSlug === 'template_22'
+                                  ? {
+                                      templateId: canonicalSlug,
+                                      palette: {
+                                        primary: TEMPLATE_22_CANONICAL_COLORS[0],
+                                        secondary: TEMPLATE_22_CANONICAL_COLORS[1],
+                                        accent: TEMPLATE_22_CANONICAL_COLORS[2],
+                                        text: TEMPLATE_22_CANONICAL_COLORS[3],
+                                      },
+                                      colors: [...TEMPLATE_22_CANONICAL_COLORS],
+                                    }
+                                  : { templateId: canonicalSlug, palette: {} };
       const row = {
         user_id: req.user.id,
         template_id: tid,

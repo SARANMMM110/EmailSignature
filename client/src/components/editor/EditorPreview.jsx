@@ -224,13 +224,13 @@ export function EditorPreview({
   const titleClass = 'text-[17px] font-semibold tracking-tight text-[#0d0f14] sm:text-[18px]';
 
   const previewBg =
-    layoutSlug === 'template_15' ||
     layoutSlug === 'template_16' ||
     layoutSlug === 'template_17' ||
     layoutSlug === 'template_18' ||
     layoutSlug === 'template_19' ||
     layoutSlug === 'template_20' ||
-    layoutSlug === 'template_21'
+    layoutSlug === 'template_21' ||
+    layoutSlug === 'template_22'
       ? '#ffffff'
       : 'linear-gradient(180deg, #fafbfc 0%, #f5f6f8 40%, #eef0f3 100%)';
 

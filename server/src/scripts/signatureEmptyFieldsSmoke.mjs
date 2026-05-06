@@ -56,13 +56,13 @@ const TEMPLATES = [
   'template_12',
   'template_13',
   'template_14',
-  'template_15',
   'template_16',
   'template_17',
   'template_18',
   'template_19',
   'template_20',
   'template_21',
+  'template_22',
 ];
 
 async function run() {

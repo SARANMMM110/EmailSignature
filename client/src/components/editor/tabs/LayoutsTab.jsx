@@ -12,7 +12,10 @@ import { displayNameForTemplateRow, uuidToTemplateSlug } from '../../../lib/temp
 import { useAuth } from '../../../hooks/useAuth.js';
 import { usePlanGate } from '../../../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../../../store/upgradeModalStore.js';
-import { lockedTemplateIdsForPlan } from '../../../lib/templatePlanOrder.js';
+import {
+  lockedTemplateIdsForPlan,
+  prepareTemplatesForLayoutPicker,
+} from '../../../lib/templatePlanOrder.js';
 import { useEditorStore } from '../../../store/editorStore.js';
 import { PLANS } from '../../../data/plans.js';
 
@@ -92,11 +95,22 @@ export function LayoutsTab() {
     [templates]
   );
 
-  const filtered = useMemo(() => filterTemplatesBySidebar(enriched, filters), [enriched, filters]);
+  const catalogForLayouts = useMemo(
+    () => prepareTemplatesForLayoutPicker(enriched),
+    [enriched]
+  );
+
+  const filtered = useMemo(
+    () => filterTemplatesBySidebar(catalogForLayouts, filters),
+    [catalogForLayouts, filters]
+  );
 
   const lockedTemplateIds = useMemo(
-    () => lockedTemplateIdsForPlan(enriched, gate.limit('layout_templates')),
-    [enriched, gate]
+    () =>
+      lockedTemplateIdsForPlan(catalogForLayouts, gate.limit('layout_templates'), {
+        preserveInputOrder: true,
+      }),
+    [catalogForLayouts, gate]
   );
 
   const filteredSignatureKey = useMemo(

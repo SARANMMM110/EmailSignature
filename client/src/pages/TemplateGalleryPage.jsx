@@ -13,7 +13,10 @@ import { useI18n } from '../hooks/useI18n.js';
 import { usePlanGate } from '../hooks/usePlanGate.js';
 import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import api, { templatesAPI, signaturesAPI } from '../lib/api.js';
-import { lockedTemplateIdsForPlan } from '../lib/templatePlanOrder.js';
+import {
+  lockedTemplateIdsForPlan,
+  prepareTemplatesForLayoutPicker,
+} from '../lib/templatePlanOrder.js';
 import { PLANS } from '../data/plans.js';
 import { displayNameForTemplateRow, uuidToTemplateSlug } from '../lib/templateIds.js';
 
@@ -88,14 +91,20 @@ export function TemplateGalleryPage() {
     })();
   }, [userId, t]);
 
+  /** Hide duplicate-engine rows; intro-showcase order then `sort_order` (matches editor Layouts tab). */
+  const templatesForGallery = useMemo(() => prepareTemplatesForLayoutPicker(templates), [templates]);
+
   const filtered = useMemo(
-    () => filterTemplatesBySidebar(templates, filters),
-    [templates, filters]
+    () => filterTemplatesBySidebar(templatesForGallery, filters),
+    [templatesForGallery, filters]
   );
 
   const lockedTemplateIds = useMemo(
-    () => lockedTemplateIdsForPlan(templates, gate.limit('layout_templates')),
-    [templates, gate]
+    () =>
+      lockedTemplateIdsForPlan(templatesForGallery, gate.limit('layout_templates'), {
+        preserveInputOrder: true,
+      }),
+    [templatesForGallery, gate]
   );
 
   const filteredSignatureKey = useMemo(
@@ -246,6 +255,15 @@ export function TemplateGalleryPage() {
             {!loadingList &&
               !loadError &&
               templates.length > 0 &&
+              templatesForGallery.length === 0 && (
+              <p className="mt-12 rounded-xl border border-[#e4e6ea] bg-white py-10 text-center text-sm font-medium text-[#6b7280]">
+                No layout templates are available in the gallery.
+              </p>
+            )}
+
+            {!loadingList &&
+              !loadError &&
+              templatesForGallery.length > 0 &&
               filtered.length === 0 && (
               <p className="mt-12 rounded-xl border border-[#e4e6ea] bg-white py-10 text-center text-sm font-medium text-[#6b7280]">
                 No layouts match these filters. Try adjusting the sidebar.

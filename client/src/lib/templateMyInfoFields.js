@@ -20,13 +20,13 @@ export const TEMPLATE_HAS_PHOTO_SLOT = {
   template_12: true,
   template_13: true,
   template_14: true,
-  template_15: true,
   template_16: true,
   template_17: true,
   template_18: true,
   template_19: true,
   template_20: true,
   template_21: true,
+  template_22: true,
 };
 
 /** @type {Record<string, Set<string>>} */
@@ -61,14 +61,6 @@ const MY_INFO_KEYS_BY_SLUG = {
     'website',
     'address',
   ]),
-  template_15: new Set([
-    'full_name',
-    'job_title',
-    'phone',
-    'email',
-    'website',
-    'address',
-  ]),
   template_16: new Set([
     'full_name',
     'job_title',
@@ -84,6 +76,15 @@ const MY_INFO_KEYS_BY_SLUG = {
   template_20: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
   /** Layout 21 — company + tagline lines removed from My information (name + role + contacts only). */
   template_21: new Set(['full_name', 'job_title', 'phone', 'email', 'website', 'address']),
+  /** Layout 22 — contacts + portrait only (no company / social rows in HTML). */
+  template_22: new Set([
+    'full_name',
+    'job_title',
+    'phone',
+    'email',
+    'website',
+    'address',
+  ]),
 };
 
 const DEFAULT_KEYS = MY_INFO_KEYS_BY_SLUG.template_1;

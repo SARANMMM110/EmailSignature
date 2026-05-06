@@ -9,13 +9,13 @@ import {
   TEMPLATE_12_CANONICAL_COLORS,
   TEMPLATE_13_CANONICAL_COLORS,
   TEMPLATE_14_CANONICAL_COLORS,
-  TEMPLATE_15_CANONICAL_COLORS,
   TEMPLATE_16_CANONICAL_COLORS,
   TEMPLATE_17_CANONICAL_COLORS,
   TEMPLATE_18_CANONICAL_COLORS,
   TEMPLATE_19_CANONICAL_COLORS,
   TEMPLATE_20_CANONICAL_COLORS,
   TEMPLATE_21_CANONICAL_COLORS,
+  TEMPLATE_22_CANONICAL_COLORS,
   uuidToTemplateSlug,
 } from '../lib/templateIds.js';
 import { profileFormPartialForGenerate } from '../lib/myInfoDraft.js';
@@ -69,13 +69,13 @@ export function resolveDemoPayloadColors(slug, paletteColors) {
   if (s === 'template_12') return [...TEMPLATE_12_CANONICAL_COLORS];
   if (s === 'template_13') return [...TEMPLATE_13_CANONICAL_COLORS];
   if (s === 'template_14') return [...TEMPLATE_14_CANONICAL_COLORS];
-  if (s === 'template_15') return [...TEMPLATE_15_CANONICAL_COLORS];
   if (s === 'template_16') return [...TEMPLATE_16_CANONICAL_COLORS];
   if (s === 'template_17') return [...TEMPLATE_17_CANONICAL_COLORS];
   if (s === 'template_18') return [...TEMPLATE_18_CANONICAL_COLORS];
   if (s === 'template_19') return [...TEMPLATE_19_CANONICAL_COLORS];
   if (s === 'template_20') return [...TEMPLATE_20_CANONICAL_COLORS];
   if (s === 'template_21') return [...TEMPLATE_21_CANONICAL_COLORS];
+  if (s === 'template_22') return [...TEMPLATE_22_CANONICAL_COLORS];
   return [...ENGINE_PALETTE_DEFAULT_ARRAY];
 }
 
@@ -133,6 +133,24 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
           photoUrl: 'https://static.codia.ai/s/image_4e3a0f16-8719-4bec-99d2-9ef5f3f8cd88.png',
         }
       : {};
+  const layout3Demo =
+    slug === 'template_3'
+      ? {
+          fullName: 'Michael Smith',
+          jobTitle: 'Graphic Designer',
+          companyName: 'YOUR LOGO',
+          tagline: 'TAGLINE HERE',
+          phone: '+000 00 000 111',
+          email: 'example@gmail.com',
+          website: 'www.yourwebsite.com',
+          address: '123 Anywhere St., Any City',
+          photoUrl: 'https://i.pravatar.cc/220?img=12',
+          facebook: 'https://www.facebook.com/',
+          twitter: 'https://twitter.com/',
+          instagram: 'https://www.instagram.com/',
+          linkedin: 'https://www.linkedin.com/',
+        }
+      : {};
   const layout13Demo =
     slug === 'template_13'
       ? {
@@ -155,19 +173,6 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
           website: 'www.maddomormeda.com',
           address: '130 Raw Visual Artist (2580 AT, 440)',
           photoUrl: 'https://i.pravatar.cc/200?img=47',
-        }
-      : {};
-  const layout15Demo =
-    slug === 'template_15'
-      ? {
-          fullName: 'Pauline Roberto',
-          jobTitle: 'Web Developer',
-          companyName: 'Your Company',
-          phone: '+123 456 7890',
-          email: 'youremail@mail.com',
-          website: 'www.yourwebsite.com',
-          address: '123 Empty teater\nLos Angles LA 313\nUnited State',
-          photoUrl: 'https://i.pravatar.cc/200?img=32',
         }
       : {};
   const layout16Demo =
@@ -247,6 +252,19 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
             'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=500&fit=crop&crop=faces&auto=format&q=80',
         }
       : {};
+  const layout22Demo =
+    slug === 'template_22'
+      ? {
+          fullName: 'Laluna Maria',
+          jobTitle: 'Executive Director',
+          phone: '000-827333-3837',
+          email: 'hello@example.com',
+          website: 'www.example.com',
+          address: '1234 your street here,',
+          photoUrl:
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop&crop=faces&auto=format&q=80',
+        }
+      : {};
   const baseForm = {
     fullName: f.full_name,
     jobTitle: f.job_title,
@@ -296,6 +314,21 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     if (!String(form.address || '').trim()) form.address = layout12Demo.address;
     if (!String(form.photoUrl || '').trim()) form.photoUrl = layout12Demo.photoUrl;
   }
+  if (slug === 'template_3') {
+    if (!String(form.fullName || '').trim()) form.fullName = layout3Demo.fullName;
+    if (!String(form.jobTitle || '').trim()) form.jobTitle = layout3Demo.jobTitle;
+    if (!String(form.companyName || '').trim()) form.companyName = layout3Demo.companyName;
+    if (!String(form.tagline || '').trim()) form.tagline = layout3Demo.tagline;
+    if (!String(form.phone || '').trim()) form.phone = layout3Demo.phone;
+    if (!String(form.email || '').trim()) form.email = layout3Demo.email;
+    if (!String(form.website || '').trim()) form.website = layout3Demo.website;
+    if (!String(form.address || '').trim()) form.address = layout3Demo.address;
+    if (!String(form.photoUrl || '').trim()) form.photoUrl = layout3Demo.photoUrl;
+    if (!String(form.facebook || '').trim()) form.facebook = layout3Demo.facebook;
+    if (!String(form.twitter || '').trim()) form.twitter = layout3Demo.twitter;
+    if (!String(form.instagram || '').trim()) form.instagram = layout3Demo.instagram;
+    if (!String(form.linkedin || '').trim()) form.linkedin = layout3Demo.linkedin;
+  }
   if (slug === 'template_13') {
     if (!String(form.fullName || '').trim()) form.fullName = layout13Demo.fullName;
     if (!String(form.jobTitle || '').trim()) form.jobTitle = layout13Demo.jobTitle;
@@ -313,15 +346,6 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     if (!String(form.website || '').trim()) form.website = layout14Demo.website;
     if (!String(form.address || '').trim()) form.address = layout14Demo.address;
     if (!String(form.photoUrl || '').trim()) form.photoUrl = layout14Demo.photoUrl;
-  }
-  if (slug === 'template_15') {
-    if (!String(form.fullName || '').trim()) form.fullName = layout15Demo.fullName;
-    if (!String(form.jobTitle || '').trim()) form.jobTitle = layout15Demo.jobTitle;
-    if (!String(form.phone || '').trim()) form.phone = layout15Demo.phone;
-    if (!String(form.email || '').trim()) form.email = layout15Demo.email;
-    if (!String(form.website || '').trim()) form.website = layout15Demo.website;
-    if (!String(form.address || '').trim()) form.address = layout15Demo.address;
-    if (!String(form.photoUrl || '').trim()) form.photoUrl = layout15Demo.photoUrl;
   }
   if (slug === 'template_16') {
     if (!String(form.fullName || '').trim()) form.fullName = layout16Demo.fullName;
@@ -392,22 +416,38 @@ export function demoHtmlGeneratePayload(templateSlug, paletteColors = null, acco
     if (!String(form.photoUrl || '').trim()) form.photoUrl = layout21Demo.photoUrl;
     form.logoUrl = '';
   }
+  if (slug === 'template_22') {
+    if (!String(form.fullName || '').trim()) form.fullName = layout22Demo.fullName;
+    if (!String(form.jobTitle || '').trim()) form.jobTitle = layout22Demo.jobTitle;
+    form.companyName = '';
+    form.tagline = '';
+    if (!String(form.phone || '').trim()) form.phone = layout22Demo.phone;
+    if (!String(form.email || '').trim()) form.email = layout22Demo.email;
+    if (!String(form.website || '').trim()) form.website = layout22Demo.website;
+    if (!String(form.address || '').trim()) form.address = layout22Demo.address;
+    if (!String(form.photoUrl || '').trim()) form.photoUrl = layout22Demo.photoUrl;
+    form.facebook = '';
+    form.linkedin = '';
+    form.logoUrl = '';
+  }
   const designShowLogo = true;
   const designFont =
     slug === 'template_13' || slug === 'template_14'
       ? "'Archivo', Helvetica, Arial, sans-serif"
-      : slug === 'template_15'
-        ? "'Montserrat', 'Poppins', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
+      : slug === 'template_3'
+        ? "'Montserrat', 'Poppins', 'Segoe UI', Tahoma, Arial, sans-serif"
         : slug === 'template_16'
           ? "'Poppins', 'Montserrat', 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
           : slug === 'template_17'
             ? "'Montserrat', 'Poppins', 'Roboto', Helvetica, Arial, sans-serif"
-            : slug === 'template_18' ||
-                slug === 'template_19' ||
-                slug === 'template_20' ||
-                slug === 'template_21'
-              ? "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-              : d.font;
+            : slug === 'template_22'
+              ? "'Playfair Display', 'Poppins', Georgia, 'Times New Roman', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+              : slug === 'template_18' ||
+                  slug === 'template_19' ||
+                  slug === 'template_20' ||
+                  slug === 'template_21'
+                ? "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+                : d.font;
   return {
     templateId: templateSlug,
     design: { font: designFont, showLogo: designShowLogo, showPhoto: true },
@@ -651,6 +691,53 @@ export function wrapSignatureHtmlForIframe(signatureHTML, options = {}) {
     width: 620px !important;
     max-width: 620px !important;
   }
+  /** Layout 11 with photo off — outer rail matches inner card (452px). */
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:452px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:452px"] {
+    width: 452px !important;
+    max-width: 452px !important;
+  }
+  /** Layout 13 with photo off — shell matches inner row (482px). */
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:482px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:482px"] {
+    width: 482px !important;
+    max-width: 482px !important;
+  }
+  /** Layout 14 with photo off — shell matches inner row (462px). */
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:462px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:462px"] {
+    width: 462px !important;
+    max-width: 462px !important;
+  }
+  /** Layout 20 with photo off — neon shell (412px). */
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:412px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:412px"] {
+    width: 412px !important;
+    max-width: 412px !important;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="min-width:620px"] {
+    width: 620px !important;
+    min-width: 620px !important;
+    max-width: 620px !important;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:660px"] {
+    width: 660px !important;
+    max-width: 660px !important;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="min-width:660px"] {
+    width: 660px !important;
+    min-width: 660px !important;
+    max-width: 660px !important;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:522px"] {
+    width: 522px !important;
+    max-width: 522px !important;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="min-width:522px"] {
+    width: 522px !important;
+    min-width: 522px !important;
+    max-width: 522px !important;
+  }
   [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="width:484px"] {
     width: 484px !important;
     max-width: 484px !important;
@@ -701,6 +788,28 @@ export function wrapSignatureHtmlForIframe(signatureHTML, options = {}) {
   [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:620px"] td[data-sig-part="banner"] > table[role="presentation"] {
     width: 100% !important;
     max-width: 620px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:660px"] td[data-sig-part="signature"],
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:660px"] td[data-sig-part="banner"] {
+    width: 100% !important;
+    max-width: 660px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:660px"] td[data-sig-part="banner"] > table[role="presentation"] {
+    width: 100% !important;
+    max-width: 660px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:522px"] td[data-sig-part="signature"],
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:522px"] td[data-sig-part="banner"] {
+    width: 100% !important;
+    max-width: 522px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:522px"] td[data-sig-part="banner"] > table[role="presentation"] {
+    width: 100% !important;
+    max-width: 522px !important;
     box-sizing: border-box;
   }
   [data-sig-preview="bare"] .sig-zoom-wrap > table[role="presentation"][style*="max-width:484px"] td[data-sig-part="signature"],
@@ -795,6 +904,18 @@ export function wrapSignatureHtmlForIframe(signatureHTML, options = {}) {
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="banner"][style*="width:620px"] {
     width: 620px !important;
     max-width: 620px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:660px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="banner"][style*="width:660px"] {
+    width: 660px !important;
+    max-width: 660px !important;
+    box-sizing: border-box;
+  }
+  [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:522px"],
+  [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="banner"][style*="width:522px"] {
+    width: 522px !important;
+    max-width: 522px !important;
     box-sizing: border-box;
   }
   [data-sig-preview="bare"] .sig-zoom-wrap table[data-sig-part="signature"][style*="width:484px"],

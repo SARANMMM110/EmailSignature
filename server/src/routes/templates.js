@@ -167,8 +167,10 @@ function mapFileTemplates(filters) {
   }));
   if (filters.tier) list = list.filter((t) => t.tier === filters.tier);
   if (filters.style) list = list.filter((t) => (t.style_tags || [t.style]).includes(filters.style));
-  if (filters.has_logo === 'true') list = list.filter((t) => t.has_logo);
-  if (filters.has_logo === 'false') list = list.filter((t) => !t.has_logo);
+  if (filters.has_logo === 'true')
+    list = list.filter((t) => t.has_logo || String(t.id) === 'template_22');
+  if (filters.has_logo === 'false')
+    list = list.filter((t) => !t.has_logo || String(t.id) === 'template_22');
   return list;
 }
 
@@ -198,8 +200,7 @@ router.get(
       let q = supabaseAdmin.from('templates').select('*').eq('is_active', true);
       if (tier) q = q.eq('tier', tier);
       if (style) q = q.eq('style', style);
-      if (has_logo === 'true') q = q.eq('has_logo', true);
-      if (has_logo === 'false') q = q.eq('has_logo', false);
+      /** Logo filter applied after merge — Layout 22 (`has_logo: false`) still appears when filtering by logo slot (matches gallery sidebar). */
 
       const { data, error } = await q.order('sort_order', { ascending: true });
       if (error) {
@@ -211,7 +212,15 @@ router.get(
       }
       const uniqueByEngine = dedupeTemplatesByEngine(data).map(normalizeCatalogRowForEngine);
       await ensureMissingTemplatesInSupabase(uniqueByEngine);
-      const merged = mergeMissingEnginesFromMeta(uniqueByEngine);
+      let merged = mergeMissingEnginesFromMeta(uniqueByEngine);
+      const l22Slug = 'template_22';
+      const l22Uuid = String(TEMPLATE_SLUG_TO_UUID.template_22).toLowerCase();
+      const isLayout22Row = (t) => {
+        const id = String(t?.id ?? '').toLowerCase();
+        return id === l22Slug || id === l22Uuid;
+      };
+      if (has_logo === 'true') merged = merged.filter((t) => t.has_logo || isLayout22Row(t));
+      if (has_logo === 'false') merged = merged.filter((t) => !t.has_logo || isLayout22Row(t));
       res.json({ templates: merged.map(mergeStaticPreview) });
     } catch (e) {
       next(e);

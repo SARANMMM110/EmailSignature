@@ -40,15 +40,29 @@ export const LANDING_TEMPLATE_ROWS = [
   { id: 'template_12', label: 'Resume card', tier: 'free' },
   { id: 'template_13', label: 'Dark card + rail', tier: 'free' },
   { id: 'template_14', label: 'Light + orange card', tier: 'free' },
-  { id: 'template_15', label: 'Lime + white card', tier: 'free' },
   { id: 'template_16', label: 'Navy split + portrait', tier: 'free' },
   { id: 'template_17', label: 'Lime creative card', tier: 'free' },
   { id: 'template_18', label: 'Navy Zubrilka card', tier: 'free' },
   { id: 'template_19', label: 'Periwinkle creative card', tier: 'free' },
   { id: 'template_20', label: 'Neon dark card', tier: 'free' },
+  { id: 'template_22', label: 'Cream editorial', tier: 'free' },
 ];
 
-/** Landing “Templates” section — sample previews only (not the full catalog). */
-export const LANDING_TEMPLATE_SHOWCASE = ['template_17', 'template_18', 'template_19', 'template_20']
+/**
+ * Landing “Templates” section — 3×3 grid of distinct previews (not the full catalog).
+ * Omits `template_7` / `template_8`: their HTML falls back to `template_2` / `template_3` on the server.
+ * Slot 7 uses `template_22` (not `template_10`) — logo + cutout photo layouts read too similar to slot 3 at iframe scale.
+ */
+export const LANDING_TEMPLATE_SHOWCASE = [
+  'template_1',
+  'template_2',
+  'template_3',
+  'template_5',
+  'template_6',
+  'template_9',
+  'template_22',
+  'template_11',
+  'template_12',
+]
   .map((id) => LANDING_TEMPLATE_ROWS.find((r) => r.id === id))
   .filter(Boolean);

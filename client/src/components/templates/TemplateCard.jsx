@@ -41,18 +41,20 @@ export function TemplateCard({
   const previewWidthPx = useMemo(() => {
     const slug = uuidToTemplateSlug(template.id);
     if (slug === 'template_2') return 600;
-    if (slug === 'template_1' || slug === 'template_5') return 520;
+    if (slug === 'template_1') return 600;
+    if (slug === 'template_5') return 520;
+    if (slug === 'template_3') return 620;
     if (slug === 'template_11') return 620;
     if (slug === 'template_12') return 520;
     if (slug === 'template_13') return 600;
     if (slug === 'template_14') return 600;
-    if (slug === 'template_15') return 600;
     if (slug === 'template_16') return 600;
     if (slug === 'template_17') return 600;
     if (slug === 'template_18') return 521;
     if (slug === 'template_19') return 600;
     if (slug === 'template_20') return 600;
     if (slug === 'template_21') return 620;
+    if (slug === 'template_22') return 620;
     return 600;
   }, [template.id]);
 

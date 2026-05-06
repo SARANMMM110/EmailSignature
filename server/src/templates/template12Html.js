@@ -1,7 +1,7 @@
 /**
  * Layout 12 — 520×162 Rheina reference (email-safe tables): cream card surface (no full-bleed plate PNG — avoids baked-in edge); left “Hello, I’m” +
  * full name + chevron + lime role pill (black title, centered, rounded); center **P** / **E** / **A** + copy (no colons); small X;
- * right column: **SVG lime rail** (`t12_photo_rail_uri`) on **card-colored** td (not lime) so SVG transparency shows the stepped cut; portrait + squiggle on top. Tokens from `buildTemplate12PaletteContext`.
+ * right column when `sig_has_photo_column`: **SVG lime rail** (`t12_photo_rail_uri`) on **card-colored** td (not lime) so SVG transparency shows the stepped cut; portrait + squiggle on top. Without photo, rail + squiggle are omitted and the P/E/A column widens. Tokens from `buildTemplate12PaletteContext`.
  */
 
 export const TEMPLATE_12_MARKUP = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="520" style="width:520px;max-width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;font-family:'Inter',system-ui,-apple-system,'Segoe UI',Arial,Helvetica,sans-serif;border:0;box-shadow:none;">
@@ -28,7 +28,7 @@ export const TEMPLATE_12_MARKUP = `<table role="presentation" cellpadding="0" ce
 </tr>
 </table>
 </td>
-<td width="130" valign="top" style="width:130px;max-width:130px;vertical-align:top;padding:38px 0 0 4px;">
+<td width="{{#if sig_has_photo_column}}130{{else}}280{{/if}}" valign="top" style="width:{{#if sig_has_photo_column}}130{{else}}280{{/if}}px;max-width:{{#if sig_has_photo_column}}130{{else}}280{{/if}}px;vertical-align:top;padding:38px 0 0 4px;">
 {{#if phone}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>
 <td valign="top" style="padding:0 4px 0 0;vertical-align:top;font-size:11px;font-weight:700;line-height:14px;color:{{t12_contact_label}};mso-line-height-rule:exactly;">P</td>
 <td valign="top" style="vertical-align:top;font-size:11px;font-weight:300;line-height:14px;color:{{t12_contact_muted}};mso-line-height-rule:exactly;">{{phone}}</td>
@@ -43,6 +43,7 @@ export const TEMPLATE_12_MARKUP = `<table role="presentation" cellpadding="0" ce
 </tr></table>{{/if}}
 <div style="padding-top:18px;line-height:0;font-size:0;text-align:left;"><img src="{{{t12_x_uri}}}" width="7" height="6" alt="" style="display:block;width:7px;height:6px;border:0;"></div>
 </td>
+{{#if sig_has_photo_column}}
 <td width="150" valign="top" align="right" style="width:150px;max-width:150px;vertical-align:top;padding:17px 8px 0 0;text-align:right;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse;margin:0 0 0 auto;">
 <tr>
@@ -59,6 +60,7 @@ export const TEMPLATE_12_MARKUP = `<table role="presentation" cellpadding="0" ce
 </tr>
 </table>
 </td>
+{{/if}}
 </tr>
 </table>
 </td>

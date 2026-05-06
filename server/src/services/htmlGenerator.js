@@ -14,6 +14,24 @@ import { T18_CARD_HEIGHT_PX } from '../templates/template18Html.js';
 import { T19_CARD_HEIGHT_PX, T19_CARD_WIDTH_PX } from '../templates/template19Html.js';
 import { T20_CARD_HEIGHT_PX, T20_CARD_WIDTH_PX } from '../templates/template20Html.js';
 import {
+  T3_CARD_HEIGHT_PX,
+  T3_CARD_WIDTH_PX,
+  T3_INNER_GRID_W_PX,
+  T3_LEFT_RAIL_ROW2_PAD_TOP_PX,
+  T3_NO_LOGO_SPACER_PAD_ADJ_PX,
+  T3_RIGHT_PHONE_ROW_PAD_TOP_PX,
+} from '../templates/template3Html.js';
+import {
+  buildTemplate22DecoSvg,
+  buildTemplate22NamePanelBgSvg,
+  buildTemplate22PhotoBottomOverlaySvg,
+} from '../templates/template22DecoSvg.js';
+import {
+  T22_COMPACT_W_PX,
+  T22_NAME_COL_W_NO_PHOTO_PX,
+  T22_NAME_COL_W_WITH_PHOTO_PX,
+} from '../templates/template22Html.js';
+import {
   splitSignaturePreviewSlots,
   intersperseBrBetweenBannerPartTables,
 } from '../lib/splitSignaturePreviewSlots.js';
@@ -784,6 +802,8 @@ function buildTemplate5PaletteContext(c1, c2, c3, c4) {
   const shell = mixHexWithWhite(p4, 0.96);
   const leftArt = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="280" viewBox="0 0 180 280"><rect width="180" height="280" fill="${shell}"/><path d="M-5,22 C40,4 82,52 65,118 C48,188 -8,224 -5,280 L-5,0 Z" fill="${p2}" opacity="0.16"/><path d="M0,128 Q48,102 86,158 T48,280" fill="none" stroke="${p1}" stroke-width="24" stroke-linecap="round" opacity="0.22"/><ellipse cx="94" cy="212" rx="80" ry="62" fill="${p1}" opacity="0.14"/></svg>`;
   const rightArt = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="260" viewBox="0 0 200 260"><rect width="200" height="260" fill="none"/><ellipse cx="168" cy="44" rx="92" ry="78" fill="${p1}" opacity="0.12"/><ellipse cx="186" cy="198" rx="76" ry="62" fill="${p3}" opacity="0.1"/></svg>`;
+  const contactStroke = pickDarkestReadable([mixHexPair('#232231', p4, 0.35), '#232231'], 0.48);
+  const icons = contactStrokeIconDataUrisCompact(contactStroke);
   return {
     t5_shell_bg: shell,
     t5_deco_left: svgDataUri(leftArt),
@@ -794,6 +814,10 @@ function buildTemplate5PaletteContext(c1, c2, c3, c4) {
     t5_job_color: mixHexPair('#373737', p4, 0.38),
     t5_contact_color: mixHexPair('#464646', p4, 0.42),
     t5_link_color: mixHexPair(p1, p2, 0.42),
+    t5_icon_phone: icons.phone,
+    t5_icon_mail: icons.mail,
+    t5_icon_globe: icons.globe,
+    t5_icon_pin: icons.pin,
   };
 }
 
@@ -817,13 +841,16 @@ function buildTemplate6PaletteContext(c1, c2, c3, c4) {
   const shell = mixHexPair('#0e1327', p4, 0.55);
   const strip = mixHexWithBlack(mixHexPair(p1, p4, 0.38), 0.18);
   const leftBase = mixHexWithWhite(p2, 0.94);
-  const leftArt = `<svg xmlns="http://www.w3.org/2000/svg" width="216" height="280" viewBox="0 0 216 280"><rect width="216" height="280" fill="#ffffff"/><path d="M-6,36 C58,4 128,72 96,168 C72,238 8,272 0,280 L0,0 Z" fill="${leftBase}" opacity="0.98"/><path d="M0,150 Q78,118 148,182 T96,280" fill="none" stroke="${p1}" stroke-width="20" stroke-linecap="round" opacity="0.5"/><ellipse cx="108" cy="224" rx="82" ry="62" fill="${p1}" opacity="0.14"/></svg>`;
-  const rightArt = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="280" viewBox="0 0 360 280"><rect width="360" height="280" fill="none"/><path d="M360,0 L360,280 L228,280 Q268,168 312,88 Q340,36 360,0 Z" fill="${mixHexWithBlack(p4, 0.22)}" opacity="0.42"/><path d="M320,24 Q382,96 340,220" fill="none" stroke="${p1}" stroke-width="22" stroke-linecap="round" opacity="0.45"/><ellipse cx="300" cy="200" rx="96" ry="72" fill="${p3}" opacity="0.12"/></svg>`;
+  const leftArt = `<svg xmlns="http://www.w3.org/2000/svg" width="216" height="220" viewBox="0 0 216 220"><rect width="216" height="220" fill="#ffffff"/><path d="M-6,32 C56,6 120,58 92,132 C70,192 8,218 0,220 L0,0 Z" fill="${leftBase}" opacity="0.98"/><path d="M0,128 Q72,100 138,158 T88,220" fill="none" stroke="${p1}" stroke-width="18" stroke-linecap="round" opacity="0.5"/><ellipse cx="104" cy="178" rx="72" ry="52" fill="${p1}" opacity="0.14"/></svg>`;
+  /** Deco anchored top-right; compact vertical extent so it scales with short signatures without a huge empty lower band. */
+  const rightArt = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200" viewBox="0 0 360 200"><rect width="360" height="200" fill="none"/><path d="M360,0 L360,200 L248,200 Q278,118 308,72 Q338,28 360,0 Z" fill="${mixHexWithBlack(p4, 0.22)}" opacity="0.4"/><path d="M328,18 Q368,78 332,168" fill="none" stroke="${p1}" stroke-width="20" stroke-linecap="round" opacity="0.42"/><ellipse cx="292" cy="138" rx="72" ry="54" fill="${p3}" opacity="0.11"/><path d="M318,172 L324,182 L314,182 Z M338,188 L344,198 L334,198 Z" fill="${p1}" opacity="0.55"/></svg>`;
   const sparkFill = mixHexPair(p3, p1, 0.35);
   const sparkSm = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12,2 L22,12 L12,22 L2,12 Z" fill="${sparkFill}" opacity="0.92"/></svg>`;
   const sparkLg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path d="M16,3 L29,16 L16,29 L3,16 Z" fill="${sparkFill}" opacity="0.88"/></svg>`;
   const contactStroke = pickDarkestReadable([mixHexPair('#232231', p4, 0.35), '#232231'], 0.48);
   const icons = contactStrokeIconDataUrisCompact(contactStroke);
+  const fbGlyph = primaryOnWhite(p1, p4);
+  const t6FacebookIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${fbGlyph}"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-1.5c-.63 0-1 .38-1 1V12h2.5l-.5 3H14v7.95c5.05-.5 9-4.76 9-9.95z"/></svg>`;
 
   return {
     t6_shell_bg: shell,
@@ -838,11 +865,15 @@ function buildTemplate6PaletteContext(c1, c2, c3, c4) {
     t6_name_color: pickDarkestReadable([p4, '#0c0c21'], 0.48),
     t6_title_color: mixHexPair('#101124', p4, 0.28),
     t6_contact_color: mixHexPair('#232231', p4, 0.25),
+    /** Hairline between title block and contact grid (tracks text swatch). */
+    t6_contact_divider: mixHexPair('#e8eaef', mixHexPair('#232231', p4, 0.3), 0.55),
     t6_link_color: mixHexPair(p1, p2, 0.38),
     t6_fb_glyph_color: primaryOnWhite(p1, p4),
     t6_icon_phone: icons.phone,
     t6_icon_mail: icons.mail,
+    t6_icon_globe: icons.globe,
     t6_icon_pin: icons.pin,
+    t6_icon_facebook: svgDataUri(t6FacebookIconSvg),
   };
 }
 
@@ -1308,29 +1339,7 @@ function buildTemplate14PaletteContext(c1, c2, c3, c4) {
   };
 }
 
-/** Layout 15 — lime = primary (c1); card + ink follow text (c4) + secondary (c2); tab icon stroke uses text. */
-function buildTemplate15PaletteContext(c1, c2, c3, c4) {
-  const lime = String(c1 || '#D4FF1F').trim();
-  const secondary = String(c2 || '#0a0a0a').trim();
-  const accent = String(c3 || '#b4d97a').trim();
-  const text = String(c4 || '#0a0a0a').trim();
-  const card = signatureCardSurface(text);
-  const ink = paletteTextOnSurface(text, card, 4.5);
-  const muted = companyMutedColor(text, secondary, card);
-  const phBg = mixHexPair(mixHexPair('#e8f4b8', lime, 0.35), mixHexPair(accent, secondary, 0.12), 0.4);
-  const tabIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="30" viewBox="0 0 40 22"><path fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" d="M2 14 Q8 6 14 14 T26 7 T38 14"/><path fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" d="M2 18 Q8 10 14 18 T26 11 T38 18"/><path fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" d="M2 10 Q8 3 14 10 T26 3 T38 10"/></svg>`;
-  return {
-    t15_lime: lime,
-    t15_card: card,
-    t15_ink: ink,
-    t15_muted: muted,
-    t15_tab_icon: svgDataUri(tabIconSvg),
-    t15_photo_placeholder_bg: phBg,
-    t15_photo_placeholder_color: ink,
-  };
-}
-
-/** Layout 16 — 600×~112px banner: #0a192f navy, #555 title, #333 contacts, 4×3 dots (no social URIs). */
+/** Layout 16 — 600px: white photo rail | navy block, white name + rule + light contact text + stroke icons. */
 function buildTemplate16PaletteContext(c1, c2, c3, c4) {
   const navyRef = '#0a192f';
   const navy = String(c1 || navyRef).trim();
@@ -1360,22 +1369,26 @@ function buildTemplate16PaletteContext(c1, c2, c3, c4) {
   const wicon = contactStrokeIconDataUrisCompact('#ffffff');
   const leftCellStyle = `background-color:${navy};background-image:url(${svgDataUri(citySvg)});background-repeat:no-repeat;background-position:90% 108%;background-size:260% auto;`;
   const phBg = mixHexPair('#0f1f35', ink, 0.4);
-  /** Job line — reference `.title` ~#555. */
-  const titleMuted = mixHexPair('#555555', bodyGray, 0.28);
-  /** Contact rows — reference `.contact-info` ~#333. */
-  const contactInk = mixHexPair('#333333', bodyGray, 0.38);
+  /** Title line on navy panel — softened white. */
+  const titleOnNavy = mixHexWithWhite(navy, 0.62);
+  /** Contact lines on navy — light gray for contrast with stroke icons. */
+  const contactOnNavy = mixHexWithWhite(navy, 0.76);
+  /** Hairline between name stack and contacts (still generated for compatibility). */
+  const ruleSoft = 'rgba(255,255,255,0.38)';
   return {
     t16_navy: navy,
     t16_ring_dark: ink,
     t16_white: white,
-    t16_name_color: navy,
-    t16_title_color: titleMuted,
-    t16_contact_color: contactInk,
+    t16_name_color: '#ffffff',
+    t16_title_color: titleOnNavy,
+    t16_contact_color: contactOnNavy,
+    t16_rule_soft: ruleSoft,
     t16_left_cell_style: leftCellStyle,
     t16_hex_uri: svgDataUri(hexSvg),
     t16_dots_tr: t16Dots(4, 3, 8, 1.22),
     t16_dots_br: t16Dots(4, 3, 8, 1.22),
     t16_deco_tr: svgDataUri(decoTrSvg),
+    t16_icon_mail: wicon.mail,
     t16_icon_phone: wicon.phone,
     t16_icon_globe: wicon.globe,
     t16_icon_pin: wicon.pin,
@@ -1800,55 +1813,209 @@ function buildTemplate21PaletteContext(c1, c2, c3, c4) {
   };
 }
 
+/** Layout 22 — gold #caa76b (c1); navy-charcoal #0f1b26 (c2); cream #f4efe8 (c3); body #111 (c4). */
+function buildTemplate22PaletteContext(c1, c2, c3, c4) {
+  const gold = String(c1 || '#caa76b').trim();
+  const ink = String(c2 || '#0f1b26').trim();
+  const cream = String(c3 || '#f4efe8').trim();
+  const bodyInk = String(c4 || '#111111').trim();
+  const muted = mixHexWithWhite(bodyInk, 0.48);
+  /** Photo circle (fixed reference tone). */
+  const photoRing = '#e6d7c3';
+  /** Reference HTML contact / title greys. */
+  const contactInk = '#333333';
+  const titleSoft = '#555555';
+  const ic = contactStrokeIconDataUrisCompact(ink);
+  const decoSvg = buildTemplate22DecoSvg(ink, cream, gold, photoRing);
+  const photoBottomSvg = buildTemplate22PhotoBottomOverlaySvg(ink);
+  const namePanelSvg = buildTemplate22NamePanelBgSvg(gold, ink, photoRing);
+  const sepSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="200" viewBox="0 0 16 200">` +
+    `<rect x="7" y="0" width="2" height="200" fill="${gold}"/>` +
+    `<path d="M 8 94 L 11 100 L 8 106 L 5 100 Z" fill="${gold}"/>` +
+    `</svg>`;
+  const waSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${ink}">` +
+    `<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.671.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.881 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>` +
+    `</svg>`;
+  return {
+    t22_orange: gold,
+    t22_gold: gold,
+    t22_muted: muted,
+    t22_contact: contactInk,
+    t22_title_soft: titleSoft,
+    t22_ink: bodyInk,
+    t22_cream: cream,
+    t22_sep_uri: svgDataUri(sepSvg),
+    t22_deco_uri: svgDataUri(decoSvg),
+    t22_photo_bottom_uri: svgDataUri(photoBottomSvg),
+    t22_name_panel_uri: svgDataUri(namePanelSvg),
+    t22_icon_whatsapp: svgDataUri(waSvg),
+    t22_icon_mail: ic.mail,
+    t22_icon_globe: ic.globe,
+    t22_icon_phone: ic.phone,
+    t22_icon_pin: ic.pin,
+    t22_photo_placeholder_bg: ink,
+    t22_photo_placeholder_color: cream,
+  };
+}
+
 /**
- * Layout 3 — teal quarters + top arc, 8×3 light-teal dot grids, white-on-black contact icons,
- * social glyphs (FB / mail / dribbble / X).
+ * Layout 3 — concentric diamond field (SVG), white-stroke contact icons on primary squares,
+ * circular social glyphs (FB / X / Instagram / LinkedIn).
  */
-function buildTemplate3DecorDataUris(primaryHex) {
-  const teal = String(primaryHex || '#2bbecb').trim();
-  const lightTeal = mixHexWithWhite(teal, 0.52);
-  const dotGrid = (fill, cols, rows, gap, r) => {
-    let body = '';
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        body += `<circle cx="${x * gap + gap / 2}" cy="${y * gap + gap / 2}" r="${r}" fill="${fill}"/>`;
-      }
-    }
-    const w = cols * gap;
-    const h = rows * gap;
+function buildTemplate3DecorDataUris(primaryHex, textHex, cardWidthPx) {
+  const p1 = String(primaryHex || '#2456b8').trim();
+  const ink = String(textHex || '#1e3a8a').trim();
+  /** Card width — full-bleed shell; must match {@link sig_t3_card_width} (photo vs compact). */
+  const w =
+    Number.isFinite(Number(cardWidthPx)) && Number(cardWidthPx) > 0
+      ? Math.round(Number(cardWidthPx))
+      : T3_CARD_WIDTH_PX;
+  /** ViewBox height: rotated squares extend S/√2 from center — keep inside [0,h] and [0,w]. */
+  const h = T3_CARD_HEIGHT_PX;
+  const cx = w / 2;
+  const t3sx = (n) => Math.round((Number(n) * w) / 600);
+  /** Slightly below mid so bottom-aligned portrait sits in the light “frame”; main stack center. */
+  const cy = h * 0.515;
+  /** Outer square S1 tuned so S1/√2 fits between cy and card edges. */
+  const diamondSizeFactor = 0.46;
+  const scale = (w / 945) * diamondSizeFactor;
+  const S1 = 560 * scale;
+  const S2 = 510 * scale;
+  const S3 = 460 * scale;
+  const S4 = 410 * scale;
+  /** Smaller overlapping diamonds upper-center (drawn after main stack so they show in the top band). */
+  const cyTop = h * 0.38;
+  const StTop1 = S1 * 0.42;
+  const StTop2 = S1 * 0.34;
+  const bg = mixHexWithWhite(p1, 0.94);
+  const g1m18 = mixHexWithWhite(p1, 0.12);
+  const g1m38 = mixHexWithWhite(p1, 0.38);
+  const g1m65 = mixHexWithWhite(p1, 0.62);
+  const g3a = mixHexWithWhite(p1, 0.18);
+  const g3b = mixHexWithWhite(p1, 0.42);
+  const g3c = mixHexWithWhite(p1, 0.68);
+  const g4a = mixHexWithWhite(p1, 0.88);
+  const g4b = mixHexWithWhite(p1, 0.95);
+  /** Decorative accents (corners + texture) — keep opacity low for busy signatures. */
+  const decoStroke = p1;
+  const decoInk = mixHexWithWhite(ink, 0.45);
+  const t3DecorOverlay =
+    `<pattern id="t3dotTex" width="14" height="14" patternUnits="userSpaceOnUse">` +
+    `<circle cx="2.5" cy="2.5" r="0.75" fill="${decoStroke}" opacity="0.35"/>` +
+    `</pattern>` +
+    `<linearGradient id="t3fadeTop" x1="0" y1="0" x2="0" y2="1">` +
+    `<stop offset="0%" stop-color="${decoStroke}" stop-opacity="0.14"/>` +
+    `<stop offset="55%" stop-color="${decoStroke}" stop-opacity="0"/>` +
+    `</linearGradient>` +
+    `<linearGradient id="t3fadeBot" x1="0" y1="1" x2="0" y2="0">` +
+    `<stop offset="0%" stop-color="${decoInk}" stop-opacity="0.1"/>` +
+    `<stop offset="60%" stop-color="${decoInk}" stop-opacity="0"/>` +
+    `</linearGradient>`;
+  const t3DecorShapes =
+    `<rect width="${w}" height="${h}" fill="url(#t3dotTex)" opacity="0.055"/>` +
+    `<rect width="${w}" height="72" fill="url(#t3fadeTop)"/>` +
+    `<rect x="0" y="${h - 56}" width="${w}" height="56" fill="url(#t3fadeBot)"/>` +
+    `<g fill="none" stroke="${decoStroke}" stroke-width="1.15" opacity="0.2">` +
+    `<path d="M 10 32 L 10 10 L 32 10"/>` +
+    `<path d="M ${w - 10} 32 L ${w - 10} 10 L ${w - 32} 10"/>` +
+    `<path d="M 10 ${h - 32} L 10 ${h - 10} L 32 ${h - 10}"/>` +
+    `<path d="M ${w - 10} ${h - 32} L ${w - 10} ${h - 10} L ${w - 32} ${h - 10}"/>` +
+    `</g>` +
+    `<g fill="none" stroke="${decoStroke}" stroke-width="0.85" opacity="0.16">` +
+    `<path d="M 26 24 L 38 36 L 26 48 L 14 36 Z"/>` +
+    `<path d="M ${t3sx(574)} ${h - 48} L ${t3sx(586)} ${h - 36} L ${t3sx(574)} ${h - 24} L ${t3sx(562)} ${h - 36} Z"/>` +
+    `</g>` +
+    `<path d="M -20 ${h * 0.42} C ${t3sx(120)} ${h * 0.28} ${t3sx(200)} ${h * 0.52} ${cx} ${h * 0.45} S ${t3sx(480)} ${h * 0.38} ${w + 20} ${h * 0.48}" ` +
+    `fill="none" stroke="${decoStroke}" stroke-width="0.75" opacity="0.09"/>` +
+    `<g opacity="0.12" stroke="${decoStroke}" stroke-width="0.9" fill="none">` +
+    `<circle cx="${t3sx(118)}" cy="18" r="3.5"/>` +
+    `<circle cx="${t3sx(482)}" cy="${h - 18}" r="3.5"/>` +
+    `<circle cx="${t3sx(520)}" cy="26" r="2.2"/>` +
+    `<circle cx="${t3sx(88)}" cy="${h - 22}" r="2.2"/>` +
+    `</g>`;
+  const rotGrad = (side, gradId) =>
+    `<rect x="${cx - side / 2}" y="${cy - side / 2}" width="${side}" height="${side}" fill="url(#${gradId})" transform="rotate(45 ${cx} ${cy})"/>`;
+  const rotGradAt = (side, gradId, cy0) =>
+    `<rect x="${cx - side / 2}" y="${cy0 - side / 2}" width="${side}" height="${side}" fill="url(#${gradId})" transform="rotate(45 ${cx} ${cy0})"/>`;
+  const rotWhite = (side) =>
+    `<rect x="${cx - side / 2}" y="${cy - side / 2}" width="${side}" height="${side}" fill="#ffffff" transform="rotate(45 ${cx} ${cy})"/>`;
+  const diamondSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<defs>` +
+    `<linearGradient id="t3gd1" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0%" stop-color="${p1}"/>` +
+    `<stop offset="22%" stop-color="${g1m18}"/>` +
+    `<stop offset="42%" stop-color="${g1m38}"/>` +
+    `<stop offset="68%" stop-color="${g1m65}"/>` +
+    `<stop offset="92%" stop-color="#ffffff"/>` +
+    `</linearGradient>` +
+    `<linearGradient id="t3gd3" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0%" stop-color="${g3a}"/>` +
+    `<stop offset="28%" stop-color="${g3b}"/>` +
+    `<stop offset="58%" stop-color="${g3c}"/>` +
+    `<stop offset="88%" stop-color="#ffffff"/>` +
+    `</linearGradient>` +
+    `<linearGradient id="t3gd4" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0%" stop-color="${g4a}"/>` +
+    `<stop offset="45%" stop-color="${g4b}"/>` +
+    `<stop offset="100%" stop-color="#ffffff"/>` +
+    `</linearGradient>` +
+    t3DecorOverlay +
+    `</defs>` +
+    `<rect width="${w}" height="${h}" fill="${bg}"/>` +
+    rotGrad(S1, 't3gd1') +
+    rotWhite(S2) +
+    rotGrad(S3, 't3gd3') +
+    rotGrad(S4, 't3gd4') +
+    `<g opacity="0.9">` +
+    rotGradAt(StTop1, 't3gd3', cyTop) +
+    rotGradAt(StTop2, 't3gd4', cyTop) +
+    `</g>` +
+    t3DecorShapes +
+    `</svg>`;
+  const t3_diamond_bg = svgDataUri(diamondSvg);
+  const wicons = contactStrokeIconDataUrisCompact('#ffffff');
+  const t3SocCirc = (dPath, ox, oy, sc) => {
+    const inner = `<path transform="translate(${ox},${oy}) scale(${sc})" fill="#ffffff" d="${dPath}"/>`;
     return svgDataUri(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">` +
+        `<circle cx="12" cy="12" r="12" fill="${p1}"/>` +
+        `<g>${inner}</g>` +
+        `</svg>`
     );
   };
-  const decoTl = svgDataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52"><circle cx="0" cy="0" r="52" fill="${teal}"/></svg>`
-  );
-  /** Shallow crest (not a full 64px semicircle) so the headshot stays visible when table z-index stacking varies. */
-  const decoTopArc = svgDataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="24" viewBox="0 0 128 24" preserveAspectRatio="none"><path d="M0 24 Q64 2 128 24 Z" fill="${teal}"/></svg>`
-  );
-  const decoBr = svgDataUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 70 70"><circle cx="70" cy="70" r="70" fill="${teal}"/></svg>`
-  );
-  const wicons = contactStrokeIconDataUrisCompact('#ffffff');
-  const fb = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z"/></svg>`;
-  const mailGlyph = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>`;
-  const drib = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><circle cx="7.5" cy="12" r="3.2"/><circle cx="17" cy="7" r="3.2"/><circle cx="15.5" cy="17" r="3.2"/></svg>`;
-  const tw = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+  const fbPath =
+    'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z';
+  const twPath =
+    'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z';
+  const liPath =
+    'M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69A1.69 1.69 0 005.19 6.88c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z';
+  const igW = '#ffffff';
+  const igGlyph =
+    `<rect x="5.5" y="5.5" width="13" height="13" rx="3" ry="3" fill="none" stroke="${igW}" stroke-width="1.4"/>` +
+    `<circle cx="12" cy="12" r="3" fill="${igW}"/>` +
+    `<circle cx="16.5" cy="7.5" r="1" fill="${igW}"/>`;
+  const igSvg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">` +
+    `<circle cx="12" cy="12" r="12" fill="${p1}"/>` +
+    `<g>${igGlyph}</g>` +
+    `</svg>`;
   return {
-    t3_deco_tl: decoTl,
-    t3_deco_top_arc: decoTopArc,
-    t3_deco_br: decoBr,
-    t3_dots_bl: dotGrid(lightTeal, 8, 3, 7, 1.35),
-    t3_dots_tr: dotGrid(lightTeal, 8, 3, 7, 1.35),
+    t3_diamond_bg,
+    /** Fallback wash behind stretched SVG — matches {@link diamondSvg} base rect. */
+    t3_card_wash: bg,
+    t3_ink: ink,
+    t3_icon_cell: p1,
     t3_icon_phone: wicons.phone,
     t3_icon_globe: wicons.globe,
     t3_icon_mail: wicons.mail,
     t3_icon_pin: wicons.pin,
-    t3_soc_facebook: svgDataUri(fb),
-    t3_soc_mail: svgDataUri(mailGlyph),
-    t3_soc_dribbble: svgDataUri(drib),
-    t3_soc_twitter: svgDataUri(tw),
+    t3_soc_facebook: t3SocCirc(fbPath, 3.5, 3.5, 0.88),
+    t3_soc_twitter: t3SocCirc(twPath, 3.4, 3.4, 0.88),
+    t3_soc_instagram: svgDataUri(igSvg),
+    t3_soc_linkedin: t3SocCirc(liPath, 3.2, 3.2, 0.8),
     t3_title_muted: '#9ca3af',
   };
 }
@@ -2079,6 +2246,7 @@ function splitDisplayNameTwoLinesMax(raw) {
     const mid = Math.ceil(w.length / 2);
     return { line1: w.slice(0, mid), line2: w.slice(mid) };
   }
+  /** Two tokens → first name / last name (never split a single word mid-string). */
   if (words.length === 2) return { line1: words[0], line2: words[1] };
   const k = Math.ceil(words.length / 2);
   return { line1: words.slice(0, k).join(' '), line2: words.slice(k).join(' ') };
@@ -2192,6 +2360,7 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const isTemplate19 = templateKey === 'template_19';
   const isTemplate20 = templateKey === 'template_20';
   const isTemplate21 = templateKey === 'template_21';
+  const isTemplate22 = templateKey === 'template_22';
   const d0 = payload.design || {};
   const showLogo = d0.showLogo !== false && d0.show_logo !== false;
   const showPhoto = d0.showPhoto !== false && d0.show_photo !== false;
@@ -2209,7 +2378,8 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     isTemplate18 ||
     isTemplate19 ||
     isTemplate20 ||
-    isTemplate21
+    isTemplate21 ||
+    isTemplate22
   ) {
     const lu16 = String(f.logoUrl || '').trim();
     if (/dummyimage\.com/i.test(lu16)) {
@@ -2236,6 +2406,81 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   if (!showLogo) logoUrl = '';
   if (!showPhoto) photoUrl = '';
 
+  /** Photo column (image or initials) — false when user turns off the photo slot. */
+  const sig_has_photo_column = showPhoto;
+  const sig_has_logo_image = Boolean(String(logoUrl || '').trim());
+  /** Both photo and logo toggles off — templates use a single centered stack where supported. */
+  const sig_center_compact = !showPhoto && !showLogo;
+  /** Layout 11: full card width — drops by photo column when portrait rail is hidden. */
+  const T11_OUTER_FULL_PX = 620;
+  const T11_PHOTO_COL_PX = 168;
+  const sig_t11_outer_width = sig_has_photo_column
+    ? T11_OUTER_FULL_PX
+    : T11_OUTER_FULL_PX - T11_PHOTO_COL_PX;
+  /** Layout 13: 600px card — drops 118px yellow photo rail when portrait slot is off. */
+  const T13_OUTER_FULL_PX = 600;
+  const T13_PHOTO_COL_PX = 118;
+  const sig_t13_outer_width = sig_has_photo_column
+    ? T13_OUTER_FULL_PX
+    : T13_OUTER_FULL_PX - T13_PHOTO_COL_PX;
+  /** Layout 14: 600px — drops 138px orange portrait well when photo off; footer keeps 400:200 ratio. */
+  const T14_OUTER_FULL_PX = 600;
+  const T14_PHOTO_COL_PX = 138;
+  const sig_t14_outer_width = sig_has_photo_column
+    ? T14_OUTER_FULL_PX
+    : T14_OUTER_FULL_PX - T14_PHOTO_COL_PX;
+  const sig_t14_footer_left_px = sig_has_photo_column
+    ? 400
+    : Math.round((sig_t14_outer_width * 400) / T14_OUTER_FULL_PX);
+  const sig_t14_footer_right_px = sig_has_photo_column
+    ? 200
+    : Math.round((sig_t14_outer_width * 200) / T14_OUTER_FULL_PX);
+  /** Layout 20: 600px neon card — drops 188px portrait gutter when photo slot off (`sig_t20_outer_width`). */
+  const T20_OUTER_FULL_PX = T20_CARD_WIDTH_PX;
+  const T20_PHOTO_COL_PX = 188;
+  const sig_t20_outer_width = sig_has_photo_column
+    ? T20_OUTER_FULL_PX
+    : T20_OUTER_FULL_PX - T20_PHOTO_COL_PX;
+  /** Layout 1: same card width as photo row (520px); compact split uses 260 + 260. */
+  const sig_t1_inner_width = 520;
+  /** Layout 5: full 520px with photo rail (180 + 340); without photo use copy column width only. */
+  const sig_t5_inner_width = sig_has_photo_column ? 520 : 340;
+  /** Layout 16: 600px (200 white + 400 navy) with photo; **400px** navy card only when photo off — same inner split, no stretched row. */
+  const sig_t16_outer_width = sig_has_photo_column ? 600 : 400;
+  /** Layout 22: 620px rail; name column widens when portrait column is omitted ({@link T22_NAME_COL_W_NO_PHOTO_PX}). */
+  const sig_t22_outer_width = T22_COMPACT_W_PX;
+  const sig_t22_name_col_w = sig_has_photo_column
+    ? T22_NAME_COL_W_WITH_PHOTO_PX
+    : T22_NAME_COL_W_NO_PHOTO_PX;
+  /** Layout 9: 600px chevron row with photo; **560px** + narrower chevron strip when photo off. */
+  const sig_t9_card_width = sig_has_photo_column ? 600 : 560;
+  const sig_t9_chevron_col_w = sig_has_photo_column ? 240 : 200;
+  /** Photo strip + name rail share one `<td>` so the chevron SVG is not covered by a sibling cell. */
+  const T9_NAME_RAIL_W_PX = 178;
+  const sig_t9_identity_band_width = sig_t9_chevron_col_w + T9_NAME_RAIL_W_PX;
+  /** No-photo: nudge chevron art left + extra name inset so the tip does not meet the uppercase lines. */
+  const sig_t9_chevron_bg_pos = sig_has_photo_column ? '0px 50%' : '-40px 50%';
+  const sig_t9_name_rail_pad_left = sig_has_photo_column ? 14 : 22;
+  /** Layout 2: inner well 508px (photo + identity + contacts) or 468px when photo+logo off — same 240|228 columns, no dead center stack. */
+  const sig_t2_inner_width = sig_center_compact ? 468 : 508;
+  const sig_t2_card_width = 92 + sig_t2_inner_width;
+  /** Layout 3: 620px shell, 592px inner — `T3_CARD_WIDTH_PX` / `T3_INNER_GRID_W_PX` (unchanged if photo is off). */
+  const sig_t3_inner_grid_width = T3_INNER_GRID_W_PX;
+  const sig_t3_card_width = T3_CARD_WIDTH_PX;
+  /** Layout 6: 600px with photo (24+216+360); strip + narrower deco column when photo off. */
+  const T6_STRIP_W_PX = 24;
+  const T6_LEFT_COL_PHOTO_PX = 216;
+  const T6_LEFT_COL_NO_PHOTO_PX = 128;
+  const T6_RIGHT_COL_W_PX = 360;
+  const sig_t6_left_col_w = sig_has_photo_column ? T6_LEFT_COL_PHOTO_PX : T6_LEFT_COL_NO_PHOTO_PX;
+  const sig_t6_card_width = T6_STRIP_W_PX + sig_t6_left_col_w + T6_RIGHT_COL_W_PX;
+  const sig_t6_left_bg_size = sig_has_photo_column
+    ? `${T6_LEFT_COL_PHOTO_PX}px auto`
+    : `${T6_LEFT_COL_NO_PHOTO_PX}px auto`;
+  /** Layout 10 content wells (600px card − 40px lime bar = 560px): shrink right rail when photo is off. */
+  const t10_left_px = sig_center_compact ? 560 : sig_has_photo_column ? 340 : 420;
+  const t10_right_px = sig_center_compact ? 0 : sig_has_photo_column ? 220 : 140;
+
   const linkRaw = String(f.signatureLinkUrl || '').trim();
   const wrapHref =
     (f.entireSignatureClickable || linkRaw) && linkRaw ? ensureHttps(f.signatureLinkUrl) : '';
@@ -2244,6 +2489,12 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const companyLines = companyRaw.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   const has_brand_row = Boolean(String(logoUrl || '').trim()) || Boolean(companyRaw);
   const has_brand_slot = showLogo && has_brand_row;
+  /** Layout 6: logo image or company line in brand row (no empty spacer) — drives vertical copy padding. */
+  const t6_has_brand_visual =
+    Boolean(String(logoUrl || '').trim()) ||
+    (showLogo && Boolean(String(companyRaw || '').trim()));
+  /** Layout 5: logo image present — when false, right-column copy is vertically centered (no spacer row). */
+  const t5_has_brand_visual = Boolean(String(logoUrl || '').trim());
   const t10_company_display = (companyLines[0] || companyRaw).trim();
   const t10_tagline_text =
     companyLines.length > 1
@@ -2286,7 +2537,7 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const deco_geo_url = buildGeoDecoDataUri(c1, c2, c3);
   const deco_floral_url = buildFloralDecoDataUri(c1, c2, c3);
   const header_bar_bg = headerBarBackground(c1, c2);
-  const t3 = buildTemplate3DecorDataUris(c1);
+  const t3 = buildTemplate3DecorDataUris(c1, c4, sig_t3_card_width);
   const name_initials = nameInitialsFromFullName(f.fullName || '');
   const t3_name_first_upper = String(name_line1 || '').toUpperCase();
   const t3_name_last_upper = String(name_line2 || '').toUpperCase();
@@ -2320,50 +2571,8 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const t6_row1_right_display = t6FbDisp || t6WebDisp || '';
   const t6_row1_right_href = facebookUrl || (websiteRaw && websiteFull ? websiteFull : '');
   const has_t6_row1_right = Boolean(String(t6_row1_right_display).trim());
-
-  const t15Display = splitDisplayNameTwoLinesMax(f.fullName || '');
-  const t15_name_line1_upper = String(t15Display.line1 || '').toUpperCase();
-  const t15_name_line2_upper = String(t15Display.line2 || '').toUpperCase();
-  const t15_has_name_line2 = Boolean(String(t15Display.line2 || '').trim());
-  const t15_job_pill_text = escapeHtml(String(jobTitleRaw || '').trim().toUpperCase());
-  const t15_has_contact_body = !!(
-    String(phoneRaw || '').trim() ||
-    emailTrim ||
-    (websiteRaw && websiteFull)
-  );
-
-  const t15MutedHex = company_muted;
-  const t15AddrParts = [address_line1, address_line2, address_line3]
-    .map((x) => String(x || '').trim())
-    .filter(Boolean);
-  let t15_address_body_html = '';
-  if (has_address_lines) {
-    const nl = addrRaw.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
-    if (nl.length >= 2) {
-      t15_address_body_html = nl.map((p) => escapeHtml(p)).join(' / ');
-    } else if (t15AddrParts.length) {
-      t15_address_body_html = t15AddrParts.map((p) => escapeHtml(p)).join(' / ');
-    }
-  }
-  const t15ContactChunks = [];
-  if (String(phoneRaw || '').trim()) {
-    t15ContactChunks.push(escapeHtml(String(phoneRaw).trim()));
-  }
-  if (emailTrim) {
-    t15ContactChunks.push(
-      emailTrim && t3_mailto_href
-        ? `<a href="${escapeHtml(t3_mailto_href)}" style="color:${t15MutedHex};text-decoration:none;">${escapeHtml(emailTrim)}</a>`
-        : escapeHtml(emailTrim)
-    );
-  }
-  if (websiteRaw && websiteFull && websiteDisplay) {
-    t15ContactChunks.push(
-      `<a href="${escapeHtml(websiteFull)}" style="color:${t15MutedHex};text-decoration:none;">${escapeHtml(websiteDisplay)}</a>`
-    );
-  }
-  const t15_contact_body_html = t15ContactChunks.join(` <span style="color:${t15MutedHex};">/</span> `);
-  const t15_show_company_in_tab =
-    !!String(companyRaw || '').trim() && !/^core$/i.test(String(companyRaw || '').trim());
+  /** Layout 6 row1 right: Facebook takes precedence over website — icon matches link target. */
+  const t6_row1_right_is_facebook = Boolean(String(facebookUrl || '').trim());
 
   const t16_lockup_upper = escapeHtml(
     String((companyLines[0] || companyRaw || '')).trim().toUpperCase()
@@ -2394,6 +2603,39 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const t21_has_tagline = Boolean(String(t21_tagline_line1 || '').trim());
   const t21_cta_href = String(websiteFull || wrapHref || '').trim();
   const t21_has_cta = Boolean(t21_cta_href);
+  const t22NameSplit = splitDisplayNameTwoLinesMax(f.fullName || '');
+  const t22_name_line1 = String(t22NameSplit.line1 || '').trim();
+  const t22_name_line2 = String(t22NameSplit.line2 || '').trim();
+  const t22_has_name_line2 = Boolean(String(t22_name_line2 || '').trim());
+  /** Layout 3: same two-line split as Layout 22 — explicit `<br>` only, no extra wraps. */
+  const t3_name_line1 = t22_name_line1;
+  const t3_name_line2 = t22_name_line2;
+  const t3_has_name_line2 = t22_has_name_line2;
+  /** Layout 3: pad left rail row1 when logo off so website/address sit with phone/email. */
+  const t3_name_block_approx_h = String(f.fullName || '').trim()
+    ? t3_has_name_line2
+      ? 44
+      : 24
+    : 0;
+  const t3_title_block_approx_h = String(jobTitleRaw || '').trim() ? 22 : 0;
+  const sig_t3_no_logo_r1_spacer_h = showLogo
+    ? 0
+    : Math.max(
+        0,
+        Math.round(
+          t3_name_block_approx_h +
+            t3_title_block_approx_h +
+            T3_RIGHT_PHONE_ROW_PAD_TOP_PX -
+            T3_LEFT_RAIL_ROW2_PAD_TOP_PX -
+            T3_NO_LOGO_SPACER_PAD_ADJ_PX
+        )
+      );
+  const t22TitleSplit = splitIntroTwoLines(jobTitleRaw);
+  const t22_title_line1 = String(t22TitleSplit.l1 || '').trim();
+  const t22_title_line2 = String(t22TitleSplit.l2 || '').trim();
+  const t22_has_title_line2 = Boolean(String(t22_title_line2 || '').trim());
+  const t22_has_title_block = Boolean(jobTitleRaw);
+  const t22_tel_href = t16_tel_href;
   const t20NameSplit = splitDisplayNameTwoLinesMax(f.fullName || '');
   const t20_name_line1_upper = String(t20NameSplit.line1 || '').toUpperCase();
   const t20_name_line2_upper = String(t20NameSplit.line2 || '').toUpperCase();
@@ -2442,6 +2684,35 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     logo_url: logoUrl,
     show_logo: showLogo,
     show_photo: showPhoto,
+    sig_has_photo_column,
+    sig_has_logo_image,
+    sig_center_compact,
+    sig_t11_outer_width,
+    sig_t13_outer_width,
+    sig_t14_outer_width,
+    sig_t14_footer_left_px,
+    sig_t14_footer_right_px,
+    sig_t20_outer_width,
+    sig_t1_inner_width,
+    sig_t5_inner_width,
+    sig_t16_outer_width,
+    sig_t22_outer_width,
+    sig_t22_name_col_w,
+    sig_t9_card_width,
+    sig_t9_chevron_col_w,
+    sig_t9_identity_band_width,
+    sig_t9_chevron_bg_pos,
+    sig_t9_name_rail_pad_left,
+    sig_t2_inner_width,
+    sig_t2_card_width,
+    sig_t3_card_width,
+    sig_t3_inner_grid_width,
+    sig_t3_no_logo_r1_spacer_h,
+    sig_t6_card_width,
+    sig_t6_left_col_w,
+    sig_t6_left_bg_size,
+    t10_left_px,
+    t10_right_px,
 
     color_1: c1,
     color_2: c2,
@@ -2525,13 +2796,13 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     ...buildTemplate12PaletteContext(c1, c2, c3, c4),
     ...buildTemplate13PaletteContext(c1, c2, c3, c4),
     ...buildTemplate14PaletteContext(c1, c2, c3, c4),
-    ...buildTemplate15PaletteContext(c1, c2, c3, c4),
     ...buildTemplate16PaletteContext(c1, c2, c3, c4),
     ...buildTemplate17PaletteContext(c1, c2, c3, c4),
     ...buildTemplate18PaletteContext(c1, c2, c3, c4),
     ...buildTemplate19PaletteContext(c1, c2, c3, c4),
     ...buildTemplate20PaletteContext(c1, c2, c3, c4),
     ...buildTemplate21PaletteContext(c1, c2, c3, c4),
+    ...buildTemplate22PaletteContext(c1, c2, c3, c4),
     t13_has_name_second_line,
     t13_name_line1_upper,
     t13_name_line2_upper,
@@ -2540,14 +2811,6 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     t14_job_line1,
     t14_job_line2,
     t14_has_job_line2,
-    t15_name_line1_upper,
-    t15_name_line2_upper,
-    t15_has_name_line2,
-    t15_job_pill_text,
-    t15_has_contact_body,
-    t15_address_body_html,
-    t15_contact_body_html,
-    t15_show_company_in_tab,
     t16_lockup_upper,
     t16_tel_href,
     t17_tel_href,
@@ -2575,6 +2838,17 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     t21_cta_href,
     t21_has_cta,
     t21_tel_href: t16_tel_href,
+    t22_name_line1,
+    t22_name_line2,
+    t22_has_name_line2,
+    t3_name_line1,
+    t3_name_line2,
+    t3_has_name_line2,
+    t22_title_line1,
+    t22_title_line2,
+    t22_has_title_line2,
+    t22_has_title_block,
+    t22_tel_href,
     has_t16_web_mail,
     t10_company_display,
     has_t10_tagline: Boolean(t10_tagline_text),
@@ -2591,7 +2865,12 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     t6_row1_right_display,
     t6_row1_right_href,
     has_t6_row1_right,
+    t6_row1_right_is_facebook,
     has_t6_sparkles: true,
+    t6_has_brand_visual,
+    t5_has_brand_visual,
+    t3_tagline_display: taglineTrim,
+    has_t3_tagline_field: Boolean(taglineTrim),
     ...t3,
 
     apply_brand_palette_to_cta_banners: d.apply_brand_palette_to_cta_banners === true,
@@ -2626,6 +2905,8 @@ function contextFromSignatureRecord(data, genOptions = {}) {
     facebook: social.facebook || bf.facebook || '',
     telegram: social.telegram || bf.telegram || '',
     medium: social.medium || bf.medium || '',
+    t22FacebookLabel: bf.t22FacebookLabel || '',
+    t22LinkedinLabel: bf.t22LinkedinLabel || '',
     showBadge: data.show_badge !== false && data.showBadge !== false,
     signatureLinkUrl: data.signature_link || bf.signatureLinkUrl || '',
     entireSignatureClickable: Boolean(String(data.signature_link || bf.signatureLinkUrl || '').trim()),
@@ -2699,13 +2980,14 @@ function resolveRowTemplateSlug(row) {
     if (/^template_12$/i.test(s)) return 'template_12';
     if (/^template_13$/i.test(s)) return 'template_13';
     if (/^template_14$/i.test(s)) return 'template_14';
-    if (/^template_15$/i.test(s)) return 'template_15';
+    if (/^template_15$/i.test(s)) return 'template_16';
     if (/^template_16$/i.test(s)) return 'template_16';
     if (/^template_17$/i.test(s)) return 'template_17';
     if (/^template_18$/i.test(s)) return 'template_18';
     if (/^template_19$/i.test(s)) return 'template_19';
     if (/^template_20$/i.test(s)) return 'template_20';
     if (/^template_21$/i.test(s)) return 'template_21';
+    if (/^template_22$/i.test(s)) return 'template_22';
     if (/^template_\d+$/i.test(s)) return 'template_1';
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)) {
       return uuidToTemplateSlug(s);
@@ -3534,7 +3816,28 @@ function editorSecondaryBannerRenderable(editorBanner, previewSlotsMode = false)
 function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) {
   const blankPlaceholder = Boolean(appendOpts.blankPlaceholder);
   if (!editorBanner || !editorPrimaryBannerRenderable(editorBanner, blankPlaceholder)) return html;
-  const layoutW = bundleRailPxForEngineSlug(resolveTemplateKey(templateId));
+  const slug = resolveTemplateKey(templateId);
+  let layoutW = bundleRailPxForEngineSlug(slug);
+  if (slug === 'template_22') {
+    const t22 = Number(context?.sig_t22_outer_width);
+    if (Number.isFinite(t22) && t22 > 0) layoutW = Math.round(t22);
+  }
+  if (slug === 'template_11') {
+    const t11 = Number(context?.sig_t11_outer_width);
+    if (Number.isFinite(t11) && t11 > 0) layoutW = Math.round(t11);
+  }
+  if (slug === 'template_13') {
+    const t13 = Number(context?.sig_t13_outer_width);
+    if (Number.isFinite(t13) && t13 > 0) layoutW = Math.round(t13);
+  }
+  if (slug === 'template_14') {
+    const t14 = Number(context?.sig_t14_outer_width);
+    if (Number.isFinite(t14) && t14 > 0) layoutW = Math.round(t14);
+  }
+  if (slug === 'template_20') {
+    const t20 = Number(context?.sig_t20_outer_width);
+    if (Number.isFinite(t20) && t20 > 0) layoutW = Math.round(t20);
+  }
   const stripW = bannerStripContentWidthPx(layoutW);
 
   const primaryBanner = {
