@@ -400,12 +400,13 @@ export function normalizeSignatureTemplateSlug(design, template_id) {
   return 'template_1';
 }
 
-/** Editor preview rail (`bundleRailPxForEngineSlug`): Layout 2/1 = 600px; 5/12 = 520; 18 = 521; 3/11/21/22 = 620; 13–17,19–20 = 600. */
+/** Editor preview rail (`bundleRailPxForEngineSlug`): Layout 2/1 = 600px; 5/12 = 520; 18 = 521; 9 = 640; 3/11/21/22 = 620; 13–17,19–20 = 600. */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
   if (s === 'template_2') return 600;
   if (s === 'template_1') return 600;
   if (s === 'template_5' || s === 'template_12') return 520;
+  if (s === 'template_9') return 640;
   if (s === 'template_3') return 620;
   if (s === 'template_11') return 620;
   if (s === 'template_18') return 521;
@@ -427,7 +428,7 @@ export function bundleRailPxForSignature(signature) {
   const showPhoto =
     signature?.design?.showPhoto !== false && signature?.design?.show_photo !== false;
   if (slug === 'template_16' && !showPhoto) return 400;
-  if (slug === 'template_9' && !showPhoto) return 560;
+  if (slug === 'template_9' && !showPhoto) return 600;
   /** Layout 11: 620px with photo rail, 452px without (168px column dropped). */
   if (slug === 'template_11' && !showPhoto) return 452;
   /** Layout 13: 600px with yellow photo rail, 482px without (118px rail dropped). */

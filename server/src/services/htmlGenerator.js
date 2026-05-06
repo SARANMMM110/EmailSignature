@@ -2228,6 +2228,27 @@ function splitDisplayName(raw) {
 }
 
 /**
+ * Layout 9 chevron name rail: explicit lines only (no reliance on CSS wrap).
+ * - 1 word → one line.
+ * - 2 words → first | last (two lines).
+ * - 3+ words → first | middle(s) | last — third line only when a middle exists before the last token.
+ */
+function splitDisplayNameChevronThreeMax(raw) {
+  const words = String(raw || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return { line1: '', line2: '', line3: '' };
+  if (words.length === 1) return { line1: words[0], line2: '', line3: '' };
+  if (words.length === 2) return { line1: words[0], line2: words[1], line3: '' };
+  return {
+    line1: words[0],
+    line2: words.slice(1, -1).join(' '),
+    line3: words[words.length - 1],
+  };
+}
+
+/**
  * Layout 15 hero headline: **at most two lines** (explicit `<br>` only; no extra wraps).
  * Honors user newlines; otherwise balances multi-word names across two lines; splits one long token near the middle.
  */
@@ -2392,6 +2413,10 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const websiteFull = websiteRaw ? ensureHttps(websiteRaw) : '';
   const websiteDisplay = websiteRaw.replace(/^https?:\/\//i, '');
   const { name_line1, name_line2 } = splitDisplayName(f.fullName || '');
+  const t9ChevronName = splitDisplayNameChevronThreeMax(f.fullName || '');
+  const t9_name_line1 = String(t9ChevronName.line1 || '').trim();
+  const t9_name_line2 = String(t9ChevronName.line2 || '').trim();
+  const t9_name_line3 = String(t9ChevronName.line3 || '').trim();
 
   const linkedinUrl = ensureHttps(String(f.linkedin || '').trim());
   const twitterUrl = ensureHttps(String(f.twitter || '').trim());
@@ -2452,15 +2477,20 @@ function contextFromEditorPayload(payload, genOptions = {}) {
   const sig_t22_name_col_w = sig_has_photo_column
     ? T22_NAME_COL_W_WITH_PHOTO_PX
     : T22_NAME_COL_W_NO_PHOTO_PX;
-  /** Layout 9: 600px chevron row with photo; **560px** + narrower chevron strip when photo off. */
-  const sig_t9_card_width = sig_has_photo_column ? 600 : 560;
-  const sig_t9_chevron_col_w = sig_has_photo_column ? 240 : 200;
+  /** Layout 9: **640px** chevron row with photo; **600px** compact when photo off. */
+  const sig_t9_card_width = sig_has_photo_column ? 640 : 600;
+  /** Photo + chevron art column — narrower than legacy 240px so the name rail starts nearer the chevron tip (fits 96px avatar + inset). */
+  const sig_t9_chevron_col_w = 200;
   /** Photo strip + name rail share one `<td>` so the chevron SVG is not covered by a sibling cell. */
-  const T9_NAME_RAIL_W_PX = 178;
+  const T9_NAME_RAIL_W_PX = 210;
+  const sig_t9_name_rail_w = T9_NAME_RAIL_W_PX;
   const sig_t9_identity_band_width = sig_t9_chevron_col_w + T9_NAME_RAIL_W_PX;
+  /** Extra space between name rail and contact icons (pushes details right). */
+  const sig_t9_contacts_pad_left = 28;
   /** No-photo: nudge chevron art left + extra name inset so the tip does not meet the uppercase lines. */
   const sig_t9_chevron_bg_pos = sig_has_photo_column ? '0px 50%' : '-40px 50%';
-  const sig_t9_name_rail_pad_left = sig_has_photo_column ? 14 : 22;
+  /** Inset from the chevron/photo column — minimal so the name sits close to the chevron tip. */
+  const sig_t9_name_rail_pad_left = sig_has_photo_column ? 0 : 10;
   /** Layout 2: inner well 508px (photo + identity + contacts) or 468px when photo+logo off — same 240|228 columns, no dead center stack. */
   const sig_t2_inner_width = sig_center_compact ? 468 : 508;
   const sig_t2_card_width = 92 + sig_t2_inner_width;
@@ -2701,6 +2731,8 @@ function contextFromEditorPayload(payload, genOptions = {}) {
     sig_t9_card_width,
     sig_t9_chevron_col_w,
     sig_t9_identity_band_width,
+    sig_t9_name_rail_w,
+    sig_t9_contacts_pad_left,
     sig_t9_chevron_bg_pos,
     sig_t9_name_rail_pad_left,
     sig_t2_inner_width,
@@ -2747,6 +2779,9 @@ function contextFromEditorPayload(payload, genOptions = {}) {
 
     name_line1,
     name_line2,
+    t9_name_line1,
+    t9_name_line2,
+    t9_name_line3,
 
     linkedin_url: linkedinUrl,
     twitter_url: twitterUrl,

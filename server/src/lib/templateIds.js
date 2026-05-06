@@ -370,12 +370,13 @@ export function engineSlugFromCatalogTemplateId(id) {
   return 'template_1';
 }
 
-/** Bundle / preview rail: Layout 2 = 600px; Layout 1 = 600px (matches compact card width); Layout 5 & 12 = 520px; Layout 18 = 521px; Layout 3 & 11 & 21 & 22 = 620px; Layout 13–17, 19–20 = 600px (must match client editor preview). */
+/** Bundle / preview rail: Layout 2 = 600px; Layout 1 = 600px (matches compact card width); Layout 5 & 12 = 520px; Layout 18 = 521px; Layout 3 & 11 & 21 & 22 = 620px; Layout 9 = 640px; Layout 13–17, 19–20 = 600px (must match client editor preview). */
 export function bundleRailPxForEngineSlug(slug) {
   const s = String(slug || '').toLowerCase();
   if (s === 'template_2') return 600;
   if (s === 'template_1') return 600;
   if (s === 'template_5' || s === 'template_12') return 520;
+  if (s === 'template_9') return 640;
   if (s === 'template_3') return 620;
   if (s === 'template_11') return 620;
   if (s === 'template_18') return 521;
