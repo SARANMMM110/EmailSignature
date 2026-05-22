@@ -23,6 +23,9 @@ server {
     root /var/www/signaturestudio/dist;
     index index.html;
 
+    # Puppeteer PNG export can take 30–90s and POST bodies include full signature HTML.
+    client_max_body_size 5m;
+
     # ssl_certificate     /etc/letsencrypt/live/signaturestudio.biz/fullchain.pem;
     # ssl_certificate_key /etc/letsencrypt/live/signaturestudio.biz/privkey.pem;
 
@@ -32,6 +35,9 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_connect_timeout 30s;
         # Pass full path /api/... to Express (see comment at top).
         proxy_pass http://signaturestudio_api;
     }
@@ -50,3 +56,9 @@ server {
         try_files $uri $uri/ /index.html;
     }
 }
+
+# Deploy note: if you build in /var/www/EmailSignature/client, copy dist to nginx root:
+#   npm run build --prefix /var/www/EmailSignature/client
+#   rsync -av --delete /var/www/EmailSignature/client/dist/ /var/www/signaturestudio/dist/
+# If ModSecurity/WAF strips JSON quotes from HTML payloads, whitelist POST /api/generate-signature
+# or rely on the client sending Content-Type: text/html (see client/src/lib/signatureExportFetch.js).

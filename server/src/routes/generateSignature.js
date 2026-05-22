@@ -31,6 +31,14 @@ export function attachGenerateSignatureHtml(req, _res, next) {
     req.body,
     req.headers['content-type']
   );
+  const ct = String(req.headers['content-type'] || '').slice(0, 80);
+  const len = Buffer.isBuffer(req.body) ? req.body.length : 0;
+  console.log('[generate-signature] request', {
+    contentType: ct,
+    bytes: len,
+    htmlChars: req.signatureExportHtml?.length || 0,
+    hasAuth: Boolean(req.headers.authorization),
+  });
   next();
 }
 
@@ -219,6 +227,7 @@ export async function generateSignaturePost(req, res, next) {
       await browser.close();
     }
   } catch (e) {
+    console.error('[generate-signature] render failed:', e?.message || e);
     next(e);
   }
 }
