@@ -43,8 +43,17 @@ export async function postGenerateSignature(html, { accessToken } = {}) {
     credentials: 'include',
   });
 
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { message: text.slice(0, 200) };
+  }
   if (!res.ok) {
+    if (import.meta.env?.DEV) {
+      console.warn('[generate-signature] export failed', res.status, data);
+    }
     const err = new Error(
       data.message || data.error || `Request failed with status code ${res.status}`
     );

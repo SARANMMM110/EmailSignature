@@ -60,7 +60,7 @@ function withRenderLock(fn) {
 }
 
 /** Read raw body (must run before global JSON parser). */
-export const generateSignatureRawParser = express.raw({ type: '*/*', limit: '2mb' });
+export const generateSignatureRawParser = express.raw({ type: '*/*', limit: '5mb' });
 
 export function attachGenerateSignatureHtml(req, _res, next) {
   req.signatureExportHtml = htmlFromRawGenerateSignatureRequest(
@@ -137,6 +137,82 @@ function wrapDocument(fragmentHtml) {
 </html>`;
 }
 
+async function renderHtmlToPng(browser, html) {
+  const page = await browser.newPage();
+  try {
+    await page.setViewport({
+      width: 720,
+      height: 480,
+      deviceScaleFactor: 2,
+    });
+
+    // Do not wait for every remote asset — broken/slow img URLs can hang `load` and cause nginx 502/504.
+    await page.setContent(wrapDocument(html), {
+      waitUntil: 'domcontentloaded',
+      timeout: 30_000,
+    });
+
+    await page.evaluate(async () => {
+      const imgs = Array.from(document.images);
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) resolve();
+              else {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+                setTimeout(resolve, 4000);
+              }
+            })
+        )
+      );
+    });
+
+    await new Promise((r) => setTimeout(r, 400));
+
+    const root = await page.$('#sig-export-root');
+    let buf;
+    if (root) {
+      try {
+        buf = await root.screenshot({
+          type: 'png',
+          omitBackground: false,
+          captureBeyondViewport: true,
+        });
+      } catch {
+        buf = await root.screenshot({ type: 'png', omitBackground: false });
+      }
+      await root.dispose();
+    }
+    if (!buf?.length) {
+      const box = await page.evaluate(() => {
+        const el = document.getElementById('sig-export-root');
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          x: Math.max(0, Math.floor(r.left)),
+          y: Math.max(0, Math.floor(r.top)),
+          width: Math.min(Math.ceil(r.width), 4096),
+          height: Math.min(Math.ceil(r.height), 4096),
+        };
+      });
+      if (box && box.width > 0 && box.height > 0) {
+        buf = await page.screenshot({
+          type: 'png',
+          clip: box,
+          omitBackground: false,
+        });
+      } else {
+        buf = await page.screenshot({ type: 'png', omitBackground: false });
+      }
+    }
+    return buf;
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
 export async function generateSignaturePost(req, res, next) {
   try {
     const html = String(req.signatureExportHtml || '').trim();
@@ -184,61 +260,7 @@ export async function generateSignaturePost(req, res, next) {
 
     const png = await withRenderLock(async () => {
       const browser = await acquireSharedBrowser();
-      const page = await browser.newPage();
-      try {
-        await page.setViewport({
-          width: 720,
-          height: 480,
-          deviceScaleFactor: 2,
-        });
-
-        await page.setContent(wrapDocument(html), {
-          waitUntil: 'load',
-          timeout: 45_000,
-        });
-
-        await new Promise((r) => setTimeout(r, 800));
-
-        const root = await page.$('#sig-export-root');
-        let buf;
-        if (root) {
-          try {
-            buf = await root.screenshot({
-              type: 'png',
-              omitBackground: false,
-              captureBeyondViewport: true,
-            });
-          } catch {
-            buf = await root.screenshot({ type: 'png', omitBackground: false });
-          }
-          await root.dispose();
-        }
-        if (!buf?.length) {
-          const box = await page.evaluate(() => {
-            const el = document.getElementById('sig-export-root');
-            if (!el) return null;
-            const r = el.getBoundingClientRect();
-            return {
-              x: Math.max(0, Math.floor(r.left)),
-              y: Math.max(0, Math.floor(r.top)),
-              width: Math.min(Math.ceil(r.width), 4096),
-              height: Math.min(Math.ceil(r.height), 4096),
-            };
-          });
-          if (box && box.width > 0 && box.height > 0) {
-            buf = await page.screenshot({
-              type: 'png',
-              clip: box,
-              omitBackground: false,
-            });
-          } else {
-            buf = await page.screenshot({ type: 'png', omitBackground: false });
-          }
-        }
-        return buf;
-      } finally {
-        await page.close().catch(() => {});
-      }
+      return renderHtmlToPng(browser, html);
     });
 
     const fileName = `signature-${randomUUID()}.png`;
@@ -266,14 +288,26 @@ export async function generateSignaturePost(req, res, next) {
       storage,
     });
   } catch (e) {
-    console.error('[generate-signature] render failed:', e?.message || e);
-    if (e?.message?.includes('Could not find Chrome') || e?.message?.includes('Failed to launch')) {
+    const msg = e?.message || String(e);
+    console.error('[generate-signature] render failed:', msg, {
+      htmlChars: String(req.signatureExportHtml || '').length,
+    });
+    if (msg.includes('Could not find Chrome') || msg.includes('Failed to launch')) {
       return res.status(503).json({
         error: 'PUPPETEER_UNAVAILABLE',
         message:
           'PNG export browser is not available on the server. Install Chromium/Puppeteer OS dependencies (see server/.env.example).',
       });
     }
-    next(e);
+    if (msg.includes('timeout') || msg.includes('Timeout')) {
+      return res.status(504).json({
+        error: 'RENDER_TIMEOUT',
+        message: 'PNG export timed out. Try again or simplify images in the signature.',
+      });
+    }
+    return res.status(500).json({
+      error: 'RENDER_FAILED',
+      message: msg || 'PNG export failed',
+    });
   }
 }
