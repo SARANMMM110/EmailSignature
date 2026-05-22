@@ -244,27 +244,27 @@ export async function generateSignaturePost(req, res, next) {
     const fileName = `signature-${randomUUID()}.png`;
     const base64 = Buffer.from(png).toString('base64');
 
-      const uploaded = await uploadGeneratedSignaturePng(png, fileName);
-      let url;
-      let storage = 'local';
+    const uploaded = await uploadGeneratedSignaturePng(png, fileName);
+    let url;
+    let storage = 'local';
 
-      if (uploaded.ok) {
-        url = uploaded.publicUrl;
-        storage = 'supabase';
-      } else {
-        await fs.mkdir(SIGNATURES_DIR, { recursive: true });
-        const filePath = path.join(SIGNATURES_DIR, fileName);
-        await fs.writeFile(filePath, png);
-        url = `${publicBase}/signatures/${fileName}`;
-      }
+    if (uploaded.ok) {
+      url = uploaded.publicUrl;
+      storage = 'supabase';
+    } else {
+      await fs.mkdir(SIGNATURES_DIR, { recursive: true });
+      const filePath = path.join(SIGNATURES_DIR, fileName);
+      await fs.writeFile(filePath, png);
+      url = `${publicBase}/signatures/${fileName}`;
+    }
 
-      return res.json({
-        url,
-        mime: 'image/png',
-        base64,
-        dataUrl: `data:image/png;base64,${base64}`,
-        storage,
-      });
+    return res.json({
+      url,
+      mime: 'image/png',
+      base64,
+      dataUrl: `data:image/png;base64,${base64}`,
+      storage,
+    });
   } catch (e) {
     console.error('[generate-signature] render failed:', e?.message || e);
     if (e?.message?.includes('Could not find Chrome') || e?.message?.includes('Failed to launch')) {

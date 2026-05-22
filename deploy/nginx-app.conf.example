@@ -20,7 +20,7 @@ server {
     listen 443 ssl http2;
     server_name signaturestudio.biz;
 
-    root /var/www/signaturestudio/dist;
+    root /var/www/EmailSignature/client/dist;
     index index.html;
 
     # Puppeteer PNG export can take 30–90s and POST bodies include full signature HTML.
@@ -57,8 +57,7 @@ server {
     }
 }
 
-# Deploy note: if you build in /var/www/EmailSignature/client, copy dist to nginx root:
-#   npm run build --prefix /var/www/EmailSignature/client
-#   rsync -av --delete /var/www/EmailSignature/client/dist/ /var/www/signaturestudio/dist/
-# If ModSecurity/WAF strips JSON quotes from HTML payloads, whitelist POST /api/generate-signature
-# or rely on the client sending Content-Type: text/html (see client/src/lib/signatureExportFetch.js).
+# Deploy note: build + sync in one step:
+#   bash /var/www/EmailSignature/deploy/build-and-deploy-client.sh
+# Or set NGINX_ROOT if your nginx root differs:
+#   NGINX_ROOT=/path/to/dist bash deploy/build-and-deploy-client.sh
