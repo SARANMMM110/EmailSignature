@@ -1,9 +1,12 @@
-/** UTF-8 → base64 for POST /api/generate-signature (avoids WAF mangling HTML in JSON). */
-export function signatureExportRequestBody(html) {
-  const s = String(html ?? '').trim();
-  if (!s) return { html: '' };
-  const bytes = new TextEncoder().encode(s);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return { htmlB64: btoa(binary) };
+/** Axios config: POST raw HTML (no JSON) so WAF/proxies cannot strip JSON quotes around `<table>`. */
+export function signatureExportRequestConfig() {
+  return {
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    transformRequest: [
+      (data, headers) => {
+        headers['Content-Type'] = 'text/html; charset=utf-8';
+        return data;
+      },
+    ],
+  };
 }

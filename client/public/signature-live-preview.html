@@ -391,8 +391,8 @@
       try {
         const res = await fetch('/api/generate-signature', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ html: state.lastRendered }),
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+          body: String(state.lastRendered || ''),
         });
         const j = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(j.error || res.statusText);

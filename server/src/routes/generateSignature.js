@@ -3,7 +3,7 @@
  * configured (public HTTPS URL for email clients), else save under /public/signatures.
  * Authenticated users need `copy_html_to_clipboard` (Personal+). Plan flag `png_rich_clipboard_render` matches Personal+ for client gates.
  */
-import { Router } from 'express';
+import express, { Router } from 'express';
 import puppeteer from 'puppeteer';
 import { existsSync } from 'fs';
 import fs from 'fs/promises';
@@ -82,14 +82,24 @@ function wrapDocument(fragmentHtml) {
 </html>`;
 }
 
-router.post('/generate-signature', optionalAuth, async (req, res, next) => {
+/** Raw HTML body (WAF-safe). JSON `{ html }` / `{ htmlB64 }` still accepted for older clients. */
+function htmlFromRequest(req) {
+  if (typeof req.body === 'string') return req.body.trim();
+  return htmlFromGenerateSignatureBody(req.body);
+}
+
+router.post(
+  '/generate-signature',
+  express.text({ type: ['text/html', 'text/plain'], limit: '2mb' }),
+  optionalAuth,
+  async (req, res, next) => {
   try {
-    const html = htmlFromGenerateSignatureBody(req.body);
+    const html = htmlFromRequest(req);
     if (!html) {
       return res.status(400).json({
         error: 'MISSING_HTML',
         message:
-          'Send JSON with a non-empty "html" string or "htmlB64" (UTF-8 base64). Example: {"html":"<table>...</table>"}',
+          'POST signature HTML as Content-Type text/html, or JSON {"html":"..."} / {"htmlB64":"..."}.',
       });
     }
 
@@ -205,6 +215,7 @@ router.post('/generate-signature', optionalAuth, async (req, res, next) => {
   } catch (e) {
     next(e);
   }
-});
+  }
+);
 
 export default router;

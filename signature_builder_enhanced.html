@@ -1419,8 +1419,8 @@ async function requestPuppeteerImageUrl(html) {
   const base = getSignatureApiBase();
   const res = await fetch(base + '/api/generate-signature', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ html: String(html || '').trim() }),
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    body: String(html || '').trim(),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
