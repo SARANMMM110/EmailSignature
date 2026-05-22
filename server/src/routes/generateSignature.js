@@ -2,26 +2,37 @@
  * POST /api/generate-signature — render HTML to PNG via Puppeteer, upload to Supabase Storage when
  * configured (public HTTPS URL for email clients), else save under /public/signatures.
  * Authenticated users need `copy_html_to_clipboard` (Personal+). Plan flag `png_rich_clipboard_render` matches Personal+ for client gates.
+ *
+ * Mounted in app.js **before** `express.json()` so WAF-mangled JSON bodies are not rejected by body-parser.
  */
-import express, { Router } from 'express';
+import express from 'express';
 import puppeteer from 'puppeteer';
 import { existsSync } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
-import { htmlFromGenerateSignatureBody } from '../lib/parseSignatureExportBody.js';
+import { htmlFromRawGenerateSignatureRequest } from '../lib/parseSignatureExportBody.js';
 import { uploadGeneratedSignaturePng } from '../services/signatureExportStorage.js';
 import { optionalAuth } from '../middleware/optionalAuth.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { PLANS, normalizePlanId, minPlanForFeature } from '../data/plans.js';
 
-const router = Router();
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** server/public/signatures — served at GET /signatures/:file */
 const PUBLIC_ROOT = path.join(__dirname, '..', '..', 'public');
 const SIGNATURES_DIR = path.join(PUBLIC_ROOT, 'signatures');
+
+/** Read raw body (must run before global JSON parser). */
+export const generateSignatureRawParser = express.raw({ type: '*/*', limit: '2mb' });
+
+export function attachGenerateSignatureHtml(req, _res, next) {
+  req.signatureExportHtml = htmlFromRawGenerateSignatureRequest(
+    req.body,
+    req.headers['content-type']
+  );
+  next();
+}
 
 /**
  * Resolve which Chrome/Chromium binary to pass to `puppeteer.launch`.
@@ -82,20 +93,15 @@ function wrapDocument(fragmentHtml) {
 </html>`;
 }
 
-/** Raw HTML body (WAF-safe). JSON `{ html }` / `{ htmlB64 }` still accepted for older clients. */
-function htmlFromRequest(req) {
-  if (typeof req.body === 'string') return req.body.trim();
-  return htmlFromGenerateSignatureBody(req.body);
-}
-
-router.post(
-  '/generate-signature',
-  express.text({ type: ['text/html', 'text/plain'], limit: '2mb' }),
-  optionalAuth,
-  async (req, res, next) => {
+export async function generateSignaturePost(req, res, next) {
   try {
-    const html = htmlFromRequest(req);
+    const html = String(req.signatureExportHtml || '').trim();
     if (!html) {
+      const ct = String(req.headers['content-type'] || '').slice(0, 80);
+      const preview = Buffer.isBuffer(req.body)
+        ? req.body.toString('utf8').trim().slice(0, 120)
+        : '';
+      console.warn('[generate-signature] Missing HTML', { contentType: ct, preview });
       return res.status(400).json({
         error: 'MISSING_HTML',
         message:
@@ -215,7 +221,4 @@ router.post(
   } catch (e) {
     next(e);
   }
-  }
-);
-
-export default router;
+}

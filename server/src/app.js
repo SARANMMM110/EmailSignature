@@ -19,7 +19,12 @@ import palettesRoutes from './routes/palettes.js';
 import bannersRoutes from './routes/banners.js';
 import uploadRoutes from './routes/upload.js';
 import htmlRoutes from './routes/html.js';
-import generateSignatureRoutes from './routes/generateSignature.js';
+import {
+  attachGenerateSignatureHtml,
+  generateSignaturePost,
+  generateSignatureRawParser,
+} from './routes/generateSignature.js';
+import { optionalAuth } from './middleware/optionalAuth.js';
 import landingPreviewRoutes from './routes/landingPreview.js';
 
 dotenv.config();
@@ -51,6 +56,14 @@ app.use(
           },
     credentials: true,
   })
+);
+/** PNG export — raw body parser BEFORE global JSON (WAF may strip JSON quotes from HTML payloads). */
+app.post(
+  '/api/generate-signature',
+  generateSignatureRawParser,
+  attachGenerateSignatureHtml,
+  optionalAuth,
+  generateSignaturePost
 );
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
@@ -94,7 +107,6 @@ adminApi.use(adminRoutes);
 adminApi.use(agencyAdminRouter);
 app.use('/api/admin', adminApi);
 app.use('/api/agency', agencyRoutes);
-app.use('/api', generateSignatureRoutes);
 app.use('/api/landing', landingPreviewRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/palettes', palettesRoutes);
