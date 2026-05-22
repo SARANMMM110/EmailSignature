@@ -55,6 +55,23 @@ app.use(
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+/** Invalid JSON (e.g. `{html:<table>...}` without quotes) — return 400 JSON, not an opaque 500. */
+app.use((err, req, res, next) => {
+  if (err?.type === 'entity.parse.failed' || (err instanceof SyntaxError && err.status === 400)) {
+    const preview = String(err.body || '')
+      .trim()
+      .slice(0, 120);
+    console.error('[api] Invalid JSON body', { method: req.method, path: req.path, preview });
+    return res.status(400).json({
+      error: 'INVALID_JSON_BODY',
+      message:
+        'Request body must be valid JSON with quoted keys and string values, e.g. {"html":"<table>...</table>"} or {"htmlB64":"..."}.',
+      ...(preview ? { receivedPreview: preview } : {}),
+    });
+  }
+  next(err);
+});
+
 app.get('/health', (req, res) => {
   res.json({ ok: true });
 });

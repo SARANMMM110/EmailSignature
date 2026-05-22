@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { htmlFromGenerateSignatureBody } from '../lib/parseSignatureExportBody.js';
 import { uploadGeneratedSignaturePng } from '../services/signatureExportStorage.js';
 import { optionalAuth } from '../middleware/optionalAuth.js';
 import { supabaseAdmin } from '../services/supabase.js';
@@ -83,9 +84,13 @@ function wrapDocument(fragmentHtml) {
 
 router.post('/generate-signature', optionalAuth, async (req, res, next) => {
   try {
-    const html = typeof req.body?.html === 'string' ? req.body.html.trim() : '';
+    const html = htmlFromGenerateSignatureBody(req.body);
     if (!html) {
-      return res.status(400).json({ error: 'Missing "html" string in JSON body' });
+      return res.status(400).json({
+        error: 'MISSING_HTML',
+        message:
+          'Send JSON with a non-empty "html" string or "htmlB64" (UTF-8 base64). Example: {"html":"<table>...</table>"}',
+      });
     }
 
     if (req.user && supabaseAdmin) {

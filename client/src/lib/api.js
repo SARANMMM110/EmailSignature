@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { clearStoredRegistrationRef } from './registrationRef.js';
 import { useUpgradeModalStore } from '../store/upgradeModalStore.js';
 import { supabase, isSupabaseConfigured } from './supabase.js';
+import { signatureExportRequestBody } from './signatureExportPayload.js';
 
 /**
  * Vite injects `import.meta.env`. It can be missing during circular module init
@@ -363,7 +364,7 @@ export async function consumeAgencyInviteLink(linkToken) {
 
 /** Puppeteer PNG export — public route; returns { url, base64?, dataUrl? } */
 export const signatureExportAPI = {
-  generateImage: (html) => api.post('generate-signature', { html }),
+  generateImage: (html) => api.post('generate-signature', signatureExportRequestBody(html)),
 };
 
 export const uploadAPI = {
