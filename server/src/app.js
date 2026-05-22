@@ -65,7 +65,11 @@ app.post(
   optionalAuth,
   generateSignaturePost
 );
-app.use(express.json({ limit: '2mb' }));
+const jsonBodyParser = express.json({ limit: '2mb' });
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/api/generate-signature') return next();
+  return jsonBodyParser(req, res, next);
+});
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 /** Invalid JSON (e.g. `{html:<table>...}` without quotes) — return 400 JSON, not an opaque 500. */

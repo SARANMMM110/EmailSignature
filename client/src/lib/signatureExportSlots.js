@@ -18,11 +18,13 @@ export async function generateSplitSignatureBannerPngUrls(fullHtml, railPx) {
   if (sig && slots.length >= 2) {
     const sigDoc = wrapHtmlFragmentForPuppeteerExport(sig, railPx);
     const slotDocs = slots.map((s) => wrapHtmlFragmentForPuppeteerExport(s, railPx));
-    const results = await Promise.all([
-      signatureExportAPI.generateImage(sigDoc),
-      ...slotDocs.map((d) => signatureExportAPI.generateImage(d)),
-    ]);
-    const urls = results.map((r) => String(r.data?.url || '').trim());
+    const urls = [];
+    const sigRes = await signatureExportAPI.generateImage(sigDoc);
+    urls.push(String(sigRes.data?.url || '').trim());
+    for (const doc of slotDocs) {
+      const r = await signatureExportAPI.generateImage(doc);
+      urls.push(String(r.data?.url || '').trim());
+    }
     const sigUrl = urls[0];
     const bannerUrls = urls.slice(1);
     if (sigUrl && bannerUrls.length === slots.length && bannerUrls.every(Boolean)) {
@@ -34,10 +36,8 @@ export async function generateSplitSignatureBannerPngUrls(fullHtml, railPx) {
   if (sig && ban) {
     const sigDoc = wrapHtmlFragmentForPuppeteerExport(sig, railPx);
     const banDoc = wrapHtmlFragmentForPuppeteerExport(ban, railPx);
-    const [sigRes, banRes] = await Promise.all([
-      signatureExportAPI.generateImage(sigDoc),
-      signatureExportAPI.generateImage(banDoc),
-    ]);
+    const sigRes = await signatureExportAPI.generateImage(sigDoc);
+    const banRes = await signatureExportAPI.generateImage(banDoc);
     const sigUrl = String(sigRes.data?.url || '').trim();
     const banUrl = String(banRes.data?.url || '').trim();
     if (sigUrl && banUrl) {
