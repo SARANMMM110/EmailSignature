@@ -65,7 +65,8 @@ export const generateSignatureRawParser = express.raw({ type: '*/*', limit: '5mb
 export function attachGenerateSignatureHtml(req, _res, next) {
   req.signatureExportHtml = htmlFromRawGenerateSignatureRequest(
     req.body,
-    req.headers['content-type']
+    req.headers['content-type'],
+    req.headers['x-signature-export-encoding']
   );
   const ct = String(req.headers['content-type'] || '').slice(0, 80);
   const len = Buffer.isBuffer(req.body) ? req.body.length : 0;

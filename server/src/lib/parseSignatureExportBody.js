@@ -16,16 +16,26 @@ export function htmlFromGenerateSignatureBody(body) {
 
 /**
  * Parse raw request bytes before global `express.json()` runs.
- * Handles text/html bodies and WAF-mangled JSON (`{html:<table>...}` with quotes stripped).
+ * Handles text/html, base64 text/plain (WAF-safe), and WAF-mangled JSON.
  */
-export function htmlFromRawGenerateSignatureRequest(buf, contentType) {
+export function htmlFromRawGenerateSignatureRequest(buf, contentType, encodingHeader) {
   const raw = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf || '');
   const trimmed = raw.trim();
   if (!trimmed) return '';
 
   const ct = String(contentType || '').toLowerCase();
+  const enc = String(encodingHeader || '').toLowerCase();
 
-  if (ct.includes('text/html') || ct.includes('text/plain')) {
+  if (ct.includes('text/plain') && (enc === 'base64' || /^[A-Za-z0-9+/=\s]+$/.test(trimmed))) {
+    try {
+      const b64 = trimmed.replace(/\s+/g, '');
+      return Buffer.from(b64, 'base64').toString('utf8').trim();
+    } catch {
+      return '';
+    }
+  }
+
+  if (ct.includes('text/html')) {
     return trimmed;
   }
 

@@ -17,6 +17,14 @@ const viteApi = String(env.VITE_API_URL ?? '')
   .replace(/\/api$/i, '')
   .replace(/\/+$/, '');
 
+/** UTF-8 string → base64 (no HTML tags in POST body — avoids nginx ModSecurity blocks). */
+function toBase64Utf8(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
 /** Same-origin `/api/generate-signature` in dev + typical prod; absolute origin when cross-origin API is configured. */
 export function generateSignaturePostUrl() {
   if (typeof window === 'undefined') return '/api/generate-signature';
@@ -28,10 +36,14 @@ export function generateSignaturePostUrl() {
   return `${window.location.origin.replace(/\/$/, '')}/api/generate-signature`;
 }
 
-/** POST raw HTML via fetch (not axios) so default `application/json` cannot override Content-Type. */
+/**
+ * POST signature HTML for PNG export.
+ * Uses base64 + text/plain so nginx/WAF does not block `<table>` / `<img>` in the body.
+ */
 export async function postGenerateSignature(html, { accessToken } = {}) {
   const headers = {
-    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Type': 'text/plain; charset=utf-8',
+    'X-Signature-Export-Encoding': 'base64',
     Accept: 'application/json',
   };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -39,7 +51,7 @@ export async function postGenerateSignature(html, { accessToken } = {}) {
   const res = await fetch(generateSignaturePostUrl(), {
     method: 'POST',
     headers,
-    body: String(html ?? ''),
+    body: toBase64Utf8(String(html ?? '')),
     credentials: 'include',
   });
 
