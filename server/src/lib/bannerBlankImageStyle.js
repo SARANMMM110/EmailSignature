@@ -1,7 +1,7 @@
 import { buildCtaBannerImageStyleString } from './ctaBannerImageStyle.js';
 
 /**
- * Email-safe inline styles for blank image-strip `<img>`: fixed cell; full image visible (contain + center).
+ * Email-safe inline styles for blank image-strip `<img>`: fills the fixed strip (`object-fit:cover`, centered).
  * @param {Record<string, unknown>} _banner — reserved for API compatibility
  * @param {number} blankW — content width (px)
  * @param {number} blankH — strip height (px)
@@ -13,6 +13,7 @@ export function buildBannerBlankImgStyleString(_banner, blankW, blankH) {
   return buildCtaBannerImageStyleString({
     fluidWidth: true,
     heightPx: h,
+    objectFit: 'cover',
     extra: ['min-width:100%', `max-width:${maxW}px`],
   });
 }

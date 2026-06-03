@@ -8,12 +8,14 @@
  * @param {number} [opts.widthPx]
  * @param {number} [opts.heightPx]
  * @param {boolean} [opts.fluidWidth]
+ * @param {'contain'|'cover'|'fill'} [opts.objectFit]
  * @param {number} [opts.borderRadiusPx]
  * @param {string[]} [opts.extra]
  */
 export function buildCtaBannerImageStyleString(opts = {}) {
   const heightPx = Math.max(1, Math.round(Number(opts.heightPx) || 1));
-  const fit = 'contain';
+  const fitRaw = String(opts.objectFit || 'contain').toLowerCase();
+  const fit = fitRaw === 'cover' || fitRaw === 'fill' ? fitRaw : 'contain';
   const px = 50;
   const py = 50;
   const fluid = Boolean(opts.fluidWidth);

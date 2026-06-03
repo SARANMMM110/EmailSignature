@@ -1,7 +1,7 @@
 /**
  * Email-safe inline styles for CTA banner `<img>` slots — shared by server HTML + editor preview (client copy).
  * Fixed box dimensions (width/height attributes) stay on the `<img>`; this string is the `style="…"` body.
- * Always `object-fit:contain` and centered so the full uploaded image is visible in the slot.
+ * Default `object-fit:contain` for promo slots; blank strips use `cover` via {@link buildBannerBlankImgStyleString}.
  */
 
 /**
@@ -9,12 +9,14 @@
  * @param {number} [opts.widthPx] — fixed width (omit if fluidWidth)
  * @param {number} [opts.heightPx]
  * @param {boolean} [opts.fluidWidth] — width:100%; max-width:100% inside fixed-height cell
+ * @param {'contain'|'cover'|'fill'} [opts.objectFit]
  * @param {number} [opts.borderRadiusPx]
  * @param {string[]} [opts.extra] — extra declarations (no trailing semicolons)
  */
 export function buildCtaBannerImageStyleString(opts = {}) {
   const heightPx = Math.max(1, Math.round(Number(opts.heightPx) || 1));
-  const fit = 'contain';
+  const fitRaw = String(opts.objectFit || 'contain').toLowerCase();
+  const fit = fitRaw === 'cover' || fitRaw === 'fill' ? fitRaw : 'contain';
   const px = 50;
   const py = 50;
   const fluid = Boolean(opts.fluidWidth);

@@ -44,6 +44,7 @@ export function SecondaryBannerFields({
   const blankSecPreviewStyle = buildCtaBannerImageStyleObject({
     fluidWidth: true,
     heightPx: blankStripPreviewH,
+    objectFit: 'cover',
     extra: ['min-width:100%', `max-width:${blankPreviewRail}px`],
   });
 
@@ -497,7 +498,8 @@ export function SecondaryBannerFields({
         <div className="space-y-2">
           <span className={bannerLabelClass}>Banner image</span>
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Fixed banner size (same width as your signature); the whole image is shown inside the strip—no crop.
+            Fixed banner size (same width as your signature); the image fills the strip edge to edge (may crop if
+            aspect ratio differs).
           </p>
           <div
             {...secondaryBannerImgDrop.getRootProps()}

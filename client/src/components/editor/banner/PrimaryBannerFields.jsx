@@ -39,6 +39,7 @@ export function PrimaryBannerFields({
   const blankPreviewStyle = buildCtaBannerImageStyleObject({
     fluidWidth: true,
     heightPx: blankStripPreviewH,
+    objectFit: 'cover',
     extra: ['min-width:100%', `max-width:${blankPreviewRail}px`],
   });
 
@@ -78,7 +79,8 @@ export function PrimaryBannerFields({
           </span>
           {isBlankBanner ? (
             <p className="text-[11px] leading-relaxed text-slate-500">
-              Fixed banner size; your image scales to fit inside the strip (full image visible, no crop).
+              Fixed banner size; your image fills the strip edge to edge (sides or top/bottom may be cropped if
+              the aspect ratio differs).
             </p>
           ) : null}
           {isDownloadBanner || isNeedCallBanner ? (
