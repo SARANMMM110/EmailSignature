@@ -4,7 +4,7 @@
  *
  * Usage (from server/ so @supabase/supabase-js resolves):
  *   cd server
- *   OLD_SUPABASE_URL=https://sjczvtjrvmzhtkfhtag.supabase.co \
+ *   OLD_SUPABASE_URL=https://sjcjzvtjrvmzhtkfhtag.supabase.co \
  *   OLD_SERVICE_ROLE_KEY=eyJ... \
  *   NEW_SUPABASE_URL=https://xcydigxeazgxndgxmohk.supabase.co \
  *   NEW_SERVICE_ROLE_KEY=eyJ... \
