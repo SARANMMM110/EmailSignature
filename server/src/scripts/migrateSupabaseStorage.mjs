@@ -2,8 +2,12 @@
 /**
  * Copy all files from OLD Supabase Storage bucket → NEW bucket (same paths).
  *
- * DEPRECATED: run server/src/scripts/migrateSupabaseStorage.mjs instead (resolves @supabase/supabase-js).
- *   cd server && node src/scripts/migrateSupabaseStorage.mjs
+ * Usage:
+ *   cd /var/www/EmailSignature/server
+ *   npm install   # if node_modules missing
+ *   OLD_SUPABASE_URL=... OLD_SERVICE_ROLE_KEY=... \
+ *   NEW_SUPABASE_URL=... NEW_SERVICE_ROLE_KEY=... \
+ *   node src/scripts/migrateSupabaseStorage.mjs
  *
  * Optional: BUCKET=signature-images  DRY_RUN=1
  */
@@ -19,6 +23,11 @@ const newKey = process.env.NEW_SERVICE_ROLE_KEY?.trim();
 
 if (!oldUrl || !oldKey || !newUrl || !newKey) {
   console.error('Set OLD_SUPABASE_URL, OLD_SERVICE_ROLE_KEY, NEW_SUPABASE_URL, NEW_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
+
+if (oldKey.includes('paste_') || newKey.includes('paste_')) {
+  console.error('Replace placeholder keys with real service_role JWTs from Supabase → Settings → API');
   process.exit(1);
 }
 

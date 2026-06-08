@@ -59,6 +59,6 @@ UNION ALL SELECT 'storage.objects', count(*)::text FROM storage.objects;
 
 echo ""
 echo "Done. Next steps:"
-echo "  1. bash scripts/migrate-supabase/copy-storage.mjs   (or use Supabase CLI — see README in response)"
+echo "  1. cd server && node src/scripts/migrateSupabaseStorage.mjs"
 echo "  2. Run scripts/migrate-supabase/replace-storage-urls.sql in NEW project SQL Editor"
 echo "  3. Update server/client .env with new SUPABASE_URL and keys, redeploy"
