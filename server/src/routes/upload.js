@@ -167,10 +167,15 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
       .resize(STRIP_MAX, STRIP_MAX, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 88, mozjpeg: true })
       .toBuffer();
+    const meta = await sharp(buf).metadata();
     const name = `${randomUUID()}.jpg`;
     const path = `banners/${req.user.id}/${name}`;
     const url = await uploadBuffer(path, buf, 'image/jpeg');
-    res.json({ url });
+    res.json({
+      url,
+      width: meta.width ?? null,
+      height: meta.height ?? null,
+    });
   } catch (e) {
     next(e);
   }

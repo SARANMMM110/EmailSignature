@@ -197,6 +197,8 @@ function mapSecondaryToPrimaryBannerConfig(prev) {
       href: '',
       text: '',
       banner_image_url: prev.secondary_banner_image_url ?? '',
+      banner_image_width: prev.secondary_banner_image_width ?? null,
+      banner_image_height: prev.secondary_banner_image_height ?? null,
     });
   }
   if (isWeb) {
@@ -526,6 +528,8 @@ export function signatureToEditorPayload(sig) {
           field_6: bannerCfg.field_6,
           banner_image_url: bannerCfg.banner_image_url,
           image_url: bannerCfg.image_url,
+          banner_image_width: bannerCfg.banner_image_width,
+          banner_image_height: bannerCfg.banner_image_height,
           secondary_link_url: bannerCfg.secondary_link_url,
           secondary_href: bannerCfg.secondary_href,
           secondary_text: bannerCfg.secondary_text,
@@ -538,6 +542,8 @@ export function signatureToEditorPayload(sig) {
           secondary_preset_id: bannerCfg.secondary_preset_id,
           secondary_banner_id: bannerCfg.secondary_banner_id,
           secondary_banner_image_url: bannerCfg.secondary_banner_image_url,
+          secondary_banner_image_width: bannerCfg.secondary_banner_image_width,
+          secondary_banner_image_height: bannerCfg.secondary_banner_image_height,
           cta_strip_logo_url: bannerCfg.cta_strip_logo_url,
           cta_strip_icon_url: bannerCfg.cta_strip_icon_url,
           cta_strip_hero_url: bannerCfg.cta_strip_hero_url,

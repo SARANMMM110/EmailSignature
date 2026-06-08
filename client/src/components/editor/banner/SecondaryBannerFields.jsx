@@ -1,6 +1,7 @@
 import { HiArrowUpTray } from 'react-icons/hi2';
-import { EDITOR_BLANK_BANNER_ASPECT_RATIO } from '../../../data/templatePreviews.js';
+import { editorBlankBannerStripHeightPx } from '../../../data/templatePreviews.js';
 import { buildCtaBannerImageStyleObject } from '../../../lib/ctaBannerImageStyle.js';
+import { readSecondaryBlankImageDimensions } from '../../../lib/blankBannerDimensions.js';
 import { Input } from '../../ui/Input.jsx';
 import { CtaStripAssetUploadRows } from './CtaStripAssetUploadRows.jsx';
 import {
@@ -40,12 +41,16 @@ export function SecondaryBannerFields({
 }) {
   const blankPreviewRail =
     typeof blankStripRailPx === 'number' && blankStripRailPx > 0 ? blankStripRailPx : 280;
-  const blankStripPreviewH = Math.max(48, Math.round((blankPreviewRail * 72) / 560));
+  const blankSecDims = readSecondaryBlankImageDimensions(bc);
+  const blankStripPreviewH = editorBlankBannerStripHeightPx(
+    blankPreviewRail,
+    blankSecDims.width,
+    blankSecDims.height
+  );
   const blankSecPreviewStyle = buildCtaBannerImageStyleObject({
     fluidWidth: true,
     heightPx: blankStripPreviewH,
-    objectFit: 'cover',
-    extra: ['min-width:100%', `max-width:${blankPreviewRail}px`],
+    extra: [`max-width:${blankPreviewRail}px`],
   });
 
   const isSecondaryDownload =
@@ -178,7 +183,13 @@ export function SecondaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  secondary_banner_image_url: '',
+                  secondary_banner_image_width: null,
+                  secondary_banner_image_height: null,
+                })
+              }
             >
               {isSecondaryBusinessCityResolved ? 'Remove logo' : 'Remove banner image'}
             </button>
@@ -347,7 +358,13 @@ export function SecondaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  secondary_banner_image_url: '',
+                  secondary_banner_image_width: null,
+                  secondary_banner_image_height: null,
+                })
+              }
             >
               Remove promo image
             </button>
@@ -407,7 +424,13 @@ export function SecondaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  secondary_banner_image_url: '',
+                  secondary_banner_image_width: null,
+                  secondary_banner_image_height: null,
+                })
+              }
             >
               Remove promo image
             </button>
@@ -467,7 +490,13 @@ export function SecondaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  secondary_banner_image_url: '',
+                  secondary_banner_image_width: null,
+                  secondary_banner_image_height: null,
+                })
+              }
             >
               Remove promo image
             </button>
@@ -498,8 +527,7 @@ export function SecondaryBannerFields({
         <div className="space-y-2">
           <span className={bannerLabelClass}>Banner image</span>
           <p className="text-[11px] leading-relaxed text-slate-500">
-            Fixed banner size (same width as your signature); the image fills the strip edge to edge (may crop if
-            aspect ratio differs).
+            Full signature width; banner height adjusts to your image (no cropping).
           </p>
           <div
             {...secondaryBannerImgDrop.getRootProps()}
@@ -514,10 +542,10 @@ export function SecondaryBannerFields({
               <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b5bdb] border-t-transparent" />
             ) : String(bc.secondary_banner_image_url || '').trim() ? (
               <div
-                className="mx-auto w-full overflow-hidden rounded-lg bg-[#f8fafc]"
+                className="mx-auto w-full rounded-lg bg-[#f8fafc]"
                 style={{
-                  aspectRatio: EDITOR_BLANK_BANNER_ASPECT_RATIO,
                   width: '100%',
+                  height: blankStripPreviewH,
                   ...(typeof blankStripRailPx === 'number' && blankStripRailPx > 0
                     ? { maxWidth: `${blankStripRailPx}px` }
                     : {}),
@@ -537,7 +565,13 @@ export function SecondaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  secondary_banner_image_url: '',
+                  secondary_banner_image_width: null,
+                  secondary_banner_image_height: null,
+                })
+              }
             >
               Remove banner image
             </button>
@@ -720,7 +754,13 @@ export function SecondaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ secondary_banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  secondary_banner_image_url: '',
+                  secondary_banner_image_width: null,
+                  secondary_banner_image_height: null,
+                })
+              }
             >
               Remove uploaded image
             </button>

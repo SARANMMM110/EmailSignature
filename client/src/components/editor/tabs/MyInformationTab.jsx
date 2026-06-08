@@ -342,7 +342,11 @@ export function MyInformationTab({ onToast }) {
               ? { mode: 'mark' }
               : {}
         );
-        mergeBannerCfg({ banner_image_url: data.url });
+        mergeBannerCfg({
+          banner_image_url: data.url,
+          banner_image_width: data.width ?? null,
+          banner_image_height: data.height ?? null,
+        });
         onToast?.(
           businessCitySlot
             ? t('editor.bannerLogoUpdatedSlot', { n: 1 })
@@ -391,7 +395,11 @@ export function MyInformationTab({ onToast }) {
               ? { mode: 'mark' }
               : {}
         );
-        mergeSecondaryBannerCfg({ secondary_banner_image_url: data.url });
+        mergeSecondaryBannerCfg({
+          secondary_banner_image_url: data.url,
+          secondary_banner_image_width: data.width ?? null,
+          secondary_banner_image_height: data.height ?? null,
+        });
         onToast?.(
           businessCitySlot2
             ? t('editor.bannerLogoUpdatedSlot', { n: 2 })

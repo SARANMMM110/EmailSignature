@@ -9,6 +9,7 @@
  * @param {number} [opts.heightPx]
  * @param {boolean} [opts.fluidWidth]
  * @param {'contain'|'cover'|'fill'} [opts.objectFit]
+ * @param {boolean} [opts.widthFit]
  * @param {number} [opts.borderRadiusPx]
  * @param {string[]} [opts.extra]
  */
@@ -19,22 +20,35 @@ export function buildCtaBannerImageStyleString(opts = {}) {
   const px = 50;
   const py = 50;
   const fluid = Boolean(opts.fluidWidth);
+  const widthFit = Boolean(opts.widthFit);
   const widthPx = Math.max(1, Math.round(Number(opts.widthPx) || 1));
 
-  const parts = [
-    'display:block',
-    ...(fluid
-      ? ['width:100%', 'max-width:100%']
-      : [`width:${widthPx}px`, 'max-width:100%']),
-    `height:${heightPx}px`,
-    `min-height:${heightPx}px`,
-    `max-height:${heightPx}px`,
-    `object-fit:${fit}`,
-    `object-position:${px}% ${py}%`,
-    'border:0',
-    'vertical-align:middle',
-    '-ms-interpolation-mode:bicubic',
-  ];
+  const parts = widthFit
+    ? [
+        'display:block',
+        'width:100%',
+        'max-width:100%',
+        'height:auto',
+        `max-height:${heightPx}px`,
+        'margin:0',
+        'border:0',
+        'vertical-align:middle',
+        '-ms-interpolation-mode:bicubic',
+      ]
+    : [
+        'display:block',
+        ...(fluid
+          ? ['width:100%', 'max-width:100%']
+          : [`width:${widthPx}px`, 'max-width:100%']),
+        `height:${heightPx}px`,
+        `min-height:${heightPx}px`,
+        `max-height:${heightPx}px`,
+        `object-fit:${fit}`,
+        `object-position:${px}% ${py}%`,
+        'border:0',
+        'vertical-align:middle',
+        '-ms-interpolation-mode:bicubic',
+      ];
 
   const r = opts.borderRadiusPx != null ? Math.round(Number(opts.borderRadiusPx)) : null;
   if (r != null && Number.isFinite(r) && r > 0) {

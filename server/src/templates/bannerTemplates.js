@@ -425,7 +425,7 @@ export const BANNER_TEMPLATES = {
 </table>`,
 
   /**
-   * Image-only strip — fixed cell; `{{{banner_blank_img_style}}}` fills the strip (`object-fit:cover`).
+   * Image-only strip — cell height follows image aspect ratio at rail width.
    */
   banner_blank: `<table cellpadding="0" cellspacing="0" border="0" role="presentation" width="{{banner_rail_w_px}}" style="width:{{banner_rail_w_px}}px;max-width:100%;table-layout:fixed;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td bgcolor="#f8fafc" style="padding:0;margin:0;line-height:0;font-size:0;width:{{banner_rail_w_px}}px;max-width:100%;height:{{banner_blank_h_px}}px;max-height:{{banner_blank_h_px}}px;overflow:hidden;vertical-align:middle;background-color:#f8fafc;">

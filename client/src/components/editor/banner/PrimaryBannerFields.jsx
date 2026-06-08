@@ -1,6 +1,7 @@
 import { HiArrowUpTray } from 'react-icons/hi2';
-import { EDITOR_BLANK_BANNER_ASPECT_RATIO } from '../../../data/templatePreviews.js';
+import { editorBlankBannerStripHeightPx } from '../../../data/templatePreviews.js';
 import { buildCtaBannerImageStyleObject } from '../../../lib/ctaBannerImageStyle.js';
+import { readPrimaryBlankImageDimensions } from '../../../lib/blankBannerDimensions.js';
 import { Input } from '../../ui/Input.jsx';
 import { CtaStripAssetUploadRows } from './CtaStripAssetUploadRows.jsx';
 
@@ -35,12 +36,16 @@ export function PrimaryBannerFields({
 }) {
   const blankPreviewRail =
     typeof blankStripRailPx === 'number' && blankStripRailPx > 0 ? blankStripRailPx : 280;
-  const blankStripPreviewH = Math.max(48, Math.round((blankPreviewRail * 72) / 560));
+  const blankDims = readPrimaryBlankImageDimensions(bc);
+  const blankStripPreviewH = editorBlankBannerStripHeightPx(
+    blankPreviewRail,
+    blankDims.width,
+    blankDims.height
+  );
   const blankPreviewStyle = buildCtaBannerImageStyleObject({
     fluidWidth: true,
     heightPx: blankStripPreviewH,
-    objectFit: 'cover',
-    extra: ['min-width:100%', `max-width:${blankPreviewRail}px`],
+    extra: [`max-width:${blankPreviewRail}px`],
   });
 
   const h = idPrefix ? `${idPrefix}-webinar-headline` : 'webinar-banner-headline';
@@ -79,8 +84,7 @@ export function PrimaryBannerFields({
           </span>
           {isBlankBanner ? (
             <p className="text-[11px] leading-relaxed text-slate-500">
-              Fixed banner size; your image fills the strip edge to edge (sides or top/bottom may be cropped if
-              the aspect ratio differs).
+              Full signature width; banner height adjusts to your image (no side or top/bottom crop).
             </p>
           ) : null}
           {isDownloadBanner || isNeedCallBanner ? (
@@ -102,10 +106,10 @@ export function PrimaryBannerFields({
             ) : String(bc.banner_image_url || '').trim() ? (
               isBlankBanner ? (
                 <div
-                  className="mx-auto w-full overflow-hidden rounded-lg bg-[#f8fafc]"
+                  className="mx-auto w-full rounded-lg bg-[#f8fafc]"
                   style={{
-                    aspectRatio: EDITOR_BLANK_BANNER_ASPECT_RATIO,
                     width: '100%',
+                    height: blankStripPreviewH,
                     ...(typeof blankStripRailPx === 'number' && blankStripRailPx > 0
                       ? { maxWidth: `${blankStripRailPx}px` }
                       : {}),
@@ -149,7 +153,13 @@ export function PrimaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  banner_image_url: '',
+                  banner_image_width: null,
+                  banner_image_height: null,
+                })
+              }
             >
               {isBusinessCityBanner ? 'Remove logo' : 'Remove banner image'}
             </button>
@@ -334,7 +344,13 @@ export function PrimaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  banner_image_url: '',
+                  banner_image_width: null,
+                  banner_image_height: null,
+                })
+              }
             >
               Remove promo image
             </button>
@@ -394,7 +410,13 @@ export function PrimaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  banner_image_url: '',
+                  banner_image_width: null,
+                  banner_image_height: null,
+                })
+              }
             >
               Remove promo image
             </button>
@@ -454,7 +476,13 @@ export function PrimaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  banner_image_url: '',
+                  banner_image_width: null,
+                  banner_image_height: null,
+                })
+              }
             >
               Remove promo image
             </button>
@@ -520,7 +548,13 @@ export function PrimaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  banner_image_url: '',
+                  banner_image_width: null,
+                  banner_image_height: null,
+                })
+              }
             >
               Use built-in illustration
             </button>
@@ -636,7 +670,13 @@ export function PrimaryBannerFields({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-red-600 hover:underline"
-              onClick={() => mergeBannerCfg({ banner_image_url: '' })}
+              onClick={() =>
+                mergeBannerCfg({
+                  banner_image_url: '',
+                  banner_image_width: null,
+                  banner_image_height: null,
+                })
+              }
             >
               Remove uploaded image
             </button>

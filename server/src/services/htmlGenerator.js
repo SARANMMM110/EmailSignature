@@ -38,6 +38,10 @@ import {
 import { premiumCtaTokensForBanner } from './premiumCtaBannerStyleTokens.js';
 import { buildBannerBlankImgStyleString } from '../lib/bannerBlankImageStyle.js';
 import {
+  blankBannerStripHeightPx,
+  readBannerImageDimensions,
+} from '../lib/blankBannerDimensions.js';
+import {
   buildCtaBannerImageStyleString,
   buildCtaBannerLogoRailStyleString,
 } from '../lib/ctaBannerImageStyle.js';
@@ -3133,6 +3137,8 @@ export function rowToGeneratePayload(row) {
       field_6: bannerCfg.field_6,
       banner_image_url: bannerCfg.banner_image_url,
       image_url: bannerCfg.image_url,
+      banner_image_width: bannerCfg.banner_image_width,
+      banner_image_height: bannerCfg.banner_image_height,
       cta_strip_logo_url: bannerCfg.cta_strip_logo_url,
       cta_strip_icon_url: bannerCfg.cta_strip_icon_url,
       cta_strip_hero_url: bannerCfg.cta_strip_hero_url,
@@ -3159,6 +3165,8 @@ export function rowToGeneratePayload(row) {
       field_6: bundle.banner.field_6,
       banner_image_url: bundle.banner.banner_image_url,
       image_url: bundle.banner.image_url,
+      banner_image_width: bundle.banner.banner_image_width,
+      banner_image_height: bundle.banner.banner_image_height,
       cta_strip_logo_url: bundle.banner.cta_strip_logo_url,
       cta_strip_icon_url: bundle.banner.cta_strip_icon_url,
       cta_strip_hero_url: bundle.banner.cta_strip_hero_url,
@@ -3276,22 +3284,6 @@ function blankBannerStripWidthPx(layoutRailPx) {
   if (Number.isFinite(n) && n >= 1) return Math.round(n);
   const fallback = Math.round(Number(layoutRailPx) || 470);
   return Math.max(1, fallback);
-}
-
-/** Same aspect as `/upload/banner-image` canvas (720×93) so strip height tracks signature rail width. */
-const BLANK_BANNER_REF_W_PX = 720;
-const BLANK_BANNER_REF_H_PX = Math.round((BLANK_BANNER_REF_W_PX * 72) / 560);
-
-/**
- * Image-only strip height — scales with {@link blankBannerStripWidthPx} (signature content width)
- * at the fixed upload aspect ratio (720 : {@link BLANK_BANNER_REF_H_PX}).
- */
-function blankBannerStripHeightPx(layoutRailPx) {
-  const w = blankBannerStripWidthPx(layoutRailPx);
-  const n = Math.round(Number(w) || 0);
-  const widthPx = Number.isFinite(n) && n >= 1 ? n : 470;
-  const h = Math.round((widthPx * BLANK_BANNER_REF_H_PX) / BLANK_BANNER_REF_W_PX);
-  return Math.max(48, h);
 }
 
 /**
@@ -3429,7 +3421,7 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     if (!raw) {
       if (!blankPlaceholder) return '';
       const blankW = blankBannerStripWidthPx(railPx);
-      const blankH = blankBannerStripHeightPx(railPx);
+      const blankH = blankBannerStripHeightPx(blankW);
       /* Inset wrapper — px width only: {@link collapseSignatureShellWidth} turns width:100% on presentation tables into width:auto. */
       const blankInnerW = Math.max(1, blankW - 8);
       /* Same pixel rail as signature / CTA shells so the dashed placeholder matches live preview width. */
@@ -3439,7 +3431,8 @@ function compileBannerInnerHtml(context, banner, railPx, opts = {}) {
     }
     const compiled = Handlebars.compile(tpl, { strict: false });
     const blankW = blankBannerStripWidthPx(railPx);
-    const blankH = blankBannerStripHeightPx(railPx);
+    const dims = readBannerImageDimensions(banner);
+    const blankH = blankBannerStripHeightPx(blankW, dims.width, dims.height);
     const hbIn = {
       ...context,
       banner_rail_w_px: blankW,
@@ -3889,6 +3882,8 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
     field_6: editorBanner.field_6,
     banner_image_url: editorBanner.banner_image_url,
     image_url: editorBanner.image_url,
+    banner_image_width: editorBanner.banner_image_width,
+    banner_image_height: editorBanner.banner_image_height,
     cta_strip_logo_url: editorBanner.cta_strip_logo_url,
     cta_strip_icon_url: editorBanner.cta_strip_icon_url,
     cta_strip_hero_url: editorBanner.cta_strip_hero_url,
@@ -3937,6 +3932,8 @@ function appendBanner(html, context, editorBanner, templateId, appendOpts = {}) 
       field_6: editorBanner.secondary_field_6,
       banner_image_url: editorBanner.secondary_banner_image_url,
       image_url: editorBanner.secondary_banner_image_url,
+      banner_image_width: editorBanner.secondary_banner_image_width,
+      banner_image_height: editorBanner.secondary_banner_image_height,
       cta_strip_logo_url: editorBanner.secondary_cta_strip_logo_url,
       cta_strip_icon_url: editorBanner.secondary_cta_strip_icon_url,
       cta_strip_hero_url: editorBanner.secondary_cta_strip_hero_url,

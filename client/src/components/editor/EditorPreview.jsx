@@ -152,9 +152,23 @@ export function EditorPreview({
     () => editorSplitCtaIframeHeightCeilingPx(previewLockRailPx),
     [previewLockRailPx]
   );
-  const blankStripPreviewIframeH = useMemo(
-    () => editorBlankBannerPreviewIframeHeightPx(previewLockRailPx),
-    [previewLockRailPx]
+  const blankStripPreviewIframeH0 = useMemo(
+    () =>
+      editorBlankBannerPreviewIframeHeightPx(
+        previewLockRailPx,
+        bc.banner_image_width,
+        bc.banner_image_height
+      ),
+    [previewLockRailPx, bc.banner_image_width, bc.banner_image_height]
+  );
+  const blankStripPreviewIframeH1 = useMemo(
+    () =>
+      editorBlankBannerPreviewIframeHeightPx(
+        previewLockRailPx,
+        bc.secondary_banner_image_width,
+        bc.secondary_banner_image_height
+      ),
+    [previewLockRailPx, bc.secondary_banner_image_width, bc.secondary_banner_image_height]
   );
   const slot0IsBlankStrip = isBlankImageBannerPreset(bc.preset_id, signature?.banner_id);
   const slot1IsBlankStrip =
@@ -316,7 +330,11 @@ export function EditorPreview({
                   const { sourceSlotIndex } = frame;
                   const slotIsBlank =
                     sourceSlotIndex === 0 ? slot0IsBlankStrip : slot1IsBlankStrip;
-                  const fixedBlankH = slotIsBlank ? blankStripPreviewIframeH : null;
+                  const fixedBlankH = slotIsBlank
+                    ? sourceSlotIndex === 0
+                      ? blankStripPreviewIframeH0
+                      : blankStripPreviewIframeH1
+                    : null;
                   return (
                   <section
                     key={`cta-section-${sourceSlotIndex}-${hashSrcDoc(frame.srcDoc)}`}

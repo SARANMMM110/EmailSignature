@@ -20,6 +20,11 @@ import {
 } from '../lib/templateIds.js';
 import { profileFormPartialForGenerate } from '../lib/myInfoDraft.js';
 import { ENGINE_PALETTE_DEFAULT_ARRAY } from '../lib/enginePaletteDefaults.js';
+import {
+  blankBannerStripHeightPx,
+  BLANK_BANNER_REF_W_PX,
+  BLANK_BANNER_REF_H_PX,
+} from '../lib/blankBannerDimensions.js';
 
 export const DEMO_SIGNATURE_DATA = {
   fields: {
@@ -500,34 +505,35 @@ export function editorBlankBannerStripWidthPx(railPx) {
   return Number.isFinite(w) && w >= 1 ? w : 470;
 }
 
-/** Matches server `BLANK_BANNER_REF_*` / blank strip aspect (720×93). */
-const EDITOR_BLANK_BANNER_REF_W = 720;
-const EDITOR_BLANK_BANNER_REF_H = Math.round((EDITOR_BLANK_BANNER_REF_W * 72) / 560);
+/** Recommended pixel size when no custom image is uploaded yet. */
+export const BLANK_BANNER_RECOMMENDED_WIDTH_PX = BLANK_BANNER_REF_W_PX;
+export const BLANK_BANNER_RECOMMENDED_HEIGHT_PX = BLANK_BANNER_REF_H_PX;
 
-/** Recommended pixel size shown in the editor (same aspect as the live strip). */
-export const BLANK_BANNER_RECOMMENDED_WIDTH_PX = EDITOR_BLANK_BANNER_REF_W;
-export const BLANK_BANNER_RECOMMENDED_HEIGHT_PX = EDITOR_BLANK_BANNER_REF_H;
-
-/** CSS `aspect-ratio` for My information / editor blank-strip previews (same ratio as upload). */
-export const EDITOR_BLANK_BANNER_ASPECT_RATIO = `${EDITOR_BLANK_BANNER_REF_W} / ${EDITOR_BLANK_BANNER_REF_H}`;
+/** Fallback CSS `aspect-ratio` before an image is uploaded. */
+export const EDITOR_BLANK_BANNER_ASPECT_RATIO = `${BLANK_BANNER_REF_W_PX} / ${BLANK_BANNER_REF_H_PX}`;
 
 /**
- * Blank strip height in layout CSS px — matches server `blankBannerStripHeightPx`
- * (height ∝ {@link editorBlankBannerStripWidthPx} at upload aspect ratio).
+ * Blank strip height in layout CSS px — matches server `blankBannerStripHeightPx`.
  * @param {number} railPx
+ * @param {number} [imageWidthPx]
+ * @param {number} [imageHeightPx]
  */
-export function editorBlankBannerStripHeightPx(railPx) {
+export function editorBlankBannerStripHeightPx(railPx, imageWidthPx, imageHeightPx) {
   const w = editorBlankBannerStripWidthPx(railPx);
-  const h = Math.round((w * EDITOR_BLANK_BANNER_REF_H) / EDITOR_BLANK_BANNER_REF_W);
-  return Math.max(48, h);
+  return blankBannerStripHeightPx(w, imageWidthPx, imageHeightPx);
 }
 
 /**
  * Fixed iframe height for split preview when the slot is a blank strip (`zoom` applied in bare wrap).
  * @param {number} railPx
+ * @param {number} [imageWidthPx]
+ * @param {number} [imageHeightPx]
  */
-export function editorBlankBannerPreviewIframeHeightPx(railPx) {
-  return Math.ceil(editorBlankBannerStripHeightPx(railPx) * EDITOR_PREVIEW_LOCK_ZOOM) + 2;
+export function editorBlankBannerPreviewIframeHeightPx(railPx, imageWidthPx, imageHeightPx) {
+  return (
+    Math.ceil(editorBlankBannerStripHeightPx(railPx, imageWidthPx, imageHeightPx) * EDITOR_PREVIEW_LOCK_ZOOM) +
+    2
+  );
 }
 
 /**
