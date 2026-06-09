@@ -406,7 +406,9 @@ export function SignatureCard({
       return;
     }
     const railPx = bundleRailPxForSignature(signature);
-    const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(copyHtml, railPx);
+    const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(copyHtml, railPx, {
+      signatureId: signature.id,
+    });
 
     if (mode === 'error') {
       showToast(t('card.toastNoDualImages'), 'error');
@@ -483,7 +485,9 @@ export function SignatureCard({
           return;
         }
         const railPx = bundleRailPxForSignature(signature);
-        const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(copyHtml, railPx);
+        const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(copyHtml, railPx, {
+      signatureId: signature.id,
+    });
 
         if (mode === 'composite') {
           if (!sigUrl) {
@@ -529,7 +533,9 @@ export function SignatureCard({
       }
       let manualFallback = fullHtml.trim();
       const railPx = bundleRailPxForSignature(signature);
-      const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(fullHtml, railPx);
+      const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(fullHtml, railPx, {
+        signatureId: signature.id,
+      });
 
       if (mode === 'dual' || mode === 'multi-slot') {
         if (!ensurePngExport()) return;

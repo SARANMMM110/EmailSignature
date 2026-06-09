@@ -90,7 +90,11 @@ export function CtaStripAssetUploadRows({
       if (!file) return;
       setBusy(key);
       try {
-        const { data } = await uploadAPI.uploadBannerImage(file, { mode: uploadMode });
+        const prevUrl = String(bc[key] || '').trim();
+        const { data } = await uploadAPI.uploadBannerImage(file, {
+          mode: uploadMode,
+          replaceUrl: prevUrl,
+        });
         mergeBannerCfg({ [key]: data.url });
       } catch {
         /* toast optional — parent may not pass */
@@ -98,7 +102,7 @@ export function CtaStripAssetUploadRows({
         setBusy(null);
       }
     },
-    [mergeBannerCfg]
+    [bc, mergeBannerCfg]
   );
 
   const logoDrop = useDropzone({

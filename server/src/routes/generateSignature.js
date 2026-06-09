@@ -17,6 +17,13 @@ import { uploadGeneratedSignaturePng } from '../services/signatureExportStorage.
 import { optionalAuth } from '../middleware/optionalAuth.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { PLANS, normalizePlanId, minPlanForFeature } from '../data/plans.js';
+import {
+  exportObjectPathForSignature,
+  normalizeExportSlot,
+} from '../lib/storageFiles.js';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** server/public/signatures — served at GET /signatures/:file */
@@ -264,10 +271,36 @@ export async function generateSignaturePost(req, res, next) {
       return renderHtmlToPng(browser, html);
     });
 
-    const fileName = `signature-${randomUUID()}.png`;
     const base64 = Buffer.from(png).toString('base64');
 
-    const uploaded = await uploadGeneratedSignaturePng(png, fileName);
+    const signatureId = String(req.headers['x-signature-id'] || '').trim();
+    const exportSlot = normalizeExportSlot(req.headers['x-export-slot']);
+    let objectPath = null;
+    let upsertExport = false;
+
+    if (req.user?.id && UUID_RE.test(signatureId) && exportSlot && supabaseAdmin) {
+      try {
+        const { data: owned } = await supabaseAdmin
+          .from('signatures')
+          .select('id')
+          .eq('id', signatureId)
+          .eq('user_id', req.user.id)
+          .maybeSingle();
+        if (owned?.id) {
+          objectPath = exportObjectPathForSignature(req.user.id, signatureId, exportSlot);
+          upsertExport = Boolean(objectPath);
+        }
+      } catch (ownErr) {
+        console.warn('[generate-signature] signature ownership check skipped:', ownErr?.message || ownErr);
+      }
+    }
+
+    if (!objectPath) {
+      objectPath = `generated-signatures/ephemeral/signature-${randomUUID()}.png`;
+      upsertExport = false;
+    }
+
+    const uploaded = await uploadGeneratedSignaturePng(png, objectPath, { upsert: upsertExport });
     let url;
     let storage = 'local';
 
@@ -276,9 +309,10 @@ export async function generateSignaturePost(req, res, next) {
       storage = 'supabase';
     } else {
       await fs.mkdir(SIGNATURES_DIR, { recursive: true });
-      const filePath = path.join(SIGNATURES_DIR, fileName);
+      const localName = path.basename(objectPath);
+      const filePath = path.join(SIGNATURES_DIR, localName);
       await fs.writeFile(filePath, png);
-      url = `${publicBase}/signatures/${fileName}`;
+      url = `${publicBase}/signatures/${localName}`;
     }
 
     return res.json({

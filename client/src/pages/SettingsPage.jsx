@@ -254,7 +254,7 @@ export function SettingsPage() {
       const file = new File([blob], 'photo.png', { type: 'image/png' });
       setAvatarUploadBusy(true);
       try {
-        const { data } = await uploadAPI.uploadPhoto(file);
+        const { data } = await uploadAPI.uploadPhoto(file, avatarUrl);
         setAvatarUrl(data.url);
         setToast({ message: t('settings.photoUploaded'), type: 'success' });
         closeAvatarCropModal();
@@ -264,7 +264,7 @@ export function SettingsPage() {
         setAvatarUploadBusy(false);
       }
     },
-    [t, closeAvatarCropModal]
+    [avatarUrl, t, closeAvatarCropModal]
   );
 
   const onLogoDrop = useCallback(async (accepted, fileRejections) => {
@@ -275,13 +275,13 @@ export function SettingsPage() {
     }
     if (!file) return;
     try {
-      const { data } = await uploadAPI.uploadLogo(file);
+      const { data } = await uploadAPI.uploadLogo(file, logoUrl);
       setLogoUrl(data.url);
       setToast({ message: t('settings.logoUploaded'), type: 'success' });
     } catch {
       setToast({ message: t('settings.logoUploadFailed'), type: 'error' });
     }
-  }, [t]);
+  }, [logoUrl, t]);
 
   const avatarDrop = useDropzone({
     onDrop: (files, rej) => onAvatarDrop(files, rej),

@@ -364,34 +364,41 @@ export async function consumeAgencyInviteLink(linkToken) {
 
 /** Puppeteer PNG export — public route; returns { url, base64?, dataUrl? } */
 export const signatureExportAPI = {
-  generateImage: async (html) => {
+  generateImage: async (html, opts = {}) => {
     const token = await resolveAccessToken();
-    return postGenerateSignature(html, { accessToken: token });
+    return postGenerateSignature(html, {
+      accessToken: token,
+      signatureId: opts.signatureId,
+      slot: opts.slot,
+    });
   },
 };
 
+function uploadImageForm(file, replaceUrl) {
+  const form = new FormData();
+  form.append('image', file);
+  const prev = String(replaceUrl || '').trim();
+  if (prev) form.append('replaceUrl', prev);
+  return form;
+}
+
 export const uploadAPI = {
-  uploadPhoto: (file) => {
-    const form = new FormData();
-    form.append('image', file);
-    return api.post('upload/photo', form);
+  uploadPhoto: (file, replaceUrl) => {
+    return api.post('upload/photo', uploadImageForm(file, replaceUrl));
   },
-  uploadLogo: (file) => {
-    const form = new FormData();
-    form.append('image', file);
-    return api.post('upload/logo', form);
+  uploadLogo: (file, replaceUrl) => {
+    return api.post('upload/logo', uploadImageForm(file, replaceUrl));
   },
   /**
    * Banner uploads. Default (`strip`): up to 2000×2000 JPEG, aspect preserved (no server crop).
    * `{ mode: 'mark' }`: 400×400 max PNG (`inside`) for CTA logos/icons.
    * `{ mode: 'scene' }`: 800×280 max PNG (`inside`) for CTA hero / illustration slots.
+   * `replaceUrl`: previous public URL to delete after successful upload.
    */
   uploadBannerImage: (file, opts = {}) => {
-    const form = new FormData();
-    form.append('image', file);
     const q =
       opts.mode === 'mark' ? '?mode=mark' : opts.mode === 'scene' ? '?mode=scene' : '';
-    return api.post(`upload/banner-image${q}`, form);
+    return api.post(`upload/banner-image${q}`, uploadImageForm(file, opts.replaceUrl));
   },
   /** Upload rendered signature (+ optional banner) PNGs; returns public URLs and Emailee-style HTML. */
   emaileeExport: (signatureBlob, bannerBlob = null) => {

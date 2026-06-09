@@ -86,7 +86,7 @@ export function MyInformationTab({ onToast }) {
       const file = new File([blob], 'photo.png', { type: 'image/png' });
       setUploadKind('photo');
       try {
-        const { data } = await uploadAPI.uploadPhoto(file);
+        const { data } = await uploadAPI.uploadPhoto(file, signature?.fields?.photo_url);
         updateField('fields.photo_url', data.url);
         updateField('design.showPhoto', true);
         updateField('design.show_photo', true);
@@ -98,7 +98,7 @@ export function MyInformationTab({ onToast }) {
         setUploadKind(null);
       }
     },
-    [closeCropModal, updateField, onToast]
+    [closeCropModal, signature?.fields?.photo_url, updateField, onToast]
   );
 
   const photoDrop = useDropzone({
@@ -120,7 +120,7 @@ export function MyInformationTab({ onToast }) {
       if (!file) return;
       setUploadKind('logo');
       try {
-        const { data } = await uploadAPI.uploadLogo(file);
+        const { data } = await uploadAPI.uploadLogo(file, signature?.fields?.logo_url);
         updateField('fields.logo_url', data.url);
         onToast?.('Logo updated', 'success');
       } catch {
@@ -129,7 +129,7 @@ export function MyInformationTab({ onToast }) {
         setUploadKind(null);
       }
     },
-    [updateField, onToast]
+    [signature?.fields?.logo_url, updateField, onToast]
   );
 
   const logoDrop = useDropzone({
@@ -151,7 +151,10 @@ export function MyInformationTab({ onToast }) {
       if (!file) return;
       setUploadKind('sigImage');
       try {
-        const { data } = await uploadAPI.uploadLogo(file);
+        const { data } = await uploadAPI.uploadLogo(
+          file,
+          signature?.design?.signatureImageUrl || signature?.fields?.signature_image_url
+        );
         updateSignatureDesignImageUrl(data.url);
         onToast?.('Signature design image updated', 'success');
       } catch {
@@ -160,7 +163,12 @@ export function MyInformationTab({ onToast }) {
         setUploadKind(null);
       }
     },
-    [updateSignatureDesignImageUrl, onToast]
+    [
+      signature?.design?.signatureImageUrl,
+      signature?.fields?.signature_image_url,
+      updateSignatureDesignImageUrl,
+      onToast,
+    ]
   );
 
   const sigImageDrop = useDropzone({
@@ -334,14 +342,10 @@ export function MyInformationTab({ onToast }) {
       try {
         const sceneSlot = isNeedCallBannerPreset(bc.preset_id, signature?.banner_id);
         const businessCitySlot = isBusinessCityBannerPreset(bc.preset_id, signature?.banner_id);
-        const { data } = await uploadAPI.uploadBannerImage(
-          file,
-          sceneSlot
-            ? { mode: 'scene' }
-            : businessCitySlot
-              ? { mode: 'mark' }
-              : {}
-        );
+        const { data } = await uploadAPI.uploadBannerImage(file, {
+          ...(sceneSlot ? { mode: 'scene' } : businessCitySlot ? { mode: 'mark' } : {}),
+          replaceUrl: bc.banner_image_url,
+        });
         mergeBannerCfg({
           banner_image_url: data.url,
           banner_image_width: data.width ?? null,
@@ -387,14 +391,10 @@ export function MyInformationTab({ onToast }) {
         const businessCitySlot2 =
           Boolean(bc.secondary_banner_id) &&
           isBusinessCityBannerPreset(bc.secondary_preset_id || '', bc.secondary_banner_id);
-        const { data } = await uploadAPI.uploadBannerImage(
-          file,
-          sceneSlot2
-            ? { mode: 'scene' }
-            : businessCitySlot2
-              ? { mode: 'mark' }
-              : {}
-        );
+        const { data } = await uploadAPI.uploadBannerImage(file, {
+          ...(sceneSlot2 ? { mode: 'scene' } : businessCitySlot2 ? { mode: 'mark' } : {}),
+          replaceUrl: bc.secondary_banner_image_url,
+        });
         mergeSecondaryBannerCfg({
           secondary_banner_image_url: data.url,
           secondary_banner_image_width: data.width ?? null,

@@ -6,6 +6,7 @@ import { supabaseAdmin, getStorageBucket } from '../services/supabase.js';
 import { buildEmaileeTableHtml } from '../lib/emaileeHtml.js';
 import { getPlan, normalizePlanId } from '../data/plans.js';
 import { requireFeature } from '../middleware/planGate.js';
+import { removeReplacedUserMediaUrl } from '../lib/storageFiles.js';
 
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
 /** Multer ceiling; per-plan limits enforced in `enforcePlanUploadBytes` after auth. */
@@ -70,6 +71,12 @@ async function uploadBuffer(path, buffer, contentType) {
   return pub.publicUrl;
 }
 
+async function removeReplacedUploadIfAny(req, newUrl) {
+  const replaceUrl = String(req.body?.replaceUrl || '').trim();
+  if (!replaceUrl || !req.user?.id) return;
+  await removeReplacedUserMediaUrl(req.user.id, replaceUrl, newUrl);
+}
+
 router.post('/photo', upload.single('image'), enforcePlanUploadBytes, async (req, res, next) => {
   try {
     if (!supabaseAdmin) {
@@ -86,6 +93,7 @@ router.post('/photo', upload.single('image'), enforcePlanUploadBytes, async (req
     const name = `${randomUUID()}.png`;
     const path = `photos/${req.user.id}/${name}`;
     const url = await uploadBuffer(path, buf, 'image/png');
+    await removeReplacedUploadIfAny(req, url);
     res.json({ url });
   } catch (e) {
     next(e);
@@ -108,6 +116,7 @@ router.post('/logo', upload.single('image'), enforcePlanUploadBytes, async (req,
     const name = `${randomUUID()}.png`;
     const path = `logos/${req.user.id}/${name}`;
     const url = await uploadBuffer(path, buf, 'image/png');
+    await removeReplacedUploadIfAny(req, url);
     res.json({ url });
   } catch (e) {
     next(e);
@@ -141,6 +150,7 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
       const name = `${randomUUID()}.png`;
       const path = `banners/${req.user.id}/${name}`;
       const url = await uploadBuffer(path, buf, 'image/png');
+      await removeReplacedUploadIfAny(req, url);
       res.json({ url });
       return;
     }
@@ -156,6 +166,7 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
       const name = `${randomUUID()}.png`;
       const path = `banners/${req.user.id}/${name}`;
       const url = await uploadBuffer(path, buf, 'image/png');
+      await removeReplacedUploadIfAny(req, url);
       res.json({ url });
       return;
     }
@@ -171,6 +182,7 @@ router.post('/banner-image', upload.single('image'), enforcePlanUploadBytes, asy
     const name = `${randomUUID()}.jpg`;
     const path = `banners/${req.user.id}/${name}`;
     const url = await uploadBuffer(path, buf, 'image/jpeg');
+    await removeReplacedUploadIfAny(req, url);
     res.json({
       url,
       width: meta.width ?? null,

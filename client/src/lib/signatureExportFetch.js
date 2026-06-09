@@ -40,13 +40,17 @@ export function generateSignaturePostUrl() {
  * POST signature HTML for PNG export.
  * Uses base64 + text/plain so nginx/WAF does not block `<table>` / `<img>` in the body.
  */
-export async function postGenerateSignature(html, { accessToken } = {}) {
+export async function postGenerateSignature(html, { accessToken, signatureId, slot } = {}) {
   const headers = {
     'Content-Type': 'text/plain; charset=utf-8',
     'X-Signature-Export-Encoding': 'base64',
     Accept: 'application/json',
   };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const sid = String(signatureId || '').trim();
+  const exportSlot = String(slot || '').trim();
+  if (sid) headers['X-Signature-Id'] = sid;
+  if (exportSlot) headers['X-Export-Slot'] = exportSlot;
 
   const res = await fetch(generateSignaturePostUrl(), {
     method: 'POST',

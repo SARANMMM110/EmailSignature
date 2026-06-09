@@ -27,6 +27,7 @@ import {
 import { requireUnderLimit } from '../middleware/planGate.js';
 import { countUserSignatures } from '../lib/planCounts.js';
 import { applyPlanConstraintsToSignatureRow } from '../lib/planSanitize.js';
+import { deleteSignatureStorageAssets } from '../lib/storageFiles.js';
 
 /** Stored `generated_html` should keep image-only CTA shell before upload (matches live editor preview). */
 const ROW_GENERATE_HTML_OPTIONS = { persistIncompleteBlank: true };
@@ -671,6 +672,15 @@ router.delete(
       if (!errors.isEmpty()) {
         return res.status(400).json({ message: 'Invalid id', errors: errors.array() });
       }
+      const { data: row, error: fetchErr } = await supabaseAdmin
+        .from('signatures')
+        .select('*')
+        .eq('id', req.params.id)
+        .eq('user_id', req.user.id)
+        .maybeSingle();
+      throwIfSupabaseError(fetchErr);
+      if (!row) return res.status(404).json({ message: 'Signature not found' });
+
       const { data, error } = await supabaseAdmin
         .from('signatures')
         .delete()
@@ -679,6 +689,13 @@ router.delete(
         .select('id');
       throwIfSupabaseError(error);
       if (!data?.length) return res.status(404).json({ message: 'Signature not found' });
+
+      try {
+        await deleteSignatureStorageAssets(row);
+      } catch (storageErr) {
+        console.warn('[signatures] storage cleanup failed:', storageErr?.message || storageErr);
+      }
+
       res.json({ success: true });
     } catch (e) {
       next(e);

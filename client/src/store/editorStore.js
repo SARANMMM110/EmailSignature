@@ -621,8 +621,11 @@ async function runPuppeteerExport(html) {
   const snapshot = html;
   useEditorStore.setState({ exportGenerating: true, exportImageError: null });
   try {
-    const railPx = bundleRailPxForSignature(useEditorStore.getState().signature);
-    const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(snapshot, railPx);
+    const st = useEditorStore.getState();
+    const railPx = bundleRailPxForSignature(st.signature);
+    const { sigUrl, bannerUrls, mode } = await generateSplitSignatureBannerPngUrls(snapshot, railPx, {
+      signatureId: st.signatureId,
+    });
     if (useEditorStore.getState().generatedHTML !== snapshot) return;
 
     if (mode === 'error') {
@@ -729,8 +732,12 @@ const runDebouncedPreview = debounce(async () => {
       useEditorStore.setState({
         generatedHTML: html,
         previewSlotBundle: previewSlotBundleFromGenerateResponse(data),
+        exportImageUrl: '',
+        exportBannerImageUrl: '',
+        exportBannerSlotImageUrls: [],
+        exportImageError: null,
+        exportGenerating: false,
       });
-      runPuppeteerExport(html);
     } else {
       useEditorStore.setState({ previewSlotBundle: null });
       if (import.meta.env.DEV) {
@@ -818,8 +825,12 @@ export const useEditorStore = create((set, get) => ({
         isDirty: false,
         isSaving: false,
         saveStatus: 'saved',
+        exportImageUrl: '',
+        exportBannerImageUrl: '',
+        exportBannerSlotImageUrls: [],
+        exportImageError: null,
+        exportGenerating: false,
       });
-      if (gh) queueMicrotask(() => runPuppeteerExport(gh));
     }
     setTimeout(() => {
       if (useEditorStore.getState().saveStatus === 'saved') {
@@ -1467,8 +1478,12 @@ export const useEditorStore = create((set, get) => ({
           generatedHTML: html,
           previewSlotBundle: previewSlotBundleFromGenerateResponse(data),
           previewError: null,
+          exportImageUrl: '',
+          exportBannerImageUrl: '',
+          exportBannerSlotImageUrls: [],
+          exportImageError: null,
+          exportGenerating: false,
         });
-        runPuppeteerExport(html);
       } else {
         set({
           previewSlotBundle: null,
