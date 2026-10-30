@@ -5,7 +5,7 @@
  *
  * **Card** = {@link T3_CARD_WIDTH_PX}px; **inner grid** = {@link T3_INNER_GRID_W_PX}px (equals
  * `card − 2×{@link T3_SHELL_H_PAD_PX}`) in every context — with or without the photo column.
- * Photo layout columns: **195 + 202 + 195**; no-photo: **296 + 296** (same total inner width).
+ * Photo layout columns: **180 + 186 + 226**; no-photo: **296 + 296** (same total inner width).
  *
  * Tokens from `buildTemplate3DecorDataUris` + standard `contextFromEditorPayload` fields.
  */
@@ -25,15 +25,16 @@ export const T3_CARD_WIDTH_PX = 620;
 /** Inner table width — always `card − 2×{@link T3_SHELL_H_PAD_PX}` ({@link sig_t3_inner_grid_width}). */
 export const T3_INNER_GRID_W_PX = T3_CARD_WIDTH_PX - T3_SHELL_H_PAD_PX * 2;
 
-/** Photo layout columns inside inner grid: 195 + 202 + 195 = {@link T3_INNER_GRID_W_PX}. */
-const T3_SIDE_COL_W_PX = 195;
+/** Photo layout columns inside inner grid: 180 + 186 + 226 = {@link T3_INNER_GRID_W_PX}. */
+const T3_LEFT_COL_W_PX = 180;
+const T3_RIGHT_COL_W_PX = 226;
 /** No-photo: two columns fill inner grid — **296 + 296**. */
 const T3_COMPACT_COL_W_PX = T3_INNER_GRID_W_PX / 2;
 
 /** Reference height for diamond SVG viewBox; actual cell grows with portrait. */
 export const T3_CARD_HEIGHT_PX = 216;
 /** Center column width (px) — only when {@link sig_has_photo_column}. */
-export const T3_PHOTO_COL_W_PX = 202;
+export const T3_PHOTO_COL_W_PX = 186;
 /** Portrait image box — matches {@link TEMPLATE_3_MARKUP} img width / max-height when photo on. */
 export const T3_PHOTO_IMG_W_PX = 168;
 export const T3_PHOTO_IMG_MAX_H_PX = 180;
@@ -50,23 +51,27 @@ export const T3_RIGHT_PHONE_ROW_PAD_TOP_PX = 8 + T3_CONTACT_SECTION_DOWN_PX;
 export const T3_NO_LOGO_SPACER_PAD_ADJ_PX = 4;
 
 /** Right rail padding (photo layout): inset name/title from center diamonds (`padding-left` faces the portrait column). */
-const T3_RIGHT_RAIL_PAD_L = 16;
-const T3_RIGHT_RAIL_PAD_R = 14;
+const T3_RIGHT_RAIL_PAD_L = 10;
+const T3_RIGHT_RAIL_PAD_R = 10;
+/** Gap between phone/email text and the 24px icon cell. */
+const T3_CONTACT_ICON_GAP_PX = 6;
 /** Usable inner width inside right rail `<td>` after horizontal padding. */
-const T3_RIGHT_RAIL_INNER_W_PX = T3_SIDE_COL_W_PX - T3_RIGHT_RAIL_PAD_L - T3_RIGHT_RAIL_PAD_R;
+const T3_RIGHT_RAIL_INNER_W_PX = T3_RIGHT_COL_W_PX - T3_RIGHT_RAIL_PAD_L - T3_RIGHT_RAIL_PAD_R;
 /** Phone/email label cell (icon row): inner minus icon gutter and gap before icon. */
-const T3_RIGHT_CONTACT_TEXT_W_PX = T3_RIGHT_RAIL_INNER_W_PX - T3_ICON_GUTTER_PX - 8;
+const T3_RIGHT_CONTACT_TEXT_W_PX = T3_RIGHT_RAIL_INNER_W_PX - T3_ICON_GUTTER_PX - T3_CONTACT_ICON_GAP_PX;
 const T3_COMPACT_RAIL_INNER_W_PX = T3_COMPACT_COL_W_PX - T3_RIGHT_RAIL_PAD_L - T3_RIGHT_RAIL_PAD_R;
-const T3_COMPACT_CONTACT_TEXT_W_PX = T3_COMPACT_RAIL_INNER_W_PX - T3_ICON_GUTTER_PX - 8;
+const T3_COMPACT_CONTACT_TEXT_W_PX = T3_COMPACT_RAIL_INNER_W_PX - T3_ICON_GUTTER_PX - T3_CONTACT_ICON_GAP_PX;
+/** Email stays one line in the widened rail (Outlook-safe nowrap; clip if a token is still too long). */
+const T3_EMAIL_ONE_LINE = 'white-space:nowrap;overflow:hidden;max-width:100%;';
 
 /**
  * Name: exactly **two** semantic lines (`line1` + `<br>` + optional `line2`); wrap allowed within each so nothing spills past the rail.
- * Slightly smaller type keeps long names inside the **195px** side columns without clipping.
+ * Slightly smaller type keeps long names inside the **226px** name rail without clipping.
  */
 const T3_NAME_CELL_BASE =
   'padding:0 0 3px 0;font-size:17px;font-weight:800;letter-spacing:0.01em;line-height:1.2;mso-line-height-rule:exactly;text-align:right;width:100%;max-width:100%;overflow:hidden;';
 
-const T3_LOGO_RAIL_OPEN = `<td width="${T3_SIDE_COL_W_PX}" valign="top" style="width:${T3_SIDE_COL_W_PX}px;max-width:${T3_SIDE_COL_W_PX}px;vertical-align:top;padding:5px 8px 4px 10px;">
+const T3_LOGO_RAIL_OPEN = `<td width="${T3_LEFT_COL_W_PX}" valign="top" style="width:${T3_LEFT_COL_W_PX}px;max-width:${T3_LEFT_COL_W_PX}px;vertical-align:top;padding:5px 8px 4px 10px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
 {{#unless show_logo}}{{#if sig_t3_no_logo_r1_spacer_h}}<tr><td style="padding:0;line-height:0;font-size:0;height:{{sig_t3_no_logo_r1_spacer_h}}px;mso-line-height-rule:exactly;overflow:hidden;">&nbsp;</td></tr>{{/if}}{{/unless}}
 {{#if show_logo}}<tr><td align="center" style="padding:0 0 8px 0;line-height:0;">
@@ -116,19 +121,19 @@ ${T3_LOGO_RAIL_OPEN}
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:0 auto;"><tr><td width="84" height="84" align="center" valign="middle" bgcolor="#e8eef8" style="width:84px;height:84px;background-color:#e8eef8;font-family:${T3_FONT};font-size:17px;font-weight:800;color:{{t3_ink}};mso-line-height-rule:exactly;">{{name_initials}}</td></tr></table>
 {{/if}}{{/if}}
 </td>
-<td rowspan="2" width="${T3_SIDE_COL_W_PX}" valign="top" style="width:${T3_SIDE_COL_W_PX}px;max-width:${T3_SIDE_COL_W_PX}px;vertical-align:top;padding:5px ${T3_RIGHT_RAIL_PAD_R}px 6px ${T3_RIGHT_RAIL_PAD_L}px;overflow:hidden;">
+<td rowspan="2" width="${T3_RIGHT_COL_W_PX}" valign="top" style="width:${T3_RIGHT_COL_W_PX}px;max-width:${T3_RIGHT_COL_W_PX}px;vertical-align:top;padding:5px ${T3_RIGHT_RAIL_PAD_R}px 6px ${T3_RIGHT_RAIL_PAD_L}px;overflow:hidden;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;">
 {{#if name}}<tr><td align="right" width="100%" style="${T3_NAME_CELL_BASE}color:{{t3_ink}};${T3_NAME_WRAP}">{{t3_name_line1}}{{#if t3_has_name_line2}}<br>{{t3_name_line2}}{{/if}}</td></tr>{{/if}}
 {{#if title}}<tr><td align="right" width="100%" style="padding:2px 0 6px 0;font-size:10px;font-weight:600;color:{{t3_ink}};letter-spacing:1.2px;line-height:1.35;mso-line-height-rule:exactly;text-align:right;width:100%;max-width:100%;overflow:hidden;${T3_WRAP}">{{t13_title_upper}}</td></tr>{{/if}}
 {{#if phone}}<tr><td align="right" style="padding:${T3_RIGHT_PHONE_ROW_PAD_TOP_PX}px 0 4px 0;line-height:0;width:100%;max-width:100%;overflow:hidden;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="right" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 0 auto;"><tr>
-<td width="${T3_RIGHT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;max-width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;padding:0 8px 0 0;font-size:11px;color:{{company_muted}};line-height:1.35;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_WRAP}">{{#if t16_tel_href}}<a href="{{{t16_tel_href}}}" style="color:{{company_muted}};text-decoration:none;">{{phone}}</a>{{else}}{{phone}}{{/if}}</td>
+<td width="${T3_RIGHT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;max-width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;padding:0 ${T3_CONTACT_ICON_GAP_PX}px 0 0;font-size:11px;color:{{company_muted}};line-height:1.35;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_WRAP}">{{#if t16_tel_href}}<a href="{{{t16_tel_href}}}" style="color:{{company_muted}};text-decoration:none;">{{phone}}</a>{{else}}{{phone}}{{/if}}</td>
 <td width="${T3_ICON_GUTTER_PX}" valign="top" style="width:${T3_ICON_GUTTER_PX}px;min-width:${T3_ICON_GUTTER_PX}px;max-width:${T3_ICON_GUTTER_PX}px;padding:0;line-height:0;vertical-align:top;"><table cellpadding="0" cellspacing="0" border="0" style="background-color:{{t3_icon_cell}};border-radius:4px;"><tr><td width="24" height="24" align="center" valign="middle" style="width:24px;height:24px;padding:0;line-height:0;"><img src="{{{t3_icon_phone}}}" width="12" height="12" alt="" style="display:block;border:0;width:12px;height:12px;"></td></tr></table></td>
 </tr></table>
 </td></tr>{{/if}}
 {{#if email}}<tr><td align="right" style="padding:2px 0 0 0;line-height:0;width:100%;max-width:100%;overflow:hidden;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="right" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 0 auto;"><tr>
-<td width="${T3_RIGHT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;max-width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;padding:0 8px 0 0;font-size:10px;line-height:1.4;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_WRAP}">{{#if has_mailto}}<a href="{{{t3_mailto_href}}}" style="color:{{company_muted}};text-decoration:none;">{{email}}</a>{{else}}<span style="color:{{company_muted}};">{{email}}</span>{{/if}}</td>
+<td width="${T3_RIGHT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;max-width:${T3_RIGHT_CONTACT_TEXT_W_PX}px;padding:0 ${T3_CONTACT_ICON_GAP_PX}px 0 0;font-size:10px;line-height:1.4;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_EMAIL_ONE_LINE}">{{#if has_mailto}}<a href="{{{t3_mailto_href}}}" style="color:{{company_muted}};text-decoration:none;">{{email}}</a>{{else}}<span style="color:{{company_muted}};">{{email}}</span>{{/if}}</td>
 <td width="${T3_ICON_GUTTER_PX}" valign="top" style="width:${T3_ICON_GUTTER_PX}px;min-width:${T3_ICON_GUTTER_PX}px;max-width:${T3_ICON_GUTTER_PX}px;padding:0;line-height:0;vertical-align:top;"><table cellpadding="0" cellspacing="0" border="0" style="background-color:{{t3_icon_cell}};border-radius:4px;"><tr><td width="24" height="24" align="center" valign="middle" style="width:24px;height:24px;padding:0;line-height:0;"><img src="{{{t3_icon_mail}}}" width="12" height="12" alt="" style="display:block;border:0;width:12px;height:12px;"></td></tr></table></td>
 </tr></table>
 </td></tr>{{/if}}
@@ -136,7 +141,7 @@ ${T3_LOGO_RAIL_OPEN}
 </td>
 </tr>
 <tr>
-<td width="${T3_SIDE_COL_W_PX}" valign="top" style="width:${T3_SIDE_COL_W_PX}px;max-width:${T3_SIDE_COL_W_PX}px;vertical-align:top;padding:${T3_LEFT_RAIL_ROW2_PAD_TOP_PX}px 8px 6px 10px;">
+<td width="${T3_LEFT_COL_W_PX}" valign="top" style="width:${T3_LEFT_COL_W_PX}px;max-width:${T3_LEFT_COL_W_PX}px;vertical-align:top;padding:${T3_LEFT_RAIL_ROW2_PAD_TOP_PX}px 8px 6px 10px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;border-collapse:collapse;">
 {{#if has_website}}<tr><td align="left" style="padding:0 0 5px 0;line-height:0;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="border-collapse:collapse;"><tr>
@@ -170,13 +175,13 @@ ${T3_LOGO_RAIL_OPEN_COMPACT}
 {{#if title}}<tr><td align="right" width="100%" style="padding:2px 0 6px 0;font-size:10px;font-weight:600;color:{{t3_ink}};letter-spacing:1.2px;line-height:1.35;mso-line-height-rule:exactly;text-align:right;width:100%;max-width:100%;overflow:hidden;${T3_WRAP}">{{t13_title_upper}}</td></tr>{{/if}}
 {{#if phone}}<tr><td align="right" style="padding:${T3_RIGHT_PHONE_ROW_PAD_TOP_PX}px 0 4px 0;line-height:0;width:100%;max-width:100%;overflow:hidden;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="right" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 0 auto;"><tr>
-<td width="${T3_COMPACT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;max-width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;padding:0 8px 0 0;font-size:11px;color:{{company_muted}};line-height:1.35;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_WRAP}">{{#if t16_tel_href}}<a href="{{{t16_tel_href}}}" style="color:{{company_muted}};text-decoration:none;">{{phone}}</a>{{else}}{{phone}}{{/if}}</td>
+<td width="${T3_COMPACT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;max-width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;padding:0 ${T3_CONTACT_ICON_GAP_PX}px 0 0;font-size:11px;color:{{company_muted}};line-height:1.35;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_WRAP}">{{#if t16_tel_href}}<a href="{{{t16_tel_href}}}" style="color:{{company_muted}};text-decoration:none;">{{phone}}</a>{{else}}{{phone}}{{/if}}</td>
 <td width="${T3_ICON_GUTTER_PX}" valign="top" style="width:${T3_ICON_GUTTER_PX}px;min-width:${T3_ICON_GUTTER_PX}px;max-width:${T3_ICON_GUTTER_PX}px;padding:0;line-height:0;vertical-align:top;"><table cellpadding="0" cellspacing="0" border="0" style="background-color:{{t3_icon_cell}};border-radius:4px;"><tr><td width="24" height="24" align="center" valign="middle" style="width:24px;height:24px;padding:0;line-height:0;"><img src="{{{t3_icon_phone}}}" width="12" height="12" alt="" style="display:block;border:0;width:12px;height:12px;"></td></tr></table></td>
 </tr></table>
 </td></tr>{{/if}}
 {{#if email}}<tr><td align="right" style="padding:2px 0 0 0;line-height:0;width:100%;max-width:100%;overflow:hidden;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" align="right" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 0 auto;"><tr>
-<td width="${T3_COMPACT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;max-width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;padding:0 8px 0 0;font-size:10px;line-height:1.4;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_WRAP}">{{#if has_mailto}}<a href="{{{t3_mailto_href}}}" style="color:{{company_muted}};text-decoration:none;">{{email}}</a>{{else}}<span style="color:{{company_muted}};">{{email}}</span>{{/if}}</td>
+<td width="${T3_COMPACT_CONTACT_TEXT_W_PX}" align="right" valign="top" style="width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;max-width:${T3_COMPACT_CONTACT_TEXT_W_PX}px;padding:0 ${T3_CONTACT_ICON_GAP_PX}px 0 0;font-size:10px;line-height:1.4;mso-line-height-rule:exactly;text-align:right;vertical-align:top;${T3_EMAIL_ONE_LINE}">{{#if has_mailto}}<a href="{{{t3_mailto_href}}}" style="color:{{company_muted}};text-decoration:none;">{{email}}</a>{{else}}<span style="color:{{company_muted}};">{{email}}</span>{{/if}}</td>
 <td width="${T3_ICON_GUTTER_PX}" valign="top" style="width:${T3_ICON_GUTTER_PX}px;min-width:${T3_ICON_GUTTER_PX}px;max-width:${T3_ICON_GUTTER_PX}px;padding:0;line-height:0;vertical-align:top;"><table cellpadding="0" cellspacing="0" border="0" style="background-color:{{t3_icon_cell}};border-radius:4px;"><tr><td width="24" height="24" align="center" valign="middle" style="width:24px;height:24px;padding:0;line-height:0;"><img src="{{{t3_icon_mail}}}" width="12" height="12" alt="" style="display:block;border:0;width:12px;height:12px;"></td></tr></table></td>
 </tr></table>
 </td></tr>{{/if}}

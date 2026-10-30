@@ -319,17 +319,17 @@ export function InstallModal({ open, onClose, onToast }) {
               Add your {BRAND} signature in {client.name}
             </h2>
 
-            <div className="relative mt-6 flex aspect-video max-h-56 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-violet-200 via-pink-100 to-indigo-100">
-              <button
-                type="button"
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-[#3b5bdb] shadow-lg transition hover:scale-105"
-                aria-label="Play video (placeholder)"
+            <div className="relative mt-6 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-slate-200">
+              <video
+                className="aspect-video w-full max-h-80 bg-black object-contain"
+                controls
+                playsInline
+                preload="metadata"
+                src="/SignatureStudio.mp4"
+                title={`${BRAND} signature tutorial`}
               >
-                <svg className="ml-1 h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </button>
-              <p className="absolute bottom-3 text-xs font-medium text-slate-600">Video tutorial (coming soon)</p>
+                Your browser does not support the video tag.
+              </video>
             </div>
 
             {signatureLink ? (
